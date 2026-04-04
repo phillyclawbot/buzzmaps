@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/db";
 import { NextRequest } from "next/server";
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MAX_SEARCH_QUERY_LENGTH } from "@/lib/constants";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +11,12 @@ export async function GET(request: NextRequest) {
     const sentiment = params.get("sentiment") || "all";
     const subreddit = params.get("subreddit") || "all";
     const category = params.get("category") || "all";
-    const q = params.get("q") || "";
+    const q = (params.get("q") || "").slice(0, MAX_SEARCH_QUERY_LENGTH);
+    const limit = Math.min(
+      Math.max(1, parseInt(params.get("limit") || String(DEFAULT_PAGE_SIZE), 10) || DEFAULT_PAGE_SIZE),
+      MAX_PAGE_SIZE
+    );
+    const offset = Math.max(0, parseInt(params.get("offset") || "0", 10) || 0);
 
     const restaurants = await sql`
       SELECT
@@ -42,10 +48,12 @@ export async function GET(request: NextRequest) {
         ${since === "30d" ? sql`AND rp.created_utc > EXTRACT(EPOCH FROM NOW() - INTERVAL '30 days')` : sql``}
       GROUP BY r.id
       ORDER BY latest_mention DESC
+      LIMIT ${limit} OFFSET ${offset}
     `;
 
     return Response.json(restaurants);
   } catch (err) {
-    return Response.json({ error: String(err) }, { status: 500 });
+    console.error("GET /api/restaurants error:", err);
+    return Response.json({ error: "Failed to fetch restaurants" }, { status: 500 });
   }
 }

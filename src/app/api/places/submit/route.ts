@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-
-function delay(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
-}
+import { TORONTO_BOUNDS, VALID_CATEGORIES } from "@/lib/constants";
+import { delay, isInToronto } from "@/lib/utils";
 
 async function geocodeAddress(address: string, name: string): Promise<{ lat: number; lng: number; displayName: string } | null> {
   try {
@@ -26,13 +24,13 @@ async function geocodeAddress(address: string, name: string): Promise<{ lat: num
       const place = data2[0];
       const lat = parseFloat(place.lat);
       const lng = parseFloat(place.lon);
-      if (lat < 43.4 || lat > 44.0 || lng < -79.8 || lng > -78.8) return null;
+      if (!isInToronto(lat, lng)) return null;
       return { lat, lng, displayName: place.display_name || address };
     }
     const place = data[0];
     const lat = parseFloat(place.lat);
     const lng = parseFloat(place.lon);
-    if (lat < 43.4 || lat > 44.0 || lng < -79.8 || lng > -78.8) return null;
+    if (!isInToronto(lat, lng)) return null;
     return { lat, lng, displayName: place.display_name || address };
   } catch {
     return null;
@@ -46,6 +44,15 @@ export async function POST(req: NextRequest) {
 
     if (!name || typeof name !== "string" || name.trim().length === 0) {
       return NextResponse.json({ error: "Place name is required" }, { status: 400 });
+    }
+    if (name.trim().length > 100) {
+      return NextResponse.json({ error: "Place name must be 100 characters or less" }, { status: 400 });
+    }
+    if (address && typeof address === "string" && address.length > 300) {
+      return NextResponse.json({ error: "Address must be 300 characters or less" }, { status: 400 });
+    }
+    if (reason && typeof reason === "string" && reason.length > 500) {
+      return NextResponse.json({ error: "Reason must be 500 characters or less" }, { status: 400 });
     }
 
     const sql = getDb();
@@ -69,8 +76,7 @@ export async function POST(req: NextRequest) {
     }
 
     const placeId = `user_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-    const validCategories = ["restaurant", "bar", "cafe", "shop", "park", "gym", "venue", "other"];
-    const safeCategory = validCategories.includes(category) ? category : "other";
+    const safeCategory = (VALID_CATEGORIES as readonly string[]).includes(category) ? category : "other";
 
     // Save to restaurants table
     const restaurantRows = await sql`
