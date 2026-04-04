@@ -13,8 +13,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BuzzMaps - Reddit Restaurant Map",
-  description: "Discover Toronto restaurants trending on Reddit",
+  title: 'BuzzMaps Toronto — Discover places locals love on Reddit',
+  description: "Interactive map of Toronto restaurants, bars, shops, parks and more — powered by Reddit recommendations",
+  openGraph: {
+    title: 'BuzzMaps Toronto',
+    description: "Toronto's places, as told by Reddit",
+    url: 'https://buzzmaps.vercel.app',
+    siteName: 'BuzzMaps',
+    images: [{ url: 'https://via.placeholder.com/1200x630/ff6b35/ffffff?text=BuzzMaps+Toronto', width: 1200, height: 630 }],
+    locale: 'en_CA',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'BuzzMaps Toronto',
+    description: "Toronto's places, as told by Reddit",
+    images: ['https://via.placeholder.com/1200x630/ff6b35/ffffff?text=BuzzMaps+Toronto'],
+  },
 };
 
 export default function RootLayout({

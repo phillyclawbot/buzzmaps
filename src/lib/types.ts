@@ -1,3 +1,30 @@
+export type PlaceCategory =
+  | "restaurant"
+  | "bar"
+  | "cafe"
+  | "club"
+  | "shop"
+  | "park"
+  | "gym"
+  | "venue"
+  | "market"
+  | "museum"
+  | "other";
+
+export const CATEGORY_EMOJI: Record<PlaceCategory, string> = {
+  restaurant: "🍽️",
+  bar: "🍺",
+  cafe: "☕",
+  club: "🎵",
+  shop: "🛍️",
+  park: "🌳",
+  gym: "💪",
+  venue: "🎭",
+  market: "🥬",
+  museum: "🏛️",
+  other: "📍",
+};
+
 export interface Restaurant {
   id: number;
   name: string;
@@ -9,8 +36,10 @@ export interface Restaurant {
   google_reviews_count: number | null;
   cuisine_type: string | null;
   price_level: number | null;
+  category: PlaceCategory;
   mention_count: number;
   latest_mention: number;
+  photo_url: string | null;
   posts: PostMention[];
 }
 
@@ -41,6 +70,7 @@ export interface RedditPostWithRestaurants {
     lat: number;
     lng: number;
     sentiment: string;
+    category: PlaceCategory;
   }[] | null;
 }
 

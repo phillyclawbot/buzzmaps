@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0f;
-  --foreground: #e5e5e5;
-  --accent: #f97316;
-  --card-bg: #1a1a2e;
-  --card-border: #2a2a3e;
-  --muted: #6b7280;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --accent: #ff6b35;
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+  --muted: #64748b;
 }
 
 @theme inline {
@@ -27,28 +27,38 @@ body {
 }
 
 .leaflet-container {
-  background: #0a0a0f;
+  background: #f0f4f8;
   font-family: inherit;
 }
 
+/* Tailwind v4 preflight sets plus-lighter on images, breaking Leaflet tiles */
+.leaflet-container img.leaflet-tile {
+  mix-blend-mode: normal !important;
+}
+
 .leaflet-popup-content-wrapper {
-  background: #1a1a2e;
-  color: #e5e5e5;
-  border-radius: 8px;
-  border: 1px solid #2a2a3e;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0,0,0,0.04);
+  max-width: min(320px, 90vw);
+}
+
+.leaflet-popup-content {
+  max-width: min(290px, 85vw);
 }
 
 .leaflet-popup-tip {
-  background: #1a1a2e;
+  background: #ffffff;
 }
 
 .leaflet-popup-close-button {
-  color: #6b7280 !important;
+  color: #94a3b8 !important;
 }
 
 .leaflet-popup-close-button:hover {
-  color: #e5e5e5 !important;
+  color: #334155 !important;
 }
 
 ::-webkit-scrollbar {
@@ -56,27 +66,30 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0a0a0f;
+  background: #f1f5f9;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2a2a3e;
+  background: #cbd5e1;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a3a4e;
+  background: #94a3b8;
 }
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
 
 @keyframes pulse-pin {
   0% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+    box-shadow: 0 0 0 0 rgba(255, 107, 53, 0.7);
   }
   70% {
-    box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);
+    box-shadow: 0 0 0 12px rgba(255, 107, 53, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    box-shadow: 0 0 0 0 rgba(255, 107, 53, 0);
   }
 }
 
@@ -84,24 +97,75 @@ body {
   animation: pulse-pin 2s infinite;
 }
 
+@keyframes pin-ring {
+  0% { transform: scale(1); opacity: 0.7; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+.pin-pulse-ring {
+  animation: pin-ring 2s ease-out infinite;
+}
+
+@keyframes pinPulse {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+@keyframes nearMePulse {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(3); opacity: 0; }
+}
+
 .marker-cluster-small {
-  background-color: rgba(249, 115, 22, 0.3) !important;
+  background-color: rgba(249, 115, 22, 0.2) !important;
 }
 .marker-cluster-small div {
-  background-color: rgba(249, 115, 22, 0.7) !important;
+  background-color: rgba(249, 115, 22, 0.8) !important;
   color: #fff !important;
 }
 .marker-cluster-medium {
-  background-color: rgba(234, 179, 8, 0.3) !important;
+  background-color: rgba(234, 179, 8, 0.2) !important;
 }
 .marker-cluster-medium div {
-  background-color: rgba(234, 179, 8, 0.7) !important;
+  background-color: rgba(234, 179, 8, 0.8) !important;
   color: #fff !important;
 }
 .marker-cluster-large {
-  background-color: rgba(239, 68, 68, 0.3) !important;
+  background-color: rgba(239, 68, 68, 0.2) !important;
 }
 .marker-cluster-large div {
-  background-color: rgba(239, 68, 68, 0.7) !important;
+  background-color: rgba(239, 68, 68, 0.8) !important;
   color: #fff !important;
+}
+
+/* Hide scrollbar for no-scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.page-enter {
+  animation: pageIn 0.25s ease-out;
+}
+
+/* Loading progress bar */
+@keyframes progressBar {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+.progress-bar {
+  height: 2px;
+  background: linear-gradient(to right, #ff6b35, #f59e0b);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  border-radius: 0 1px 1px 0;
+  transition: width 0.3s ease;
 }

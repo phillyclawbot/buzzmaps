@@ -1,14 +1,68 @@
 import { getDb } from "./db";
+import type { PlaceCategory } from "./types";
 
-const TORONTO_STREETS = [
-  "queen", "king", "bloor", "dundas", "college", "bathurst", "ossington",
-  "spadina", "yonge", "bay", "church", "jarvis", "parliament", "broadview",
-  "danforth", "st clair", "eglinton", "lawrence", "dupont", "davenport",
-  "harbord", "wellesley", "carlton", "gerrard", "front", "wellington",
-  "adelaide", "richmond", "temperance", "lombard", "roncesvalles", "lansdowne",
-  "dufferin", "dovercourt", "shaw", "crawford", "euclid", "palmerston",
-];
+interface ExtractedVenue {
+  name: string;
+  category: PlaceCategory;
+}
 
+const VALID_CATEGORIES = new Set([
+  "restaurant", "bar", "cafe", "club", "shop", "park", "gym", "venue", "market", "museum", "other",
+]);
+
+export async function extractVenuesWithAI(text: string): Promise<ExtractedVenue[]> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    // Fallback to empty if no API key
+    return [];
+  }
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1024,
+        messages: [
+          {
+            role: "user",
+            content: `Extract ALL specifically named places in Toronto from this text — not just food. Include: restaurants, bars, cafes, clubs, parks, shops, gyms, music venues, markets, museums, galleries, bookstores, record stores, spas, skating rinks, beaches, trails, entertainment venues, sports facilities, community centres, hotels, theatres — anything with a real name that someone might visit. Do NOT include generic terms like "a restaurant" or "some bar". Only real named places.\n\nReturn JSON array: [{"name": "Exact Place Name", "category": "restaurant|bar|cafe|club|shop|park|gym|venue|market|museum|other"}]\nReturn [] if no specific named places found. Max 10. Return ONLY the JSON array.\n\nText:\n${text.slice(0, 4000)}`,
+          },
+        ],
+      }),
+    });
+
+    if (!res.ok) return [];
+    const data = await res.json();
+    const content = data?.content?.[0]?.text || "[]";
+    // Extract JSON array from response
+    const match = content.match(/\[[\s\S]*\]/);
+    if (!match) return [];
+
+    const parsed = JSON.parse(match[0]);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .filter(
+        (v: { name?: string; category?: string }) =>
+          v.name && typeof v.name === "string" && v.name.length > 2
+      )
+      .map((v: { name: string; category: string }) => ({
+        name: v.name,
+        category: VALID_CATEGORIES.has(v.category) ? (v.category as PlaceCategory) : "other",
+      }))
+      .slice(0, 8);
+  } catch {
+    return [];
+  }
+}
+
+// Keep old regex extraction as fallback
 export function extractRestaurantNames(
   title: string,
   selftext: string
@@ -16,11 +70,9 @@ export function extractRestaurantNames(
   const text = `${title}\n${selftext}`;
   const names = new Set<string>();
 
-  // Quoted names: "Restaurant Name" or 'Restaurant Name'
   const quoted = text.matchAll(/["']([A-Z][A-Za-z\s&'.-]{2,30})["']/g);
   for (const m of quoted) names.add(m[1].trim());
 
-  // "at Name", "from Name", "called Name"
   const atFrom = text.matchAll(
     /(?:at|from|called|try|tried|visit|visited)\s+([A-Z][A-Za-z\s&'.-]{2,30})(?:[,.\s!?]|$)/g
   );
@@ -29,15 +81,6 @@ export function extractRestaurantNames(
     if (name.split(/\s+/).length <= 5) names.add(name);
   }
 
-  // "Name on Street"
-  const streetPattern = new RegExp(
-    `([A-Z][A-Za-z\\s&'.-]{2,25})\\s+on\\s+(${TORONTO_STREETS.join("|")})`,
-    "gi"
-  );
-  const onStreet = text.matchAll(streetPattern);
-  for (const m of onStreet) names.add(m[1].trim());
-
-  // Filter out common false positives
   const falsePositives = new Set([
     "Toronto", "Ontario", "Canada", "Reddit", "The", "This", "That",
     "Anyone", "Everyone", "Someone", "Does Anyone", "Has Anyone",
@@ -57,34 +100,46 @@ interface PlaceResult {
   lng: number;
   rating: number | null;
   reviews_count: number | null;
-  price_level: number | null;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 export async function geocodeRestaurant(
-  name: string
+  name: string,
+  category: PlaceCategory = "restaurant"
 ): Promise<PlaceResult | null> {
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-  if (!apiKey) return null;
+  return geocodeWithNominatim(name);
+}
 
+async function geocodeWithNominatim(name: string): Promise<PlaceResult | null> {
   try {
+    const q = encodeURIComponent(`${name} Toronto Ontario`);
     const res = await fetch(
-      `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(
-        name + " restaurant toronto"
-      )}&key=${apiKey}`
+      `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=ca`,
+      { headers: { "User-Agent": "BuzzMaps/1.0" } }
     );
     const data = await res.json();
-    if (!data.results?.length) return null;
+    if (!data?.length) return null;
 
-    const place = data.results[0];
+    const place = data[0];
+    const lat = parseFloat(place.lat);
+    const lng = parseFloat(place.lon);
+    if (lat < 43.4 || lat > 44.0 || lng < -79.8 || lng > -78.8) return null;
+
+    const displayName: string = place.display_name || name;
+    const shortName = displayName.split(",")[0].trim();
+    await delay(1100);
+
     return {
-      name: place.name,
-      place_id: place.place_id,
-      address: place.formatted_address,
-      lat: place.geometry.location.lat,
-      lng: place.geometry.location.lng,
-      rating: place.rating || null,
-      reviews_count: place.user_ratings_total || null,
-      price_level: place.price_level ?? null,
+      name: shortName,
+      place_id: `osm_${place.osm_id}`,
+      address: displayName,
+      lat,
+      lng,
+      rating: null,
+      reviews_count: null,
     };
   } catch {
     return null;
@@ -95,23 +150,23 @@ export async function saveRestaurant(
   place: PlaceResult,
   postId: number,
   context: string,
-  sentiment: string
+  sentiment: string,
+  category: PlaceCategory = "restaurant"
 ): Promise<void> {
   const sql = getDb();
 
-  // Upsert restaurant
   const rows = await sql`
-    INSERT INTO restaurants (name, place_id, address, lat, lng, google_rating, google_reviews_count, price_level)
-    VALUES (${place.name}, ${place.place_id}, ${place.address}, ${place.lat}, ${place.lng}, ${place.rating}, ${place.reviews_count}, ${place.price_level})
+    INSERT INTO restaurants (name, place_id, address, lat, lng, google_rating, google_reviews_count, category)
+    VALUES (${place.name}, ${place.place_id}, ${place.address}, ${place.lat}, ${place.lng}, ${place.rating}, ${place.reviews_count}, ${category})
     ON CONFLICT (place_id) DO UPDATE SET
-      google_rating = EXCLUDED.google_rating,
-      google_reviews_count = EXCLUDED.google_reviews_count
+      name = EXCLUDED.name,
+      address = EXCLUDED.address,
+      category = EXCLUDED.category
     RETURNING id
   `;
 
   const restaurantId = rows[0].id;
 
-  // Link post to restaurant
   await sql`
     INSERT INTO post_restaurants (post_id, restaurant_id, mention_context, sentiment)
     VALUES (${postId}, ${restaurantId}, ${context}, ${sentiment})
@@ -119,22 +174,38 @@ export async function saveRestaurant(
   `;
 }
 
-export async function processPostForRestaurants(
-  postId: number,
-  title: string,
-  selftext: string,
-  sentiment: string
-): Promise<number> {
-  const names = extractRestaurantNames(title, selftext);
-  let found = 0;
-
-  for (const name of names.slice(0, 5)) {
-    const place = await geocodeRestaurant(name);
-    if (place) {
-      await saveRestaurant(place, postId, title.slice(0, 200), sentiment);
-      found++;
-    }
+export async function fetchPostComments(
+  subreddit: string,
+  redditId: string
+): Promise<string> {
+  try {
+    const id = redditId.startsWith("t3_") ? redditId.slice(3) : redditId;
+    const res = await fetch(
+      `https://www.reddit.com/r/${subreddit}/comments/${id}/.json?limit=30`,
+      { headers: { "User-Agent": "BuzzMaps/1.0" } }
+    );
+    if (!res.ok) return "";
+    const data = await res.json();
+    const comments = data?.[1]?.data?.children || [];
+    return comments
+      .map((c: { data: { body?: string } }) => c.data?.body || "")
+      .join("\n");
+  } catch {
+    return "";
   }
+}
 
-  return found;
+export async function enrichWithGoogleRating(name: string, lat: number, lng: number): Promise<{ rating: number | null; reviews_count: number | null }> {
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (!apiKey) return { rating: null, reviews_count: null };
+  try {
+    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=150&keyword=${encodeURIComponent(name)}&key=${apiKey}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    const data = await res.json();
+    const result = data?.results?.[0];
+    if (!result) return { rating: null, reviews_count: null };
+    return { rating: result.rating ?? null, reviews_count: result.user_ratings_total ?? null };
+  } catch {
+    return { rating: null, reviews_count: null };
+  }
 }

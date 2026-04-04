@@ -1,14 +1,28 @@
-const FOOD_KEYWORDS = [
+// Any Toronto place worth visiting — food, bars, shops, parks, gyms, venues, etc.
+const PLACE_KEYWORDS = [
+  // Food & drink
   "restaurant", "ramen", "sushi", "pizza", "brunch", "dinner", "lunch",
   "breakfast", "cafe", "coffee", "bar", "pub", "bistro", "patio", "takeout",
-  "delivery", "dine", "eat", "food", "burger", "tacos", "thai", "indian",
-  "italian", "chinese", "korean", "japanese", "vietnamese", "mexican", "greek",
+  "dine", "eat", "food", "burger", "tacos", "thai", "indian", "italian",
+  "chinese", "korean", "japanese", "vietnamese", "mexican", "greek",
   "shawarma", "falafel", "bbq", "bakery", "dessert", "ice cream", "bubble tea",
-  "boba", "pho", "dim sum", "wings", "steak", "seafood", "oyster", "cocktail",
-  "beer", "wine", "gastropub", "food court", "buffet", "vegan", "vegetarian",
-  "halal", "kosher", "gluten free", "best place", "good spot", "recommendation",
-  "where to eat", "anyone tried", "worth going", "overrated", "underrated",
-  "hidden gem", "hole in wall", "new spot", "just opened", "closed down",
+  "boba", "pho", "dim sum", "wings", "steak", "seafood", "cocktail", "beer", "wine",
+  // Bars & nightlife
+  "nightclub", "club", "lounge", "rooftop", "live music", "jazz", "dive bar",
+  // Shopping
+  "shop", "store", "boutique", "market", "vintage", "bookstore", "record store",
+  "thrift", "mall", "plaza",
+  // Parks & outdoors
+  "park", "trail", "beach", "ravine", "skating", "rink", "outdoor",
+  // Fitness & wellness
+  "gym", "yoga", "pilates", "climbing", "crossfit", "spa", "sauna",
+  // Entertainment & culture
+  "museum", "gallery", "theatre", "cinema", "escape room", "bowling",
+  "arcade", "comedy", "venue", "concert",
+  // General recommendation signals
+  "best place", "good spot", "recommendation", "anyone tried", "worth going",
+  "overrated", "underrated", "hidden gem", "new spot", "just opened",
+  "must visit", "where to go", "things to do",
 ];
 
 const POSITIVE_WORDS = [
@@ -38,7 +52,7 @@ export interface RedditPost {
 
 export function isFoodRelated(title: string, selftext: string): boolean {
   const text = `${title} ${selftext}`.toLowerCase();
-  return FOOD_KEYWORDS.some((kw) => text.includes(kw));
+  return PLACE_KEYWORDS.some((kw) => text.includes(kw));
 }
 
 export function extractSentiment(

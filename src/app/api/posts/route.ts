@@ -13,12 +13,13 @@ export async function GET() {
           'name', r.name,
           'lat', r.lat,
           'lng', r.lng,
-          'sentiment', pr.sentiment
+          'sentiment', pr.sentiment,
+          'category', r.category
         )) FILTER (WHERE r.id IS NOT NULL) as restaurants
       FROM reddit_posts rp
       LEFT JOIN post_restaurants pr ON pr.post_id = rp.id
       LEFT JOIN restaurants r ON r.id = pr.restaurant_id
-      WHERE rp.is_food_related = true
+      WHERE EXISTS (SELECT 1 FROM post_restaurants pr2 WHERE pr2.post_id = rp.id)
       GROUP BY rp.id
       ORDER BY rp.created_utc DESC
       LIMIT 200
