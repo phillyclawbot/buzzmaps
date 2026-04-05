@@ -65,7 +65,8 @@ function PlaceCard({
   const posts = r.posts ?? [];
   const hasPosts = posts.length > 0;
   const color = CATEGORY_COLORS[r.category] || "#ff6b35";
-  const fallbackBg = `linear-gradient(135deg, ${color}dd 0%, ${color}66 100%)`;
+  const fallbackBg = `linear-gradient(135deg, ${color}22 0%, ${color}08 100%)`;
+  const score = buzzScore(r);
 
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -78,74 +79,111 @@ function PlaceCard({
 
   return (
     <div
-      className="rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow bg-white border border-slate-200"
+      className="group rounded-2xl overflow-hidden bg-white border border-slate-200/80 hover:border-slate-300 shadow-sm hover:shadow-lg transition-all duration-200"
       style={{ cursor: hasPosts ? "pointer" : "default" }}
       onClick={() => hasPosts && setExpanded(!expanded)}
     >
-      {/* Image section — fully self-contained relative block */}
-      <div className="relative h-48 overflow-hidden">
+      {/* Image */}
+      <div className="relative h-44 overflow-hidden">
         {r.photo_url ? (
           <img
             src={r.photo_url}
             alt={r.name}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-5xl" style={{ background: fallbackBg }}>
+          <div className="w-full h-full flex items-center justify-center text-4xl" style={{ background: fallbackBg }}>
             {CATEGORY_EMOJI[r.category] || "📍"}
           </div>
         )}
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
-        {/* Category badge — top left */}
-        <div className="absolute top-3 left-3">
-          <span className="text-xs font-bold px-2.5 py-1 rounded-full text-white uppercase tracking-wide" style={{ background: color }}>
-            {CATEGORY_EMOJI[r.category]} {r.category}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+        {/* Category pill */}
+        <span
+          className="absolute top-2.5 left-2.5 text-[10px] font-bold px-2 py-0.5 rounded-full text-white/90 uppercase tracking-wider backdrop-blur-sm"
+          style={{ background: `${color}cc` }}
+        >
+          {CATEGORY_EMOJI[r.category]} {r.category}
+        </span>
+        {/* Buzz score */}
+        {score >= 20 && (
+          <span className="absolute top-2.5 right-2.5 text-[10px] font-bold bg-white/15 backdrop-blur-sm text-white px-2 py-0.5 rounded-full">
+            {buzzLabel(score)}{score}
           </span>
+        )}
+        {/* Title overlay */}
+        <div className="absolute bottom-0 left-0 right-0 px-3.5 pb-3">
+          <h3 className="font-bold text-white text-[15px] leading-snug drop-shadow-sm">{r.name}</h3>
         </div>
-        {/* Buzz + share — top right */}
-        <div className="absolute top-3 right-3 flex flex-col items-end gap-1.5">
-          <span className="text-xs font-bold bg-black/50 text-white px-2 py-1 rounded-full backdrop-blur-sm">
-            {buzzLabel(buzzScore(r))}{buzzScore(r)}
+      </div>
+
+      {/* Body */}
+      <div className="px-3.5 pt-2.5 pb-3">
+        <p className="text-[11px] text-slate-400 truncate mb-2.5">{r.address}</p>
+
+        {/* Stats row */}
+        <div className="flex items-center gap-1.5 mb-2.5">
+          <span
+            className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+            style={{ background: `${color}12`, color }}
+          >
+            {r.mention_count} mention{Number(r.mention_count) !== 1 ? "s" : ""}
           </span>
+          {r.google_rating && (
+            <span className="text-[11px] text-amber-500 font-medium">⭐ {r.google_rating.toFixed(1)}</span>
+          )}
+          <span className="text-[10px] text-slate-300 ml-auto">{formatTimeAgo(r.latest_mention)}</span>
+        </div>
+
+        {/* Preview quote */}
+        {!expanded && posts[0] && (
+          <p className="text-[11px] text-slate-400 italic line-clamp-1 mb-2.5">&ldquo;{posts[0].title}&rdquo;</p>
+        )}
+
+        {/* Action buttons */}
+        <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => onViewOnMap(r.lat, r.lng)}
+            className="flex-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors border"
+            style={{
+              borderColor: `${color}30`,
+              color,
+              background: `${color}08`,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = color; e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = color; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = `${color}08`; e.currentTarget.style.color = color; e.currentTarget.style.borderColor = `${color}30`; }}
+          >
+            Map
+          </button>
+          <a
+            href={`/place/${encodeURIComponent(r.name)}`}
+            onClick={(e) => e.stopPropagation()}
+            className="flex-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-slate-500 border border-slate-200 hover:border-slate-300 hover:text-slate-700 transition-colors text-center"
+          >
+            Profile
+          </a>
           <button
             onClick={handleShare}
-            className="bg-black/50 backdrop-blur-sm text-white rounded-full p-1.5 hover:bg-black/70 transition-colors"
+            className="px-2 py-1.5 rounded-lg text-slate-400 border border-slate-200 hover:border-slate-300 hover:text-slate-600 transition-colors"
             title="Copy link"
           >
             {copied ? (
-              <span className="text-[10px] px-0.5 font-semibold">✓</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
             ) : (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
                 <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
               </svg>
             )}
           </button>
         </div>
-        {/* Name / stats pinned to bottom of image */}
-        <div className="absolute bottom-0 left-0 right-0 p-3">
-          <h3 className="font-black text-white text-sm leading-tight mb-0.5 drop-shadow">{r.name}</h3>
-          <p className="text-white/55 text-xs truncate mb-1.5">{r.address}</p>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold bg-white/20 text-white px-2 py-0.5 rounded-full backdrop-blur-sm">
-              {r.mention_count} mention{Number(r.mention_count) !== 1 ? "s" : ""}
-            </span>
-            {r.google_rating && (
-              <span className="text-xs text-amber-300 font-semibold">⭐ {r.google_rating.toFixed(1)}</span>
-            )}
-            <span className="text-white/45 text-xs ml-auto">{formatTimeAgo(r.latest_mention)}</span>
-          </div>
-          {!expanded && posts[0] && (
-            <p className="text-white/40 text-xs italic mt-1 line-clamp-1">&ldquo;{posts[0].title}&rdquo;</p>
-          )}
-        </div>
       </div>
 
-      {/* Expanded posts — normal flow below image */}
+      {/* Expanded posts */}
       {expanded && hasPosts && (
-        <div className="px-4 py-3 border-t border-slate-200">
-          <div className="space-y-2">
+        <div className="px-3.5 pb-3 pt-0 border-t border-slate-100">
+          <div className="space-y-1.5 pt-2.5">
             {posts.map((p) => (
               <a
                 key={p.id}
@@ -153,17 +191,17 @@ function PlaceCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="flex items-start gap-2 text-xs text-slate-600 hover:text-[#ff6b35] transition-colors"
+                className="flex items-start gap-2 text-xs text-slate-500 hover:text-[#ff6b35] transition-colors py-1 rounded-lg hover:bg-slate-50 px-1.5 -mx-1.5"
               >
                 <span
-                  className="inline-block w-1.5 h-1.5 rounded-full mt-1 shrink-0"
+                  className="inline-block w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
                   style={{ background: SENTIMENT_COLORS[p.sentiment] || SENTIMENT_COLORS.neutral }}
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="truncate">{p.title}</p>
-                  <p className="text-slate-400 text-[10px]">
+                  <p className="truncate leading-relaxed">{p.title}</p>
+                  <p className="text-slate-300 text-[10px]">
                     {isPublication(p.subreddit) ? (
-                      <span className="inline-block px-1 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 rounded text-[10px] mr-1">📰 {p.subreddit}</span>
+                      <span className="inline-block px-1 py-0.5 bg-blue-50 text-blue-500 rounded text-[10px] mr-1">📰 {p.subreddit}</span>
                     ) : (
                       <span>r/{p.subreddit} · </span>
                     )}
@@ -176,23 +214,8 @@ function PlaceCard({
         </div>
       )}
 
-      {/* Action buttons — normal flow, never overlaps */}
-      <div className="px-4 pb-3 pt-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
-        <button
-          onClick={() => onViewOnMap(r.lat, r.lng)}
-          className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-600 hover:bg-[#ff6b35] hover:text-white hover:border-[#ff6b35] transition-all"
-        >
-          Map →
-        </button>
-        <a
-          href={`/place/${encodeURIComponent(r.name)}`}
-          onClick={(e) => e.stopPropagation()}
-          className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-600 hover:bg-[#ff6b35] hover:text-white hover:border-[#ff6b35] transition-all text-center"
-        >
-          Profile →
-        </a>
-      </div>
-      <div className="px-4 pb-4" onClick={(e) => e.stopPropagation()}>
+      {/* Check-in */}
+      <div className="px-3.5 pb-3" onClick={(e) => e.stopPropagation()}>
         <CheckinButton placeId={r.id} />
       </div>
     </div>
