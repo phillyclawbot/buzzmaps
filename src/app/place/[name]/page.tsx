@@ -62,7 +62,7 @@ export default async function PlacePage({
     SELECT
       r.id, r.name, r.place_id, r.address, r.lat, r.lng,
       r.google_rating, r.google_reviews_count, r.cuisine_type, r.price_level,
-      r.category, r.metadata,
+      r.category,
       COUNT(DISTINCT pr.post_id) as mention_count,
       json_agg(json_build_object(
         'id', rp.id,

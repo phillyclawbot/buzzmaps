@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       SELECT
         r.id, r.name, r.place_id, r.address, r.lat, r.lng,
         r.google_rating, r.google_reviews_count, r.cuisine_type, r.price_level,
-        r.category, r.photo_url, r.metadata,
+        r.category, r.photo_url,
         COUNT(DISTINCT pr.post_id) as mention_count,
         MAX(rp.created_utc) as latest_mention,
         json_agg(json_build_object(
