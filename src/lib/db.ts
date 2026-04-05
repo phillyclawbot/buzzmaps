@@ -49,9 +49,21 @@ export async function runMigrations() {
       google_reviews_count INTEGER,
       cuisine_type TEXT,
       price_level INTEGER,
-      photo_reference TEXT,
+      photo_url TEXT,
       first_seen_at TIMESTAMPTZ DEFAULT NOW()
     )
+  `;
+
+  // Migrate existing databases: rename photo_reference → photo_url
+  await sql`
+    DO $$ BEGIN
+      IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'restaurants' AND column_name = 'photo_reference'
+      ) THEN
+        ALTER TABLE restaurants RENAME COLUMN photo_reference TO photo_url;
+      END IF;
+    END $$
   `;
 
   await sql`
