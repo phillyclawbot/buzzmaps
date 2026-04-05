@@ -59,12 +59,15 @@ export async function runMigrations() {
     ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'restaurant'
   `;
 
-  // Migrate existing databases: rename photo_reference → photo_url
+  // Migrate existing databases: rename photo_reference → photo_url (only if photo_url doesn't already exist)
   await sql`
     DO $$ BEGIN
       IF EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_name = 'restaurants' AND column_name = 'photo_reference'
+      ) AND NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'restaurants' AND column_name = 'photo_url'
       ) THEN
         ALTER TABLE restaurants RENAME COLUMN photo_reference TO photo_url;
       END IF;
