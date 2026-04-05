@@ -11,6 +11,7 @@ import {
   Circle,
   useMap,
 } from "react-leaflet";
+import MarkerClusterGroup from "react-leaflet-cluster";
 import type { Restaurant, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
 import { CATEGORY_COLORS, SENTIMENT_COLORS } from "@/lib/constants";
@@ -41,6 +42,44 @@ function createPinIcon(category: PlaceCategory, mentionCount: number, isRecent: 
     iconSize: [size, totalH],
     iconAnchor: [size / 2, totalH],
     popupAnchor: [0, -totalH],
+  });
+}
+
+function createClusterIcon(cluster: { getChildCount: () => number }) {
+  const count = cluster.getChildCount();
+  let size = 36;
+  let bg = "#ff6b35";
+  let ring = "rgba(255,107,53,0.25)";
+
+  if (count >= 50) {
+    size = 48;
+    bg = "#dc2626";
+    ring = "rgba(220,38,38,0.2)";
+  } else if (count >= 20) {
+    size = 44;
+    bg = "#ea580c";
+    ring = "rgba(234,88,12,0.22)";
+  } else if (count >= 10) {
+    size = 40;
+    bg = "#f97316";
+    ring = "rgba(249,115,22,0.22)";
+  }
+
+  return L.divIcon({
+    html: `<div style="
+      width:${size}px;height:${size}px;
+      border-radius:50%;
+      background:${bg};
+      color:white;
+      font-weight:800;
+      font-size:${count >= 100 ? 12 : 13}px;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 2px 10px rgba(0,0,0,0.3), 0 0 0 4px ${ring};
+      border:2px solid rgba(255,255,255,0.8);
+    ">${count}</div>`,
+    className: "",
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
   });
 }
 
@@ -228,7 +267,16 @@ export default function MapView({
           );
         })
       ) : (
-        restaurants.map((r) => {
+        <MarkerClusterGroup
+          chunkedLoading
+          maxClusterRadius={60}
+          spiderfyOnMaxZoom
+          showCoverageOnHover={false}
+          iconCreateFunction={createClusterIcon}
+          disableClusteringAtZoom={16}
+          animate
+        >
+        {restaurants.map((r) => {
           const category = r.category || "restaurant";
           const mentionCount = Number(r.mention_count);
           const isRecent = Date.now() / 1000 - r.latest_mention < 86400;
@@ -403,7 +451,8 @@ export default function MapView({
               </Popup>
             </Marker>
           );
-        })
+        })}
+        </MarkerClusterGroup>
       )}
     </MapContainer>
     </div>
