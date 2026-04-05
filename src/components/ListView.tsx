@@ -3,12 +3,12 @@
 import { useState, useMemo } from "react";
 import type { Restaurant, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
-import { NEIGHBOURHOODS, filterByNeighbourhood } from "@/lib/neighbourhoods";
+import { NEIGHBOURHOODS, filterByNeighbourhood, getNeighbourhood } from "@/lib/neighbourhoods";
 import CheckinButton from "@/components/CheckinButton";
 import { CATEGORY_COLORS, CATEGORY_FILTERS, SENTIMENT_COLORS, isPublication } from "@/lib/constants";
 import { formatTimeAgo } from "@/lib/utils";
 
-type SortMode = "mentions" | "newest" | "az" | "rating" | "buzz";
+type SortMode = "mentions" | "newest" | "az" | "rating" | "buzz" | "neighbourhood";
 
 function buzzScore(r: Restaurant): number {
   const now = Date.now() / 1000;
@@ -269,10 +269,28 @@ export default function ListView({
         });
         break;
       case "buzz": sorted.sort((a, b) => buzzScore(b) - buzzScore(a)); break;
+      case "neighbourhood": sorted.sort((a, b) => {
+        const na = getNeighbourhood(a.lat, a.lng) || "zzz";
+        const nb = getNeighbourhood(b.lat, b.lng) || "zzz";
+        if (na !== nb) return na.localeCompare(nb);
+        return b.mention_count - a.mention_count;
+      }); break;
       default: break;
     }
     return sorted;
   }, [restaurants, category, neighbourhood, searchQuery, sort]);
+
+  const grouped = useMemo(() => {
+    if (sort !== "neighbourhood") return null;
+    const groups: Record<string, Restaurant[]> = {};
+    for (const r of filtered) {
+      const hood = getNeighbourhood(r.lat, r.lng) || "Other Areas";
+      if (!groups[hood]) groups[hood] = [];
+      groups[hood].push(r);
+    }
+    // Sort groups by place count descending
+    return Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
+  }, [filtered, sort]);
 
   return (
     <div className="h-full pt-12 pb-8 overflow-y-auto bg-slate-50 page-enter">
@@ -298,6 +316,7 @@ export default function ListView({
             <option value="az">A-Z</option>
             <option value="rating">⭐ Rating</option>
             <option value="buzz">🔥 Sort by Buzz</option>
+            <option value="neighbourhood">📍 By Neighbourhood</option>
           </select>
           <select
             value={neighbourhood}
@@ -368,6 +387,24 @@ export default function ListView({
             ) : (
               <p className="text-sm">No places match these filters</p>
             )}
+          </div>
+        ) : grouped ? (
+          <div className="space-y-6">
+            {grouped.map(([hood, places]) => (
+              <div key={hood}>
+                <div className="flex items-center gap-2 mb-3">
+                  <h2 className="text-sm font-bold text-slate-800">{hood}</h2>
+                  <span className="text-[11px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                    {places.length} place{places.length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {places.map((r) => (
+                    <PlaceCard key={r.id} r={r} onViewOnMap={onViewOnMap} />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
