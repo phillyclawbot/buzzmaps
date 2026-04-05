@@ -276,7 +276,7 @@ function Home() {
           <div className="w-2.5 h-2.5 rounded-full bg-[#ff6b35] shrink-0" />
           <div className="flex flex-col leading-none">
             <span className="font-semibold text-sm tracking-tight bg-gradient-to-r from-[#ff6b35] to-[#f59e0b] bg-clip-text text-transparent leading-tight">BuzzMaps</span>
-            <span className="text-[10px] text-slate-400 leading-tight">Toronto&#39;s places, as told by Reddit</span>
+            <span className="text-[10px] text-slate-400 leading-tight">Toronto&#39;s places, as told by the internet</span>
           </div>
         </div>
 
@@ -370,7 +370,7 @@ function Home() {
             disabled={scraping}
             className="px-3 py-2 min-h-[36px] bg-gradient-to-r from-[#ff6b35] to-[#ea580c] hover:bg-[#ea580c] disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
           >
-            {scraping ? "Scraping..." : "Scrape Reddit"}
+            {scraping ? "Scraping..." : "Scrape Sources"}
           </button>
           <button
             onClick={handleScrapeAll}
@@ -496,7 +496,7 @@ function Home() {
               disabled={scraping}
               className="px-3 py-2 min-h-[36px] bg-slate-100 border border-slate-200 hover:bg-slate-200 disabled:opacity-50 text-slate-500 text-xs font-medium rounded-lg transition-colors"
             >
-              {scraping ? "Scraping..." : "Scrape Reddit"}
+              {scraping ? "Scraping..." : "Scrape Sources"}
             </button>
             <button
               onClick={() => {

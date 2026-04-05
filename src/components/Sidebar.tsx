@@ -287,7 +287,7 @@ function SidebarContent({
 
       {/* Stats footer */}
       <div className="p-3 border-t border-slate-200 text-xs text-slate-500">
-        Tracking {totalRestaurants} places from {totalPosts} Reddit posts
+        Tracking {totalRestaurants} places from {totalPosts} mentions
       </div>
     </>
   );

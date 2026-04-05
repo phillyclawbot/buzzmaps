@@ -15,7 +15,7 @@ import {
 import MarkerClusterGroup from "react-leaflet-cluster";
 import type { Restaurant, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
-import { CATEGORY_COLORS, SENTIMENT_COLORS } from "@/lib/constants";
+import { CATEGORY_COLORS, SENTIMENT_COLORS, isPublication } from "@/lib/constants";
 import { formatTimeAgo, haversineDistance } from "@/lib/utils";
 import { NEIGHBOURHOODS, NEIGHBOURHOOD_GEOJSON_MAP, getNeighbourhood, computeFeatureCentroid } from "@/lib/neighbourhoods";
 
@@ -420,7 +420,7 @@ export default function MapView({
             new Set((r.posts ?? []).map((p) => p.subreddit))
           ).slice(0, 3);
           const sourcesLabel = sources
-            .map((s) => (s.startsWith("r/") || /^[a-zA-Z]+TO$|BlogTO|Narcity|Toronto Life|NOW Magazine|Toronto Star/.test(s) ? s : `r/${s}`))
+            .map((s) => isPublication(s) ? s : s.startsWith("r/") ? s : `r/${s}`)
             .join(", ");
 
           const nearbyPlaces = restaurants
@@ -483,50 +483,56 @@ export default function MapView({
                       borderRadius: "999px",
                       border: "1px solid #ff6b3540",
                     }}>
-                      💬 {r.mention_count} Reddit thread{Number(r.mention_count) !== 1 ? "s" : ""}
+                      💬 {r.mention_count} mention{Number(r.mention_count) !== 1 ? "s" : ""}
                     </span>
-                    {sources.slice(0, 3).map((s) => (
-                      <span key={s} style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "3px",
-                        background: /BlogTO|Narcity|Toronto Life|NOW Magazine|Toronto Star|Eater/.test(s) ? "#eff6ff" : "#f0fdf4",
-                        color: /BlogTO|Narcity|Toronto Life|NOW Magazine|Toronto Star|Eater/.test(s) ? "#3b82f6" : "#16a34a",
-                        fontWeight: 600,
-                        fontSize: "10px",
-                        padding: "2px 7px",
-                        borderRadius: "999px",
-                        border: /BlogTO|Narcity|Toronto Life|NOW Magazine|Toronto Star|Eater/.test(s) ? "1px solid #bfdbfe" : "1px solid #bbf7d0",
-                      }}>
-                        {/BlogTO|Narcity|Toronto Life|NOW Magazine|Toronto Star|Eater/.test(s) ? "📰" : "🤖"} {s.startsWith("r/") ? s : /^[a-zA-Z0-9_]+$/.test(s) ? `r/${s}` : s}
-                      </span>
-                    ))}
+                    {sources.slice(0, 3).map((s) => {
+                      const isPub = isPublication(s);
+                      return (
+                        <span key={s} style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "3px",
+                          background: isPub ? "#eff6ff" : "#f0fdf4",
+                          color: isPub ? "#3b82f6" : "#16a34a",
+                          fontWeight: 600,
+                          fontSize: "10px",
+                          padding: "2px 7px",
+                          borderRadius: "999px",
+                          border: isPub ? "1px solid #bfdbfe" : "1px solid #bbf7d0",
+                        }}>
+                          {isPub ? "📰" : "🤖"} {isPub ? s : s.startsWith("r/") ? s : `r/${s}`}
+                        </span>
+                      );
+                    })}
                   </div>
                   <div style={{ maxHeight: "180px", overflowY: "auto" }}>
-                    {r.posts?.slice(0, 3).map((p) => (
-                      <a
-                        key={p.id}
-                        href={`https://reddit.com${p.permalink}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: "block",
-                          padding: "6px 0",
-                          borderTop: "1px solid #e2e8f0",
-                          textDecoration: "none",
-                          color: "#334155",
-                          fontSize: "12px",
-                        }}
-                      >
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: "6px" }}>
-                          <span dangerouslySetInnerHTML={{ __html: sentimentDot(p.sentiment) }} />
-                          <span style={{ fontWeight: 500, color: "#ff6b35", flex: 1 }}>{p.title.slice(0, 60)}{p.title.length > 60 ? "..." : ""}</span>
-                        </div>
-                        <div style={{ color: "#9ca3af", fontSize: "10px", marginTop: "2px", paddingLeft: "14px" }}>
-                          r/{p.subreddit} · {p.score} pts · {formatTimeAgo(p.created_utc)}
-                        </div>
-                      </a>
-                    ))}
+                    {r.posts?.slice(0, 3).map((p) => {
+                      const isPub = isPublication(p.subreddit);
+                      return (
+                        <a
+                          key={p.id}
+                          href={isPub ? p.permalink : `https://reddit.com${p.permalink}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: "block",
+                            padding: "6px 0",
+                            borderTop: "1px solid #e2e8f0",
+                            textDecoration: "none",
+                            color: "#334155",
+                            fontSize: "12px",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: "6px" }}>
+                            <span dangerouslySetInnerHTML={{ __html: sentimentDot(p.sentiment) }} />
+                            <span style={{ fontWeight: 500, color: isPub ? "#3b82f6" : "#ff6b35", flex: 1 }}>{p.title.slice(0, 60)}{p.title.length > 60 ? "..." : ""}</span>
+                          </div>
+                          <div style={{ color: "#9ca3af", fontSize: "10px", marginTop: "2px", paddingLeft: "14px" }}>
+                            {isPub ? `📰 ${p.subreddit}` : `r/${p.subreddit} · ${p.score} pts`} · {formatTimeAgo(p.created_utc)}
+                          </div>
+                        </a>
+                      );
+                    })}
                   </div>
                   {sources.length > 0 && (
                     <div style={{ fontSize: "10px", color: "#9ca3af", marginTop: "6px", borderTop: "1px solid #f1f5f9", paddingTop: "6px" }}>
