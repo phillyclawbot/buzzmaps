@@ -8,7 +8,7 @@ import {
   fetchPostComments,
 } from "@/lib/extract-restaurants";
 
-const SUBREDDITS = ["askTO", "toronto", "torontofood", "FoodToronto", "askToronto"];
+const SUBREDDITS = ["askTO", "toronto", "torontofood", "FoodToronto", "askToronto", "torontoevents"];
 
 // Search queries — food, bars, shops, parks, gyms, nightlife, services, everything Toronto
 const SEARCH_QUERIES = [
@@ -33,6 +33,18 @@ const SEARCH_QUERIES = [
   "best coffee toronto",
   "best dessert toronto",
   "cheap eats toronto",
+  "best bakery toronto",
+  "best ice cream toronto",
+  "best tacos toronto",
+  "best wings toronto",
+  "best shawarma toronto",
+  "best jerk chicken toronto",
+  "best ethiopian toronto",
+  "best greek toronto",
+  "best date night restaurant",
+  "best late night food toronto",
+  "best food truck toronto",
+  "best new restaurant toronto",
   // Bars & nightlife
   "best bar toronto",
   "best cocktail bar toronto",
@@ -43,6 +55,9 @@ const SEARCH_QUERIES = [
   "best jazz bar toronto",
   "best sports bar toronto",
   "best dive bar toronto",
+  "best brewery toronto",
+  "best wine bar toronto",
+  "best karaoke toronto",
   // Shopping & retail
   "best shop toronto",
   "best vintage store toronto",
@@ -50,12 +65,16 @@ const SEARCH_QUERIES = [
   "best market toronto",
   "best record store toronto",
   "hidden gem shop toronto",
+  "best thrift store toronto",
+  "best plant shop toronto",
   // Parks & outdoors
   "best park toronto",
   "best trail toronto",
   "best beach toronto",
   "best outdoor spot toronto",
   "best skating rink toronto",
+  "best dog park toronto",
+  "best picnic spot toronto",
   // Activities & entertainment
   "best gym toronto",
   "best yoga studio toronto",
@@ -65,6 +84,23 @@ const SEARCH_QUERIES = [
   "best escape room toronto",
   "best bowling toronto",
   "best arcade toronto",
+  "best spa toronto",
+  "best comedy show toronto",
+  "best theatre toronto",
+  "best pool hall toronto",
+  "best board game cafe toronto",
+  // Neighbourhood-specific
+  "best kensington market",
+  "best queen west restaurant",
+  "best ossington bar",
+  "best leslieville cafe",
+  "best distillery district",
+  "best annex restaurant",
+  "best little italy toronto",
+  "best chinatown toronto",
+  "best roncesvalles",
+  "best liberty village",
+  "best dundas west",
   // General ask recommendations
   "recommendation toronto",
   "best place in toronto",
@@ -74,6 +110,9 @@ const SEARCH_QUERIES = [
   "underrated toronto",
   "must visit toronto",
   "new opening toronto",
+  "just opened toronto",
+  "favourite spot toronto",
+  "go-to place toronto",
 ];
 
 async function searchReddit(

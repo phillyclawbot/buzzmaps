@@ -70,7 +70,10 @@ export async function runMigrations() {
       ('askTO', 'toronto'),
       ('toronto', 'toronto'),
       ('torontofood', 'toronto'),
-      ('FoodToronto', 'toronto')
+      ('FoodToronto', 'toronto'),
+      ('askToronto', 'toronto'),
+      ('torontoevents', 'toronto'),
+      ('torontobiking', 'toronto')
     ON CONFLICT DO NOTHING
   `;
 }

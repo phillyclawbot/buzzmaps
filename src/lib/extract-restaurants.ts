@@ -190,18 +190,3 @@ export async function fetchPostComments(
     return "";
   }
 }
-
-export async function enrichWithGoogleRating(name: string, lat: number, lng: number): Promise<{ rating: number | null; reviews_count: number | null }> {
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-  if (!apiKey) return { rating: null, reviews_count: null };
-  try {
-    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=150&keyword=${encodeURIComponent(name)}&key=${apiKey}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    const data = await res.json();
-    const result = data?.results?.[0];
-    if (!result) return { rating: null, reviews_count: null };
-    return { rating: result.rating ?? null, reviews_count: result.user_ratings_total ?? null };
-  } catch {
-    return { rating: null, reviews_count: null };
-  }
-}
