@@ -1,14 +1,14 @@
 import { getDb } from "./db";
 import type { PlaceCategory } from "./types";
+import { VALID_CATEGORIES } from "./constants";
+import { delay, isInToronto } from "./utils";
 
 interface ExtractedVenue {
   name: string;
   category: PlaceCategory;
 }
 
-const VALID_CATEGORIES = new Set([
-  "restaurant", "bar", "cafe", "club", "shop", "park", "gym", "venue", "market", "museum", "other",
-]);
+const VALID_CATEGORIES_SET = new Set(VALID_CATEGORIES);
 
 export async function extractVenuesWithAI(text: string): Promise<ExtractedVenue[]> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -54,7 +54,7 @@ export async function extractVenuesWithAI(text: string): Promise<ExtractedVenue[
       )
       .map((v: { name: string; category: string }) => ({
         name: v.name,
-        category: VALID_CATEGORIES.has(v.category) ? (v.category as PlaceCategory) : "other",
+        category: VALID_CATEGORIES_SET.has(v.category) ? (v.category as PlaceCategory) : "other",
       }))
       .slice(0, 8);
   } catch {
@@ -102,10 +102,6 @@ interface PlaceResult {
   reviews_count: number | null;
 }
 
-function delay(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
 export async function geocodeRestaurant(
   name: string,
   category: PlaceCategory = "restaurant"
@@ -126,7 +122,7 @@ async function geocodeWithNominatim(name: string): Promise<PlaceResult | null> {
     const place = data[0];
     const lat = parseFloat(place.lat);
     const lng = parseFloat(place.lon);
-    if (lat < 43.4 || lat > 44.0 || lng < -79.8 || lng > -78.8) return null;
+    if (!isInToronto(lat, lng)) return null;
 
     const displayName: string = place.display_name || name;
     const shortName = displayName.split(",")[0].trim();

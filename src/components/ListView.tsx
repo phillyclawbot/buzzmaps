@@ -5,38 +5,10 @@ import type { Restaurant, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
 import { NEIGHBOURHOODS, filterByNeighbourhood } from "@/lib/neighbourhoods";
 import CheckinButton from "@/components/CheckinButton";
-
-const PUBLICATION_SUBREDDITS = new Set(["BlogTO", "Narcity", "Toronto Life", "NOW Magazine", "Eater Toronto", "Toronto Star", "Toronto Sun", "Globe and Mail", "Post City", "Spacing", "Toronto Guardian", "Exclaim"]);
-
-function isPublication(subreddit: string): boolean {
-  return PUBLICATION_SUBREDDITS.has(subreddit);
-}
+import { CATEGORY_COLORS, CATEGORY_FILTERS, SENTIMENT_COLORS, isPublication } from "@/lib/constants";
+import { formatTimeAgo } from "@/lib/utils";
 
 type SortMode = "mentions" | "newest" | "az" | "rating" | "buzz";
-
-const categoryFilters = [
-  { label: "All", value: "all" },
-  { label: "🍽️ Food", value: "restaurant" },
-  { label: "🍺 Bar", value: "bar" },
-  { label: "☕ Cafe", value: "cafe" },
-  { label: "🎵 Venue", value: "venue" },
-  { label: "🌳 Park", value: "park" },
-  { label: "🛍️ Shop", value: "shop" },
-];
-
-const CATEGORY_COLORS: Record<string, string> = {
-  restaurant: "#ff6b35",
-  bar: "#7c3aed",
-  cafe: "#b45309",
-  shop: "#0891b2",
-  park: "#16a34a",
-  venue: "#db2777",
-  gym: "#dc2626",
-  market: "#059669",
-  museum: "#2563eb",
-  club: "#ec4899",
-  other: "#64748b",
-};
 
 function buzzScore(r: Restaurant): number {
   const now = Date.now() / 1000;
@@ -63,15 +35,6 @@ function buzzLabel(score: number): string {
   if (score >= 50) return "🔥 ";
   if (score >= 20) return "📈 ";
   return "💤 ";
-}
-
-function formatTimeAgo(utc: number): string {
-  const seconds = Math.floor(Date.now() / 1000 - utc);
-  if (seconds < 60) return "just now";
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
-  return `${Math.floor(seconds / 604800)}w ago`;
 }
 
 function SkeletonCard() {
@@ -194,7 +157,7 @@ function PlaceCard({
               >
                 <span
                   className="inline-block w-1.5 h-1.5 rounded-full mt-1 shrink-0"
-                  style={{ background: p.sentiment === "positive" ? "#22c55e" : p.sentiment === "negative" ? "#ef4444" : "#f59e0b" }}
+                  style={{ background: SENTIMENT_COLORS[p.sentiment] || SENTIMENT_COLORS.neutral }}
                 />
                 <div className="flex-1 min-w-0">
                   <p className="truncate">{p.title}</p>
@@ -324,7 +287,7 @@ export default function ListView({
             ))}
           </select>
           <div className="flex gap-1 overflow-x-auto flex-nowrap pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
-            {categoryFilters.map((c) => (
+            {CATEGORY_FILTERS.map((c) => (
               <button
                 key={c.value}
                 onClick={() => setCategory(c.value)}

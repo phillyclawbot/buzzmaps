@@ -3,32 +3,14 @@
 import { useState } from "react";
 import type { RedditPostWithRestaurants, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
-
-function formatTimeAgo(utc: number): string {
-  const seconds = Math.floor(Date.now() / 1000 - utc);
-  if (seconds < 60) return "just now";
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
-  return `${Math.floor(seconds / 604800)}w ago`;
-}
-
-const PUBLICATION_SUBREDDITS = new Set(["BlogTO", "BlogTO Food", "BlogTO Arts", "Narcity Toronto", "Toronto Life Food", "NOW Magazine", "Toronto Star Food"]);
-
-function isPublication(subreddit: string): boolean {
-  return PUBLICATION_SUBREDDITS.has(subreddit);
-}
+import { SENTIMENT_COLORS, isPublication } from "@/lib/constants";
+import { formatTimeAgo } from "@/lib/utils";
 
 function SentimentDot({ sentiment }: { sentiment: string }) {
-  const colors: Record<string, string> = {
-    positive: "#22c55e",
-    negative: "#ef4444",
-    neutral: "#f59e0b",
-  };
   return (
     <span
       className="inline-block w-2 h-2 rounded-full mr-1"
-      style={{ background: colors[sentiment] || colors.neutral }}
+      style={{ background: SENTIMENT_COLORS[sentiment] || SENTIMENT_COLORS.neutral }}
     />
   );
 }

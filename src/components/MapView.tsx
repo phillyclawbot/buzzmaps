@@ -13,20 +13,8 @@ import {
 } from "react-leaflet";
 import type { Restaurant, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
-
-const CATEGORY_COLORS: Record<PlaceCategory, string> = {
-  restaurant: "#ff6b35",
-  bar: "#a855f7",
-  cafe: "#6366f1",
-  club: "#ec4899",
-  shop: "#06b6d4",
-  park: "#22c55e",
-  gym: "#ef4444",
-  venue: "#f59e0b",
-  market: "#10b981",
-  museum: "#3b82f6",
-  other: "#64748b",
-};
+import { CATEGORY_COLORS, SENTIMENT_COLORS } from "@/lib/constants";
+import { formatTimeAgo, haversineDistance } from "@/lib/utils";
 
 
 
@@ -56,22 +44,8 @@ function createPinIcon(category: PlaceCategory, mentionCount: number, isRecent: 
   });
 }
 
-function formatTimeAgo(utc: number): string {
-  const seconds = Math.floor(Date.now() / 1000 - utc);
-  if (seconds < 60) return "just now";
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
-  return `${Math.floor(seconds / 604800)}w ago`;
-}
-
 function sentimentDot(sentiment: string): string {
-  const colors: Record<string, string> = {
-    positive: "#22c55e",
-    negative: "#ef4444",
-    neutral: "#f59e0b",
-  };
-  return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${colors[sentiment] || colors.neutral};margin-right:4px;"></span>`;
+  return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${SENTIMENT_COLORS[sentiment] || SENTIMENT_COLORS.neutral};margin-right:4px;"></span>`;
 }
 
 function renderStars(rating: number | null): string {
@@ -98,13 +72,7 @@ function FlyToHandler({ target }: { target: [number, number] | null }) {
   return null;
 }
 
-function calcDist(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371000;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
-  return R * 2 * Math.asin(Math.sqrt(a));
-}
+const calcDist = haversineDistance;
 
 function getHeatColor(mentions: number): string {
   if (mentions >= 10) return "#ef4444"; // red

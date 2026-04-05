@@ -7,6 +7,8 @@ import Sidebar from "@/components/Sidebar";
 import ListView from "@/components/ListView";
 import type { Restaurant, RedditPostWithRestaurants, Stats, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
+import { CATEGORY_FILTERS } from "@/lib/constants";
+import { formatLastScraped, haversineDistance } from "@/lib/utils";
 
 const MapView = dynamic(() => import("@/components/MapView"), {
   ssr: false,
@@ -16,27 +18,6 @@ const MapView = dynamic(() => import("@/components/MapView"), {
     </div>
   ),
 });
-
-function formatLastScraped(date: string | null): string {
-  if (!date) return "never";
-  const d = new Date(date);
-  const now = new Date();
-  const diff = Math.floor((now.getTime() - d.getTime()) / 1000);
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-}
-
-const categoryFilters = [
-  { label: "All", value: "all" },
-  { label: "🍽️ Food", value: "restaurant" },
-  { label: "🍺 Bar", value: "bar" },
-  { label: "☕ Cafe", value: "cafe" },
-  { label: "🎵 Venues", value: "venue" },
-  { label: "🌳 Parks", value: "park" },
-  { label: "🛍️ Shops", value: "shop" },
-];
 
 function Home() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -142,11 +123,7 @@ function Home() {
     if (nearMeActive && nearMeCoords) {
       const { lat, lng } = nearMeCoords;
       items = items.filter((r) => {
-        const dLat = (r.lat - lat) * Math.PI / 180;
-        const dLng = (r.lng - lng) * Math.PI / 180;
-        const a = Math.sin(dLat/2)**2 + Math.cos(lat * Math.PI/180) * Math.cos(r.lat * Math.PI/180) * Math.sin(dLng/2)**2;
-        const dist = 6371000 * 2 * Math.asin(Math.sqrt(a));
-        return dist <= nearMeRadius * 1000;
+        return haversineDistance(lat, lng, r.lat, r.lng) <= nearMeRadius * 1000;
       });
     }
     return items;
@@ -180,8 +157,12 @@ function Home() {
         setToast("Updated ✓");
         setTimeout(() => setToast(null), 2000);
       }
-    } catch {
-      // silently fail on fetch errors
+    } catch (err) {
+      console.error("Failed to fetch data:", err);
+      if (!background) {
+        setToast("Failed to load data. Please try again.");
+        setTimeout(() => setToast(null), 3000);
+      }
     } finally {
       if (!background) setLoading(false);
     }
@@ -332,7 +313,7 @@ function Home() {
         </div>
 
         <div className="hidden md:flex gap-1 border-l border-slate-200 pl-2 ml-1 overflow-x-auto no-scrollbar flex-nowrap">
-          {categoryFilters.map((c) => (
+          {CATEGORY_FILTERS.map((c) => (
             <button
               key={c.value}
               onClick={() => setFilter((prev) => ({ ...prev, category: c.value }))}
@@ -444,7 +425,7 @@ function Home() {
             ))}
           </div>
           <div className="flex gap-1 flex-nowrap overflow-x-auto no-scrollbar pb-1">
-            {categoryFilters.map((c) => (
+            {CATEGORY_FILTERS.map((c) => (
               <button
                 key={c.value}
                 onClick={() => {
