@@ -157,6 +157,8 @@ async function searchReddit(
   return { posts, after: data?.data?.after || null };
 }
 
+export const maxDuration = 120;
+
 export async function GET(req: Request) {
   try {
     await runMigrations();

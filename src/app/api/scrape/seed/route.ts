@@ -8,6 +8,8 @@ import {
   fetchPostComments,
 } from "@/lib/extract-restaurants";
 
+export const maxDuration = 120;
+
 async function savePosts(posts: RedditPost[]): Promise<number[]> {
   const sql = getDb();
   const ids: number[] = [];

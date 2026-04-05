@@ -8,6 +8,8 @@ import {
   fetchPostComments,
 } from "@/lib/extract-restaurants";
 
+export const maxDuration = 60;
+
 export async function GET() {
   try {
     await runMigrations();
