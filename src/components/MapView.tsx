@@ -186,6 +186,18 @@ export default function MapView({
       .filter((n) => n.count > 0);
   }, [restaurants]);
 
+  // All neighbourhoods with colours (for labels on all areas)
+  const allHoods = useMemo(() => {
+    const hoodCounts: Record<string, number> = {};
+    for (const r of restaurants) {
+      const hood = getNeighbourhood(r.lat, r.lng);
+      if (hood) hoodCounts[hood] = (hoodCounts[hood] || 0) + 1;
+    }
+    return NEIGHBOURHOODS.map((n, i) => ({
+      ...n, count: hoodCounts[n.name] || 0, color: getHoodColor(i),
+    }));
+  }, [restaurants]);
+
   // Load GeoJSON polygon data for neighbourhood boundaries
   const [geoData, setGeoData] = useState<GeoJSON.FeatureCollection | null>(null);
   useEffect(() => {
@@ -358,16 +370,17 @@ export default function MapView({
             if (color) {
               return { color, fillColor: color, fillOpacity: 0.07, weight: 1.5, opacity: 0.4 };
             }
-            return { color: "#94a3b8", fillColor: "#e2e8f0", fillOpacity: 0.04, weight: 1, opacity: 0.3 };
+            return { color: "#94a3b8", fillColor: "#e2e8f0", fillOpacity: 0.05, weight: 1.2, opacity: 0.45 };
           }}
           interactive={false}
         />
       )}
-      {/* Neighbourhood name labels at polygon centroids */}
-      {activeHoods.map((n) => {
+      {/* Neighbourhood name labels at polygon centroids — all areas */}
+      {allHoods.map((n) => {
         const centroid = hoodCentroids[n.name];
         if (!centroid) return null;
         const [centerLat, centerLng] = centroid;
+        const isActive = n.count > 0;
         return (
           <Marker
             key={`label-${n.name}`}
@@ -375,11 +388,11 @@ export default function MapView({
             interactive={false}
             icon={L.divIcon({
               html: `<div style="
-                white-space:nowrap;font-size:11px;font-weight:700;
-                color:${n.color};text-shadow:0 0 3px white, 0 0 6px white, 0 0 9px white;
+                white-space:nowrap;font-size:${isActive ? 11 : 10}px;font-weight:${isActive ? 700 : 600};
+                color:${isActive ? n.color : "#94a3b8"};text-shadow:0 0 3px white, 0 0 6px white, 0 0 9px white;
                 pointer-events:none;text-align:center;
-                opacity:0.8;letter-spacing:0.3px;
-              ">${n.name}<span style="display:block;font-size:9px;font-weight:600;opacity:0.6;">${n.count} place${n.count !== 1 ? "s" : ""}</span></div>`,
+                opacity:${isActive ? 0.8 : 0.5};letter-spacing:0.3px;
+              ">${n.name}${isActive ? `<span style="display:block;font-size:9px;font-weight:600;opacity:0.6;">${n.count} place${n.count !== 1 ? "s" : ""}</span>` : ""}</div>`,
               className: "",
               iconSize: [120, 30],
               iconAnchor: [60, 15],
