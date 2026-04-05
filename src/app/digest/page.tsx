@@ -65,7 +65,7 @@ export default async function DigestPage() {
   const newPlaces = newPlacesRaw as NewPlace[];
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-slate-50">
       {/* Top bar */}
       <div className="fixed top-0 left-0 right-0 h-12 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-50 flex items-center px-4 gap-3">
         <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">

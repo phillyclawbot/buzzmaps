@@ -15,16 +15,14 @@ const geistMono = Geist_Mono({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 export const metadata: Metadata = {
   title: 'BuzzMaps Toronto — Discover places locals love on Reddit',
-  description: "Interactive map of Toronto places — restaurants, bars, shops, parks, gyms, venues and more — powered by Reddit",
+  description: "Interactive map of Toronto places — restaurants, bars, shops, parks, gyms, venues and more — powered by Reddit and local blogs",
   openGraph: {
     title: 'BuzzMaps Toronto',
-    description: "Toronto's places, as told by Reddit",
+    description: "Toronto's places, as told by the internet",
     url: 'https://buzzmaps.vercel.app',
     siteName: 'BuzzMaps',
     images: [{ url: 'https://via.placeholder.com/1200x630/ff6b35/ffffff?text=BuzzMaps+Toronto', width: 1200, height: 630 }],
@@ -34,8 +32,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'BuzzMaps Toronto',
-    description: "Toronto's places, as told by Reddit",
-    images: ['https://via.placeholder.com/1200x630/ff6b35/ffffff?text=BuzzMaps+Toronto'],
+    description: "Toronto's places, as told by the internet",
   },
 };
 
@@ -49,7 +46,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="h-full overflow-hidden">{children}</body>
+      <body className="h-full">{children}</body>
     </html>
   );
 }

@@ -131,7 +131,7 @@ function PlaceCard({
           {r.google_rating && (
             <span className="text-[11px] text-amber-500 font-medium">⭐ {r.google_rating.toFixed(1)}</span>
           )}
-          <span className="text-[10px] text-slate-300 ml-auto">{formatTimeAgo(r.latest_mention)}</span>
+          <span className="text-[10px] text-slate-400 ml-auto">{formatTimeAgo(r.latest_mention)}</span>
         </div>
 
         {/* Preview quote */}
@@ -199,7 +199,7 @@ function PlaceCard({
                 />
                 <div className="flex-1 min-w-0">
                   <p className="truncate leading-relaxed">{p.title}</p>
-                  <p className="text-slate-300 text-[10px]">
+                  <p className="text-slate-400 text-[10px]">
                     {isPublication(p.subreddit) ? (
                       <span className="inline-block px-1 py-0.5 bg-blue-50 text-blue-500 rounded text-[10px] mr-1">📰 {p.subreddit}</span>
                     ) : (

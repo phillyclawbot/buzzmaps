@@ -410,7 +410,7 @@ export default function MapView({
           animate
         >
         {restaurants.map((r) => {
-          const category = r.category || "restaurant";
+          const category = r.category || "other";
           const mentionCount = Number(r.mention_count);
           const isRecent = Date.now() / 1000 - r.latest_mention < 86400;
           const color = CATEGORY_COLORS[category] || CATEGORY_COLORS.other;
@@ -457,7 +457,7 @@ export default function MapView({
                       {CATEGORY_EMOJI[category]} {r.name}
                     </div>
                     {r.address && (
-                      <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "2px" }}>
+                      <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
                         {r.address}
                       </div>
                     )}
@@ -527,7 +527,7 @@ export default function MapView({
                             <span dangerouslySetInnerHTML={{ __html: sentimentDot(p.sentiment) }} />
                             <span style={{ fontWeight: 500, color: isPub ? "#3b82f6" : "#ff6b35", flex: 1 }}>{p.title.slice(0, 60)}{p.title.length > 60 ? "..." : ""}</span>
                           </div>
-                          <div style={{ color: "#9ca3af", fontSize: "10px", marginTop: "2px", paddingLeft: "14px" }}>
+                          <div style={{ color: "#64748b", fontSize: "10px", marginTop: "2px", paddingLeft: "14px" }}>
                             {isPub ? `📰 ${p.subreddit}` : `r/${p.subreddit} · ${p.score} pts`} · {formatTimeAgo(p.created_utc)}
                           </div>
                         </a>
@@ -535,7 +535,7 @@ export default function MapView({
                     })}
                   </div>
                   {sources.length > 0 && (
-                    <div style={{ fontSize: "10px", color: "#9ca3af", marginTop: "6px", borderTop: "1px solid #f1f5f9", paddingTop: "6px" }}>
+                    <div style={{ fontSize: "10px", color: "#64748b", marginTop: "6px", borderTop: "1px solid #f1f5f9", paddingTop: "6px" }}>
                       Mentioned in: {sourcesLabel}
                     </div>
                   )}

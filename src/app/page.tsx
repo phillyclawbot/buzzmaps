@@ -269,7 +269,7 @@ function Home() {
   );
 
   return (
-    <div className="h-full w-full relative">
+    <div className="h-full w-full relative overflow-hidden">
       {/* Top bar */}
       <div className="fixed top-0 left-0 right-0 h-12 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-[1000] flex items-center px-4 gap-3">
         <div className="flex items-center gap-2">
@@ -803,7 +803,7 @@ function Home() {
 
       {/* Toast notification */}
       {toast && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[2000] bg-slate-800 text-white text-xs font-medium px-4 py-2 rounded-full shadow-lg pointer-events-none">
+        <div className="fixed bottom-14 left-1/2 -translate-x-1/2 z-[2000] bg-slate-800 text-white text-xs font-medium px-4 py-2 rounded-full shadow-lg pointer-events-none">
           {toast}
         </div>
       )}
