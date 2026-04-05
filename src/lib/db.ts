@@ -74,6 +74,11 @@ export async function runMigrations() {
     END $$
   `;
 
+  // Add metadata column for entity-specific fields (events, landmarks, etc.)
+  await sql`
+    ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb
+  `;
+
   await sql`
     CREATE TABLE IF NOT EXISTS post_restaurants (
       id SERIAL PRIMARY KEY,

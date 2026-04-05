@@ -17,7 +17,7 @@ import type { Restaurant, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
 import { CATEGORY_COLORS, SENTIMENT_COLORS } from "@/lib/constants";
 import { formatTimeAgo, haversineDistance } from "@/lib/utils";
-import { NEIGHBOURHOODS, NEIGHBOURHOOD_GEOJSON_MAP, getNeighbourhood } from "@/lib/neighbourhoods";
+import { NEIGHBOURHOODS, NEIGHBOURHOOD_GEOJSON_MAP, getNeighbourhood, computeFeatureCentroid } from "@/lib/neighbourhoods";
 
 const HOOD_PALETTE = [
   "#ff6b35", "#7c3aed", "#0891b2", "#16a34a", "#db2777",
@@ -153,21 +153,9 @@ function FlyToHandler({ target }: { target: [number, number] | null }) {
 
 const calcDist = haversineDistance;
 
-function getHeatColor(mentions: number): string {
-  if (mentions >= 10) return "#ef4444"; // red
-  if (mentions >= 6) return "#f97316"; // orange
-  if (mentions >= 3) return "#eab308"; // yellow
-  return "#22c55e"; // green
-}
-
-function getHeatRadius(mentions: number): number {
-  return Math.min(200 + mentions * 100, 800);
-}
-
 export default function MapView({
   restaurants,
   flyTo,
-  heatmapMode = false,
   onNearMeToggle,
   nearMeActive = false,
   nearMeRadius = 2,
@@ -176,7 +164,6 @@ export default function MapView({
 }: {
   restaurants: Restaurant[];
   flyTo: [number, number] | null;
-  heatmapMode?: boolean;
   onNearMeToggle?: (coords: { lat: number; lng: number } | null) => void;
   nearMeActive?: boolean;
   nearMeRadius?: number;
@@ -208,9 +195,16 @@ export default function MapView({
       .catch(() => {});
   }, []);
 
-  // Build a colour map: official AREA_NAME -> colour from our palette
+  // Build a colour map: official AREA_NAME -> colour (active) or null (inactive)
   const areaColorMap = useMemo(() => {
-    const map: Record<string, string> = {};
+    const map: Record<string, string | null> = {};
+    // Mark all GeoJSON features as inactive first
+    if (geoData) {
+      for (const f of geoData.features) {
+        map[(f.properties as { AREA_NAME: string }).AREA_NAME] = null;
+      }
+    }
+    // Overlay active hoods with their palette colours
     for (const hood of activeHoods) {
       const officialNames = NEIGHBOURHOOD_GEOJSON_MAP[hood.name] || [];
       for (const name of officialNames) {
@@ -218,24 +212,38 @@ export default function MapView({
       }
     }
     return map;
-  }, [activeHoods]);
+  }, [activeHoods, geoData]);
 
-  // Filter GeoJSON to only features for active neighbourhoods
-  const filteredGeoData = useMemo(() => {
-    if (!geoData) return null;
-    return {
-      ...geoData,
-      features: geoData.features.filter(
-        (f) => (f.properties as { AREA_NAME: string }).AREA_NAME in areaColorMap
-      ),
-    } as GeoJSON.FeatureCollection;
-  }, [geoData, areaColorMap]);
-
-  // Key to force GeoJSON re-render when active hoods change
+  // Key to force GeoJSON re-render when active hoods or data change
   const geoKey = useMemo(
-    () => activeHoods.map((h) => h.name).join(","),
-    [activeHoods]
+    () => (geoData ? "all:" : "none:") + activeHoods.map((h) => h.name).join(","),
+    [activeHoods, geoData]
   );
+
+  // Compute polygon centroids for each neighbourhood from GeoJSON data
+  const hoodCentroids = useMemo(() => {
+    if (!geoData) return {} as Record<string, [number, number]>;
+    const featureByArea: Record<string, GeoJSON.Feature[]> = {};
+    for (const f of geoData.features) {
+      const name = (f.properties as { AREA_NAME: string }).AREA_NAME;
+      (featureByArea[name] ||= []).push(f);
+    }
+    const centroids: Record<string, [number, number]> = {};
+    for (const hood of NEIGHBOURHOODS) {
+      const areaNames = NEIGHBOURHOOD_GEOJSON_MAP[hood.name] || [];
+      const features = areaNames.flatMap((n) => featureByArea[n] || []);
+      if (features.length === 0) continue;
+      let totalLat = 0, totalLng = 0, count = 0;
+      for (const f of features) {
+        const [lat, lng] = computeFeatureCentroid(f);
+        totalLat += lat;
+        totalLng += lng;
+        count++;
+      }
+      centroids[hood.name] = [totalLat / count, totalLng / count];
+    }
+    return centroids;
+  }, [geoData]);
 
   const handleNearMe = () => {
     if (nearMeActive) {
@@ -339,29 +347,27 @@ export default function MapView({
           pathOptions={{ color: "#3b82f6", fillColor: "#3b82f6", fillOpacity: 0.08, weight: 2, dashArray: "6 4" }}
         />
       )}
-      {/* Neighbourhood polygon overlays from real GeoJSON boundaries */}
-      {!heatmapMode && filteredGeoData && (
+      {/* Neighbourhood polygon overlays — all 158 polygons, active ones coloured */}
+      {geoData && (
         <GeoJSON
           key={geoKey}
-          data={filteredGeoData}
+          data={geoData}
           style={(feature) => {
             const name = feature?.properties?.AREA_NAME as string;
-            const color = areaColorMap[name] || "#94a3b8";
-            return {
-              color,
-              fillColor: color,
-              fillOpacity: 0.07,
-              weight: 1.5,
-              opacity: 0.4,
-            };
+            const color = areaColorMap[name];
+            if (color) {
+              return { color, fillColor: color, fillOpacity: 0.07, weight: 1.5, opacity: 0.4 };
+            }
+            return { color: "#94a3b8", fillColor: "#f1f5f9", fillOpacity: 0.02, weight: 0.8, opacity: 0.2 };
           }}
           interactive={false}
         />
       )}
-      {/* Neighbourhood name labels */}
-      {!heatmapMode && activeHoods.map((n) => {
-        const centerLat = (n.minLat + n.maxLat) / 2;
-        const centerLng = (n.minLng + n.maxLng) / 2;
+      {/* Neighbourhood name labels at polygon centroids */}
+      {activeHoods.map((n) => {
+        const centroid = hoodCentroids[n.name];
+        if (!centroid) return null;
+        const [centerLat, centerLng] = centroid;
         return (
           <Marker
             key={`label-${n.name}`}
@@ -381,25 +387,7 @@ export default function MapView({
           />
         );
       })}
-      {heatmapMode ? (
-        restaurants.map((r) => {
-          const mentionCount = Number(r.mention_count);
-          return (
-            <Circle
-              key={r.id}
-              center={[r.lat, r.lng]}
-              radius={getHeatRadius(mentionCount)}
-              pathOptions={{
-                color: getHeatColor(mentionCount),
-                fillColor: getHeatColor(mentionCount),
-                fillOpacity: 0.35,
-                weight: 0,
-              }}
-            />
-          );
-        })
-      ) : (
-        <MarkerClusterGroup
+      <MarkerClusterGroup
           chunkedLoading
           maxClusterRadius={60}
           spiderfyOnMaxZoom
@@ -585,7 +573,6 @@ export default function MapView({
           );
         })}
         </MarkerClusterGroup>
-      )}
     </MapContainer>
     </div>
   );

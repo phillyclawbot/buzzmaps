@@ -37,6 +37,9 @@ export const CATEGORY_COLORS: Record<PlaceCategory, string> = {
   venue: "#f59e0b",
   market: "#10b981",
   museum: "#3b82f6",
+  event: "#d946ef",
+  landmark: "#0ea5e9",
+  attraction: "#f43f5e",
   other: "#64748b",
 };
 
@@ -49,11 +52,14 @@ export const CATEGORY_FILTERS = [
   { label: "\u{1F3B5} Venues", value: "venue" },
   { label: "\u{1F333} Parks", value: "park" },
   { label: "\u{1F6CD}\uFE0F Shops", value: "shop" },
+  { label: "\u{1F3AA} Events", value: "event" },
+  { label: "\u{1F3D7}\uFE0F Landmarks", value: "landmark" },
+  { label: "\u{1F3A1} Attractions", value: "attraction" },
 ] as const;
 
 // Valid categories for database storage
 export const VALID_CATEGORIES = [
-  "restaurant", "bar", "cafe", "club", "shop", "park", "gym", "venue", "market", "museum", "other",
+  "restaurant", "bar", "cafe", "club", "shop", "park", "gym", "venue", "market", "museum", "event", "landmark", "attraction", "other",
 ] as const;
 
 // Known publication subreddits (not actual Reddit subs)

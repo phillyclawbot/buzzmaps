@@ -45,7 +45,6 @@ function Home() {
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const [showLegend, setShowLegend] = useState(false);
   const [thisWeekOnly, setThisWeekOnly] = useState(false);
-  const [heatmapMode, setHeatmapMode] = useState(false);
   const [nearMeActive, setNearMeActive] = useState(false);
   const [nearMeCoords, setNearMeCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [nearMeRadius, setNearMeRadius] = useState(2);
@@ -568,26 +567,6 @@ function Home() {
               )}
             </div>
 
-            {/* Heatmap toggle */}
-            <div style={{ position: "absolute", bottom: "72px", right: "12px", zIndex: 500 }}>
-              <button
-                onClick={() => setHeatmapMode((v) => !v)}
-                style={{
-                  background: heatmapMode ? "linear-gradient(to right, #ff6b35, #ea580c)" : "white",
-                  border: heatmapMode ? "none" : "1px solid #e2e8f0",
-                  borderRadius: "8px",
-                  padding: "6px 10px",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-                  color: heatmapMode ? "white" : "#334155",
-                }}
-              >
-                🔥 Heatmap
-              </button>
-            </div>
-
             {/* Category legend toggle */}
             <div style={{ position: "absolute", bottom: "32px", right: "12px", zIndex: 500 }}>
               <button
@@ -643,7 +622,7 @@ function Home() {
               )}
             </div>
 
-<MapView restaurants={filteredRestaurants} flyTo={flyTo} heatmapMode={heatmapMode} nearMeActive={nearMeActive} nearMeRadius={nearMeRadius} onNearMeToggle={(coords) => { setNearMeCoords(coords); setNearMeActive(coords !== null); }} onRadiusChange={setNearMeRadius} nearMeCount={filteredRestaurants.length} />
+<MapView restaurants={filteredRestaurants} flyTo={flyTo} nearMeActive={nearMeActive} nearMeRadius={nearMeRadius} onNearMeToggle={(coords) => { setNearMeCoords(coords); setNearMeActive(coords !== null); }} onRadiusChange={setNearMeRadius} nearMeCount={filteredRestaurants.length} />
           </div>
         </>
       ) : (

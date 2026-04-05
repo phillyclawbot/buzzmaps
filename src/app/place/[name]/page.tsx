@@ -43,6 +43,9 @@ const CATEGORY_GRADIENT: Record<string, string> = {
   venue: "from-amber-500 to-yellow-400",
   market: "from-teal-500 to-green-400",
   museum: "from-blue-500 to-indigo-400",
+  event: "from-fuchsia-500 to-purple-400",
+  landmark: "from-sky-500 to-cyan-400",
+  attraction: "from-rose-500 to-pink-400",
   other: "from-slate-500 to-slate-400",
 };
 
@@ -59,7 +62,7 @@ export default async function PlacePage({
     SELECT
       r.id, r.name, r.place_id, r.address, r.lat, r.lng,
       r.google_rating, r.google_reviews_count, r.cuisine_type, r.price_level,
-      r.category,
+      r.category, r.metadata,
       COUNT(DISTINCT pr.post_id) as mention_count,
       json_agg(json_build_object(
         'id', rp.id,
@@ -91,6 +94,7 @@ export default async function PlacePage({
     google_reviews_count: number | null;
     cuisine_type: string | null;
     category: PlaceCategory;
+    metadata: Record<string, string | undefined> | null;
     mention_count: number;
     posts: {
       id: number;
@@ -223,6 +227,63 @@ export default async function PlacePage({
             )}
           </div>
         </div>
+
+        {/* Entity metadata (events, landmarks, etc.) */}
+        {place.metadata && Object.keys(place.metadata).length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-4">
+            <div className="flex flex-wrap gap-3">
+              {place.metadata.event_date && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-lg">📅</span>
+                  <div>
+                    <div className="text-sm font-bold text-slate-900">{place.metadata.event_date}</div>
+                    {place.metadata.event_end_date && (
+                      <div className="text-xs text-slate-400">to {place.metadata.event_end_date}</div>
+                    )}
+                  </div>
+                </div>
+              )}
+              {place.metadata.hours && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-lg">🕐</span>
+                  <div>
+                    <div className="text-sm font-bold text-slate-900">{place.metadata.hours}</div>
+                    <div className="text-xs text-slate-400">Hours</div>
+                  </div>
+                </div>
+              )}
+              {place.metadata.admission_fee && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-lg">🎟️</span>
+                  <div>
+                    <div className="text-sm font-bold text-slate-900">{place.metadata.admission_fee}</div>
+                    <div className="text-xs text-slate-400">Admission</div>
+                  </div>
+                </div>
+              )}
+              {place.metadata.ticket_url && (
+                <a
+                  href={place.metadata.ticket_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-full text-sm font-medium hover:bg-purple-100 transition-colors"
+                >
+                  🎫 Get Tickets
+                </a>
+              )}
+              {place.metadata.website && (
+                <a
+                  href={place.metadata.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium hover:bg-blue-100 transition-colors"
+                >
+                  🌐 Website
+                </a>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Map embed */}
         <div className="mb-4">

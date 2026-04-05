@@ -214,6 +214,28 @@ export const NEIGHBOURHOOD_GEOJSON_MAP: Record<string, string[]> = {
   "Morningside": ["Morningside"],
 };
 
+/** Compute centroid of a GeoJSON Polygon/MultiPolygon by averaging all vertices. Returns [lat, lng]. */
+export function computeFeatureCentroid(feature: GeoJSON.Feature): [number, number] {
+  const geom = feature.geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon;
+  let sumLng = 0, sumLat = 0, count = 0;
+  const processRing = (ring: number[][]) => {
+    for (const [lng, lat] of ring) {
+      sumLng += lng;
+      sumLat += lat;
+      count++;
+    }
+  };
+  if (geom.type === "Polygon") {
+    for (const ring of geom.coordinates) processRing(ring);
+  } else if (geom.type === "MultiPolygon") {
+    for (const polygon of geom.coordinates) {
+      for (const ring of polygon) processRing(ring);
+    }
+  }
+  if (count === 0) return [0, 0];
+  return [sumLat / count, sumLng / count];
+}
+
 export function getNeighbourhood(lat: number, lng: number): string | null {
   for (const n of NEIGHBOURHOODS) {
     if (lat >= n.minLat && lat <= n.maxLat && lng >= n.minLng && lng <= n.maxLng) {
