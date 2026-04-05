@@ -62,17 +62,42 @@ export async function extractVenuesWithAI(text: string): Promise<ExtractedVenue[
   }
 }
 
-// Keep old regex extraction as fallback
-export function extractRestaurantNames(
-  title: string,
-  selftext: string
-): string[] {
-  const text = `${title}\n${selftext}`;
+const BLOCKLIST = new Set([
+  // Neighbourhoods
+  "Scarborough", "Etobicoke", "North York", "Parkdale", "Leslieville",
+  "Kensington", "Liberty Village", "Junction", "Beaches", "Danforth",
+  "Roncesvalles", "Bedford Park", "Rosedale", "Forest Hill", "Cabbagetown",
+  "Chinatown", "Koreatown", "Little Italy", "Greektown",
+  // Subway stations
+  "College", "Dundas", "Queen", "King", "Union", "Bloor-Yonge", "St. George",
+  "Spadina", "Bathurst", "Ossington", "Dufferin", "Broadview", "Pape",
+  "Woodbine", "Finch", "Sheppard-Yonge", "York Mills", "Lawrence", "Eglinton",
+  "St. Clair", "Wellesley", "Bay", "Museum",
+  // Streets
+  "Yonge Street", "Queen Street", "King Street", "Bloor Street",
+  "College Street", "Spadina Avenue", "Bay Street", "Front Street",
+  // Other
+  "TTC", "GO Transit", "TMU", "UofT", "Toronto Police", "City Hall", "Levi's",
+  // Common false positives
+  "Toronto", "Ontario", "Canada", "Reddit", "The", "This", "That",
+  "Anyone", "Everyone", "Someone", "Does Anyone", "Has Anyone",
+  "Looking For", "Best", "Good", "Great", "New", "Old",
+]);
+
+// Single common words that are street/station names but not venues
+const COMMON_SINGLE_WORDS = new Set([
+  "College", "Queen", "King", "Union", "Bay", "Church", "Front",
+  "Main", "Park", "Market", "Lawrence", "Finch", "Jane",
+]);
+
+export function extractVenuesFromText(text: string): string[] {
   const names = new Set<string>();
 
+  // Quoted names
   const quoted = text.matchAll(/["']([A-Z][A-Za-z\s&'.-]{2,30})["']/g);
   for (const m of quoted) names.add(m[1].trim());
 
+  // at/from/called/try/visit patterns
   const atFrom = text.matchAll(
     /(?:at|from|called|try|tried|visit|visited)\s+([A-Z][A-Za-z\s&'.-]{2,30})(?:[,.\s!?]|$)/g
   );
@@ -81,15 +106,57 @@ export function extractRestaurantNames(
     if (name.split(/\s+/).length <= 5) names.add(name);
   }
 
-  const falsePositives = new Set([
-    "Toronto", "Ontario", "Canada", "Reddit", "The", "This", "That",
-    "Anyone", "Everyone", "Someone", "Does Anyone", "Has Anyone",
-    "Looking For", "Best", "Good", "Great", "New", "Old",
-  ]);
+  // "went to X"
+  const wentTo = text.matchAll(/went to\s+([A-Z][A-Za-z\s&'.-]{2,30})(?:[,.\s!?]|$)/g);
+  for (const m of wentTo) {
+    const name = m[1].trim().replace(/[.\s]+$/, "");
+    if (name.split(/\s+/).length <= 5) names.add(name);
+  }
 
-  return [...names].filter(
-    (n) => !falsePositives.has(n) && n.length > 2 && n.split(/\s+/).length <= 5
-  );
+  // "love X"
+  const love = text.matchAll(/(?:love|loved|loving)\s+([A-Z][A-Za-z\s&'.-]{2,30})(?:[,.\s!?]|$)/g);
+  for (const m of love) {
+    const name = m[1].trim().replace(/[.\s]+$/, "");
+    if (name.split(/\s+/).length <= 5) names.add(name);
+  }
+
+  // "recommend X" / "check out X" / "hit up X"
+  const recommend = text.matchAll(/(?:recommend|suggesting|check out|hit up)\s+([A-Z][A-Za-z\s&'.-]{2,30})(?:[,.\s!?]|$)/g);
+  for (const m of recommend) {
+    const name = m[1].trim().replace(/[.\s]+$/, "");
+    if (name.split(/\s+/).length <= 5) names.add(name);
+  }
+
+  // "X is great/amazing/good/awesome"
+  const isGreat = text.matchAll(/([A-Z][A-Za-z\s&'.-]{2,30})\s+is\s+(?:great|amazing|good|awesome|excellent|fantastic|incredible|outstanding|wonderful)/g);
+  for (const m of isGreat) {
+    const name = m[1].trim().replace(/[.\s]+$/, "");
+    if (name.split(/\s+/).length <= 5) names.add(name);
+  }
+
+  // "ate at X" / "dinner at X" / "lunch at X" / "brunch at X"
+  const mealAt = text.matchAll(/(?:ate at|eating at|dinner at|lunch at|brunch at|breakfast at)\s+([A-Z][A-Za-z\s&'.-]{2,30})(?:[,.\s!?]|$)/g);
+  for (const m of mealAt) {
+    const name = m[1].trim().replace(/[.\s]+$/, "");
+    if (name.split(/\s+/).length <= 5) names.add(name);
+  }
+
+  return [...names].filter((n) => {
+    if (n.length < 3) return false;
+    if (BLOCKLIST.has(n)) return false;
+    if (n.split(/\s+/).length === 1 && COMMON_SINGLE_WORDS.has(n)) return false;
+    if (n.split(/\s+/).length > 5) return false;
+    return true;
+  });
+}
+
+// Keep old regex extraction as fallback
+export function extractRestaurantNames(
+  title: string,
+  selftext: string
+): string[] {
+  const text = `${title}\n${selftext}`;
+  return extractVenuesFromText(text);
 }
 
 interface PlaceResult {
