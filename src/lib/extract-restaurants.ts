@@ -54,7 +54,7 @@ export async function extractVenuesWithAI(text: string): Promise<ExtractedVenue[
       )
       .map((v: { name: string; category: string }) => ({
         name: v.name,
-        category: VALID_CATEGORIES_SET.has(v.category) ? (v.category as PlaceCategory) : "other",
+        category: VALID_CATEGORIES_SET.has(v.category as PlaceCategory) ? (v.category as PlaceCategory) : "other",
       }))
       .slice(0, 8);
   } catch {

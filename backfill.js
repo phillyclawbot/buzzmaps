@@ -7,15 +7,28 @@ const sql = neon(dbUrl);
 
 const SUBREDDITS = ["askTO", "toronto", "torontofood", "FoodToronto"];
 const SEARCH_QUERIES = [
-  "best restaurant recommendation","where to eat toronto","hidden gem toronto",
-  "best brunch toronto","best ramen toronto","best sushi toronto","best pizza toronto",
-  "best pho toronto","best dim sum toronto","best korean toronto","best thai toronto",
+  // General
+  "recommendation toronto","best place in toronto","hidden gem toronto",
+  "underrated toronto","must visit toronto","things to do toronto","new opening toronto",
+  "best neighbourhood toronto","things to do this weekend toronto","where to take visitors toronto",
+  // Food & drink
+  "best restaurant toronto","where to eat toronto","best brunch toronto","best ramen toronto",
+  "best sushi toronto","best pizza toronto","best pho toronto","best dim sum toronto",
+  "cheap eats toronto","best cafe toronto","best coffee toronto","best dessert toronto",
+  // Bars & nightlife
   "best bar toronto","best patio toronto","best nightclub toronto","best live music toronto",
-  "best shop toronto","best vintage store toronto","best bookstore toronto","best market toronto",
-  "best park toronto","best gym toronto","best museum toronto","best art gallery toronto",
-  "recommendation toronto","best place in toronto","underrated toronto","must visit toronto",
-  "best cafe toronto","best coffee toronto","cheap eats toronto","best date night toronto",
-  "best burger toronto","things to do toronto","best cocktail toronto","best dessert toronto",
+  "best cocktail toronto",
+  // Shopping & retail
+  "best shop toronto","best vintage store toronto","best bookstore toronto",
+  "best market toronto","best record store toronto","best thrift store toronto",
+  // Parks & outdoors
+  "best park toronto","best trail toronto","best beach toronto","best skating rink toronto",
+  // Activities & wellness
+  "best gym toronto","best yoga studio toronto","best climbing gym toronto",
+  "best museum toronto","best art gallery toronto","best escape room toronto",
+  "best spa toronto","best comedy club toronto",
+  // Services
+  "best barber toronto","best hair salon toronto","best tattoo toronto",
 ];
 
 async function extractVenues(text) {

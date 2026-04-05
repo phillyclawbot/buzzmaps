@@ -16,9 +16,7 @@ export async function GET(req: Request) {
       SELECT 1 FROM post_restaurants pm WHERE pm.post_id = rp.id
     )
     AND rp.score >= 3
-    ORDER BY
-      CASE WHEN rp.subreddit IN ('torontofood','FoodToronto','torontofood') THEN 0 ELSE 1 END,
-      rp.score DESC
+    ORDER BY rp.score DESC
     LIMIT ${batch}
   `;
 

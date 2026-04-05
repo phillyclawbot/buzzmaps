@@ -1,5 +1,5 @@
 import { getDb, runMigrations } from "@/lib/db";
-import { extractSentiment, isFoodRelated, type RedditPost } from "@/lib/reddit";
+import { extractSentiment, isPlaceRelated, type RedditPost } from "@/lib/reddit";
 import {
   extractVenuesWithAI,
   extractRestaurantNames,
@@ -10,12 +10,29 @@ import {
 
 const SUBREDDITS = ["askTO", "toronto", "torontofood", "FoodToronto", "askToronto", "torontoevents"];
 
-// Search queries — food, bars, shops, parks, gyms, nightlife, services, everything Toronto
+// Search queries — any Toronto place worth visiting
 const SEARCH_QUERIES = [
+  // General recommendation signals
+  "recommendation toronto",
+  "best place in toronto",
+  "where to go toronto",
+  "things to do toronto",
+  "worth visiting toronto",
+  "underrated toronto",
+  "must visit toronto",
+  "new opening toronto",
+  "hidden gem toronto",
+  "just opened toronto",
+  "favourite spot toronto",
+  "best neighbourhood toronto",
+  "things to do this weekend toronto",
+  "where to take visitors toronto",
+  "locals recommend toronto",
+  "moving to toronto",
+  "new to toronto",
   // Food & drink
-  "best restaurant recommendation",
+  "best restaurant toronto",
   "where to eat toronto",
-  "hidden gem restaurant",
   "best brunch toronto",
   "best ramen toronto",
   "best sushi toronto",
@@ -23,27 +40,17 @@ const SEARCH_QUERIES = [
   "best burger toronto",
   "best pho toronto",
   "best dim sum toronto",
-  "best korean toronto",
-  "best indian toronto",
-  "best thai toronto",
-  "best vietnamese toronto",
-  "best italian toronto",
-  "best mexican toronto",
+  "cheap eats toronto",
   "best cafe toronto",
   "best coffee toronto",
   "best dessert toronto",
-  "cheap eats toronto",
   "best bakery toronto",
   "best ice cream toronto",
   "best tacos toronto",
   "best wings toronto",
   "best shawarma toronto",
-  "best jerk chicken toronto",
-  "best ethiopian toronto",
-  "best greek toronto",
   "best date night restaurant",
   "best late night food toronto",
-  "best food truck toronto",
   "best new restaurant toronto",
   // Bars & nightlife
   "best bar toronto",
@@ -52,8 +59,6 @@ const SEARCH_QUERIES = [
   "best patio toronto",
   "best nightclub toronto",
   "best live music toronto",
-  "best jazz bar toronto",
-  "best sports bar toronto",
   "best dive bar toronto",
   "best brewery toronto",
   "best wine bar toronto",
@@ -64,7 +69,6 @@ const SEARCH_QUERIES = [
   "best bookstore toronto",
   "best market toronto",
   "best record store toronto",
-  "hidden gem shop toronto",
   "best thrift store toronto",
   "best plant shop toronto",
   // Parks & outdoors
@@ -75,6 +79,7 @@ const SEARCH_QUERIES = [
   "best skating rink toronto",
   "best dog park toronto",
   "best picnic spot toronto",
+  "best ravine toronto",
   // Activities & entertainment
   "best gym toronto",
   "best yoga studio toronto",
@@ -85,34 +90,28 @@ const SEARCH_QUERIES = [
   "best bowling toronto",
   "best arcade toronto",
   "best spa toronto",
-  "best comedy show toronto",
+  "best comedy club toronto",
   "best theatre toronto",
   "best pool hall toronto",
   "best board game cafe toronto",
   // Neighbourhood-specific
   "best kensington market",
-  "best queen west restaurant",
+  "best queen west toronto",
   "best ossington bar",
   "best leslieville cafe",
   "best distillery district",
-  "best annex restaurant",
+  "best annex toronto",
   "best little italy toronto",
   "best chinatown toronto",
   "best roncesvalles",
   "best liberty village",
   "best dundas west",
-  // General ask recommendations
-  "recommendation toronto",
-  "best place in toronto",
-  "where to go toronto",
-  "things to do toronto",
-  "worth visiting toronto",
-  "underrated toronto",
-  "must visit toronto",
-  "new opening toronto",
-  "just opened toronto",
-  "favourite spot toronto",
-  "go-to place toronto",
+  // Services & community
+  "best barber toronto",
+  "best hair salon toronto",
+  "best tattoo toronto",
+  "best coworking space toronto",
+  "best community centre toronto",
 ];
 
 async function searchReddit(
@@ -125,7 +124,7 @@ async function searchReddit(
   if (after) url += `&after=${after}`;
 
   const res = await fetch(url, {
-    headers: { "User-Agent": "BuzzMaps/1.0 toronto food map" },
+    headers: { "User-Agent": "BuzzMaps/1.0 toronto places map" },
   });
 
   if (!res.ok) throw new Error(`Reddit search error: ${res.status}`);
@@ -149,7 +148,7 @@ async function searchReddit(
         score: (d.score as number) || 0,
         num_comments: (d.num_comments as number) || 0,
         created_utc: (d.created_utc as number) || 0,
-        is_food_related: isFoodRelated(title, selftext),
+        is_food_related: isPlaceRelated(title, selftext),
         sentiment: extractSentiment(title, selftext),
       };
     }

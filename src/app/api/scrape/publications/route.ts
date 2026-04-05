@@ -27,7 +27,7 @@ const PUBLICATION_FEEDS = [
   // Narcity Toronto
   { name: "Narcity", url: "https://www.narcity.com/toronto/feed" },
   { name: "Narcity", url: "https://www.narcity.com/feed/rss.xml" },
-  // Eater Toronto - dedicated food map site
+  // Eater Toronto - restaurant and food scene coverage
   { name: "Eater Toronto", url: "https://toronto.eater.com/rss/index.xml" },
   // Toronto Star
   { name: "Toronto Star", url: "https://www.thestar.com/content/thestar/feed.RSSManagerServlet.TopStories.rss" },
@@ -49,20 +49,18 @@ const PUBLICATION_FEEDS = [
   { name: "Toronto.com", url: "https://www.toronto.com/feed/" },
   // Curiocity Toronto
   { name: "Curiocity", url: "https://curiocity.com/toronto/feed/" },
-  // Reddit food/local subs as RSS — expanded with more search queries
+  // Reddit local subs as RSS
   { name: "r/FoodToronto", url: "https://www.reddit.com/r/FoodToronto/top/.rss?t=week&limit=50" },
   { name: "r/torontofood", url: "https://www.reddit.com/r/torontofood/top/.rss?t=week&limit=50" },
-  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=best+restaurant&sort=top&t=all&limit=50" },
-  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=where+to+eat+toronto&sort=top&t=all&limit=50" },
-  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=best+bar+toronto&sort=top&t=all&limit=50" },
-  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=best+coffee+toronto&sort=top&t=all&limit=50" },
+  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=best+place+toronto&sort=top&t=all&limit=50" },
+  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=recommendation+toronto&sort=top&t=all&limit=50" },
   { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=hidden+gem+toronto&sort=top&t=all&limit=50" },
-  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=best+brunch+toronto&sort=top&t=all&limit=50" },
-  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=best+patio+toronto&sort=top&t=all&limit=50" },
+  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=things+to+do+toronto&sort=top&t=all&limit=50" },
+  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=underrated+toronto&sort=top&t=all&limit=50" },
   { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=new+opening+toronto&sort=top&t=all&limit=50" },
   { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=best+park+toronto&sort=top&t=all&limit=50" },
   { name: "r/toronto", url: "https://www.reddit.com/r/toronto/search.rss?q=best+place&sort=top&t=all&limit=50" },
-  { name: "r/toronto", url: "https://www.reddit.com/r/toronto/search.rss?q=favourite+restaurant&sort=top&t=all&limit=50" },
+  { name: "r/toronto", url: "https://www.reddit.com/r/toronto/search.rss?q=things+to+do+toronto&sort=top&t=all&limit=50" },
   { name: "r/toronto", url: "https://www.reddit.com/r/toronto/search.rss?q=underrated+toronto&sort=top&t=all&limit=50" },
   { name: "r/askToronto", url: "https://www.reddit.com/r/askToronto/top/.rss?t=month&limit=50" },
 ];

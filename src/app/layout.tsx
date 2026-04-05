@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'BuzzMaps Toronto — Discover places locals love on Reddit',
-  description: "Interactive map of Toronto restaurants, bars, shops, parks and more — powered by Reddit recommendations",
+  description: "Interactive map of Toronto places — restaurants, bars, shops, parks, gyms, venues and more — powered by Reddit",
   openGraph: {
     title: 'BuzzMaps Toronto',
     description: "Toronto's places, as told by Reddit",

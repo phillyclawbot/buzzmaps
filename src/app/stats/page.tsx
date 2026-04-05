@@ -55,9 +55,9 @@ export default async function StatsPage() {
     recentPosts,
   ] = await Promise.all([
     sql`SELECT COUNT(*)::int as count FROM restaurants`,
-    sql`SELECT COUNT(*)::int as count FROM reddit_posts WHERE is_food_related = true`,
-    sql`SELECT COUNT(*)::int as count FROM reddit_posts WHERE is_food_related = true AND subreddit ~ '^[a-zA-Z0-9_]+$'`,
-    sql`SELECT COUNT(*)::int as count FROM reddit_posts WHERE is_food_related = true AND (subreddit ILIKE '%BlogTO%' OR subreddit ILIKE '%Narcity%' OR subreddit ILIKE '%Toronto Life%' OR subreddit ILIKE '%NOW Magazine%' OR subreddit ILIKE '%Toronto Star%')`,
+    sql`SELECT COUNT(*)::int as count FROM reddit_posts`,
+    sql`SELECT COUNT(*)::int as count FROM reddit_posts WHERE subreddit ~ '^[a-zA-Z0-9_]+$'`,
+    sql`SELECT COUNT(*)::int as count FROM reddit_posts WHERE (subreddit ILIKE '%BlogTO%' OR subreddit ILIKE '%Narcity%' OR subreddit ILIKE '%Toronto Life%' OR subreddit ILIKE '%NOW Magazine%' OR subreddit ILIKE '%Toronto Star%')`,
     sql`
       SELECT r.name, r.category, COUNT(pr.id)::int as mention_count, r.google_rating
       FROM restaurants r
@@ -75,7 +75,6 @@ export default async function StatsPage() {
     sql`
       SELECT id, title, subreddit, created_utc, scraped_at
       FROM reddit_posts
-      WHERE is_food_related = true
       ORDER BY scraped_at DESC
       LIMIT 10
     ` as unknown as Promise<RecentPost[]>,

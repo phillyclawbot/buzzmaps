@@ -27,7 +27,7 @@ const PLACE_KEYWORDS = [
 
 const POSITIVE_WORDS = [
   "recommend", "amazing", "best", "love", "incredible", "outstanding", "worth",
-  "must try", "favorite", "fantastic", "delicious", "great",
+  "must try", "favorite", "fantastic", "great", "hidden gem", "underrated",
 ];
 
 const NEGATIVE_WORDS = [
@@ -50,10 +50,13 @@ export interface RedditPost {
   sentiment: "positive" | "negative" | "neutral";
 }
 
-export function isFoodRelated(title: string, selftext: string): boolean {
+export function isPlaceRelated(title: string, selftext: string): boolean {
   const text = `${title} ${selftext}`.toLowerCase();
   return PLACE_KEYWORDS.some((kw) => text.includes(kw));
 }
+
+// Backwards-compat alias
+export const isFoodRelated = isPlaceRelated;
 
 export function extractSentiment(
   title: string,
@@ -102,7 +105,7 @@ export async function fetchSubredditPosts(
         score: (d.score as number) || 0,
         num_comments: (d.num_comments as number) || 0,
         created_utc: (d.created_utc as number) || 0,
-        is_food_related: isFoodRelated(title, selftext),
+        is_food_related: isPlaceRelated(title, selftext),
         sentiment: extractSentiment(title, selftext),
       };
     }

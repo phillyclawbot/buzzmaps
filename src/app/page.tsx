@@ -621,7 +621,7 @@ function Home() {
                   <div style={{ fontSize: "11px", fontWeight: 700, color: "#64748b", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Categories</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 12px" }}>
                     {([
-                      ["restaurant", "🍽️", "Food"],
+                      ["restaurant", "🍽️", "Restaurant"],
                       ["bar", "🍺", "Bar"],
                       ["cafe", "☕", "Cafe"],
                       ["club", "🎵", "Club"],
