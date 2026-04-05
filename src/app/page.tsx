@@ -211,20 +211,46 @@ function Home() {
 
   const handleScrapeAll = async () => {
     setScrapingAll(true);
-    try {
-      await fetch("/api/scrape");
-      await fetch("/api/scrape/publications");
-      await fetch("/api/scrape/backfill");
-      await fetch("/api/scrape/popular");
-      await fetchData();
-      setToast("Scrape All complete ✓");
-      setTimeout(() => setToast(null), 3000);
-    } catch {
-      setToast("Scrape All failed");
-      setTimeout(() => setToast(null), 2000);
-    } finally {
-      setScrapingAll(false);
+    let totalPlaces = 0;
+
+    // Step 1: Quick scrapers (each under 60s)
+    for (const ep of [
+      { name: "Reddit", url: "/api/scrape" },
+      { name: "Publications", url: "/api/scrape/publications" },
+      { name: "Popular lists", url: "/api/scrape/popular" },
+    ]) {
+      try {
+        setToast(`Scraping ${ep.name}...`);
+        const res = await fetch(ep.url, { signal: AbortSignal.timeout(90000) });
+        if (res.ok) {
+          const data = await res.json().catch(() => ({}));
+          totalPlaces += data.places_found || 0;
+        }
+      } catch { /* continue */ }
     }
+
+    // Step 2: Backfill in batches of 15 queries (fits in ~60s)
+    let offset = 0;
+    let batch = 1;
+    while (true) {
+      try {
+        setToast(`Backfill batch ${batch}...`);
+        const res = await fetch(`/api/scrape/backfill?queries=15&offset=${offset}`, { signal: AbortSignal.timeout(90000) });
+        if (!res.ok) break;
+        const data = await res.json();
+        totalPlaces += data.places_found || 0;
+        if (!data.next_offset) break;
+        offset = data.next_offset;
+        batch++;
+      } catch {
+        break;
+      }
+    }
+
+    try { await fetchData(true); } catch {}
+    setToast(`Scrape complete: ${totalPlaces} places found`);
+    setTimeout(() => setToast(null), 4000);
+    setScrapingAll(false);
   };
 
   const handleFetchPhotos = async () => {

@@ -333,13 +333,22 @@ export async function GET(req: Request) {
 
     const url = new URL(req.url);
     const maxPerQuery = parseInt(url.searchParams.get("max") || "200");
+    const queryLimit = parseInt(url.searchParams.get("queries") || "15");
+    const startFrom = parseInt(url.searchParams.get("offset") || "0");
 
     let totalPosts = 0;
     let totalNew = 0;
     let totalPlaces = 0;
+    let queriesRun = 0;
+    const totalQueries = SUBREDDITS.length * SEARCH_QUERIES.length;
 
     for (const subreddit of SUBREDDITS) {
-      for (const query of SEARCH_QUERIES) {
+      for (let qi = 0; qi < SEARCH_QUERIES.length; qi++) {
+        const globalIdx = SUBREDDITS.indexOf(subreddit) * SEARCH_QUERIES.length + qi;
+        if (globalIdx < startFrom) continue;
+        if (queriesRun >= queryLimit) break;
+        const query = SEARCH_QUERIES[qi];
+        queriesRun++;
         let after: string | null = null;
         let fetched = 0;
 
@@ -403,14 +412,20 @@ export async function GET(req: Request) {
 
         // Small delay between queries
         await new Promise((r) => setTimeout(r, 2000));
+        if (queriesRun >= queryLimit) break;
       }
+      if (queriesRun >= queryLimit) break;
     }
 
+    const nextOffset = startFrom + queriesRun;
     return Response.json({
       success: true,
       posts_seen: totalPosts,
       posts_new: totalNew,
       places_found: totalPlaces,
+      queries_run: queriesRun,
+      total_queries: totalQueries,
+      next_offset: nextOffset < totalQueries ? nextOffset : null,
     });
   } catch (err) {
     return Response.json({ error: String(err) }, { status: 500 });
