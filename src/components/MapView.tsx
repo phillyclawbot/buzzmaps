@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
@@ -9,6 +9,7 @@ import {
   Marker,
   Popup,
   Circle,
+  Rectangle,
   useMap,
 } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
@@ -16,7 +17,17 @@ import type { Restaurant, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
 import { CATEGORY_COLORS, SENTIMENT_COLORS } from "@/lib/constants";
 import { formatTimeAgo, haversineDistance } from "@/lib/utils";
+import { NEIGHBOURHOODS, getNeighbourhood } from "@/lib/neighbourhoods";
 
+const HOOD_PALETTE = [
+  "#ff6b35", "#7c3aed", "#0891b2", "#16a34a", "#db2777",
+  "#b45309", "#6366f1", "#0d9488", "#ca8a04", "#dc2626",
+  "#4f46e5", "#059669",
+];
+
+function getHoodColor(index: number): string {
+  return HOOD_PALETTE[index % HOOD_PALETTE.length];
+}
 
 
 function createPinIcon(category: PlaceCategory, mentionCount: number, isRecent: boolean) {
@@ -45,7 +56,7 @@ function createPinIcon(category: PlaceCategory, mentionCount: number, isRecent: 
   });
 }
 
-function createClusterIcon(cluster: { getChildCount: () => number }) {
+function createClusterIcon(cluster: { getChildCount: () => number; getAllChildMarkers: () => L.Marker[] }) {
   const count = cluster.getChildCount();
   let size = 36;
   let bg = "#ff6b35";
@@ -65,20 +76,49 @@ function createClusterIcon(cluster: { getChildCount: () => number }) {
     ring = "rgba(249,115,22,0.22)";
   }
 
+  // Determine neighbourhood from average marker position
+  const markers = cluster.getAllChildMarkers();
+  let hood = "";
+  if (markers.length > 0) {
+    let totalLat = 0, totalLng = 0;
+    for (const m of markers) {
+      const ll = m.getLatLng();
+      totalLat += ll.lat;
+      totalLng += ll.lng;
+    }
+    hood = getNeighbourhood(totalLat / markers.length, totalLng / markers.length) || "";
+  }
+
+  const labelHtml = hood
+    ? `<div style="
+        position:absolute;top:${size + 2}px;left:50%;transform:translateX(-50%);
+        white-space:nowrap;font-size:10px;font-weight:700;color:#334155;
+        background:rgba(255,255,255,0.92);backdrop-filter:blur(4px);
+        padding:1px 6px;border-radius:6px;
+        box-shadow:0 1px 4px rgba(0,0,0,0.12);
+        pointer-events:none;line-height:1.3;
+      ">${hood}</div>`
+    : "";
+
+  const totalH = hood ? size + 18 : size;
+
   return L.divIcon({
-    html: `<div style="
-      width:${size}px;height:${size}px;
-      border-radius:50%;
-      background:${bg};
-      color:white;
-      font-weight:800;
-      font-size:${count >= 100 ? 12 : 13}px;
-      display:flex;align-items:center;justify-content:center;
-      box-shadow:0 2px 10px rgba(0,0,0,0.3), 0 0 0 4px ${ring};
-      border:2px solid rgba(255,255,255,0.8);
-    ">${count}</div>`,
+    html: `<div style="position:relative;width:${size}px;height:${totalH}px;">
+      <div style="
+        width:${size}px;height:${size}px;
+        border-radius:50%;
+        background:${bg};
+        color:white;
+        font-weight:800;
+        font-size:${count >= 100 ? 12 : 13}px;
+        display:flex;align-items:center;justify-content:center;
+        box-shadow:0 2px 10px rgba(0,0,0,0.3), 0 0 0 4px ${ring};
+        border:2px solid rgba(255,255,255,0.8);
+      ">${count}</div>
+      ${labelHtml}
+    </div>`,
     className: "",
-    iconSize: [size, size],
+    iconSize: [size, totalH],
     iconAnchor: [size / 2, size / 2],
   });
 }
@@ -146,6 +186,18 @@ export default function MapView({
   const mapRef = useRef<L.Map | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Determine which neighbourhoods have places and assign colours
+  const activeHoods = useMemo(() => {
+    const hoodCounts: Record<string, number> = {};
+    for (const r of restaurants) {
+      const hood = getNeighbourhood(r.lat, r.lng);
+      if (hood) hoodCounts[hood] = (hoodCounts[hood] || 0) + 1;
+    }
+    return NEIGHBOURHOODS
+      .map((n, i) => ({ ...n, count: hoodCounts[n.name] || 0, color: getHoodColor(i) }))
+      .filter((n) => n.count > 0);
+  }, [restaurants]);
 
   const handleNearMe = () => {
     if (nearMeActive) {
@@ -249,6 +301,45 @@ export default function MapView({
           pathOptions={{ color: "#3b82f6", fillColor: "#3b82f6", fillOpacity: 0.08, weight: 2, dashArray: "6 4" }}
         />
       )}
+      {/* Neighbourhood overlays */}
+      {!heatmapMode && activeHoods.map((n) => (
+        <Rectangle
+          key={n.name}
+          bounds={[[n.minLat, n.minLng], [n.maxLat, n.maxLng]]}
+          pathOptions={{
+            color: n.color,
+            fillColor: n.color,
+            fillOpacity: 0.06,
+            weight: 1.5,
+            opacity: 0.35,
+            dashArray: "4 3",
+          }}
+          interactive={false}
+        />
+      ))}
+      {/* Neighbourhood name labels */}
+      {!heatmapMode && activeHoods.map((n) => {
+        const centerLat = (n.minLat + n.maxLat) / 2;
+        const centerLng = (n.minLng + n.maxLng) / 2;
+        return (
+          <Marker
+            key={`label-${n.name}`}
+            position={[centerLat, centerLng]}
+            interactive={false}
+            icon={L.divIcon({
+              html: `<div style="
+                white-space:nowrap;font-size:11px;font-weight:700;
+                color:${n.color};text-shadow:0 0 3px white, 0 0 6px white, 0 0 9px white;
+                pointer-events:none;text-align:center;
+                opacity:0.8;letter-spacing:0.3px;
+              ">${n.name}<span style="display:block;font-size:9px;font-weight:600;opacity:0.6;">${n.count} place${n.count !== 1 ? "s" : ""}</span></div>`,
+              className: "",
+              iconSize: [120, 30],
+              iconAnchor: [60, 15],
+            })}
+          />
+        );
+      })}
       {heatmapMode ? (
         restaurants.map((r) => {
           const mentionCount = Number(r.mention_count);
