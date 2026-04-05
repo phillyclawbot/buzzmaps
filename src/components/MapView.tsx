@@ -340,8 +340,8 @@ export default function MapView({
       </button>
     </div>
     <MapContainer
-      center={[43.6532, -79.3832]}
-      zoom={12}
+      center={[43.7000, -79.3900]}
+      zoom={11}
       className="h-full w-full"
       zoomControl={false}
       ref={mapRef}
