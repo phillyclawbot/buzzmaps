@@ -54,6 +54,11 @@ export async function runMigrations() {
     )
   `;
 
+  // Migrate existing databases: add category column if missing
+  await sql`
+    ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'restaurant'
+  `;
+
   // Migrate existing databases: rename photo_reference → photo_url
   await sql`
     DO $$ BEGIN
