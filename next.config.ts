@@ -5,15 +5,15 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "maps.googleapis.com",
+        hostname: "upload.wikimedia.org",
       },
       {
         protocol: "https",
-        hostname: "lh3.googleusercontent.com",
+        hostname: "images.unsplash.com",
       },
       {
         protocol: "https",
-        hostname: "streetviewpixels-pa.googleapis.com",
+        hostname: "s3-media*.yelpcdn.com",
       },
     ],
   },

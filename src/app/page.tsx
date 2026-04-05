@@ -30,7 +30,7 @@ function Home() {
   const [toast, setToast] = useState<string | null>(null);
   const [scraping, setScraping] = useState(false);
   const [scrapingPubs, setScrapingPubs] = useState(false);
-  const [enriching, setEnriching] = useState(false);
+  const [fetchingPhotos, setFetchingPhotos] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [view, setView] = useState<"map" | "list">("map");
   const [filter, setFilter] = useState<{ since: string; sentiment: string; category: string }>({
@@ -209,19 +209,19 @@ function Home() {
     }
   };
 
-  const handleEnrichRatings = async () => {
-    setEnriching(true);
+  const handleFetchPhotos = async () => {
+    setFetchingPhotos(true);
     try {
       const res = await fetch("/api/places/enrich");
       const data = await res.json();
-      setToast(`⭐ Enriched ${data.enriched} of ${data.total_checked} places`);
+      setToast(`Found ${data.enriched} new photo${data.enriched !== 1 ? "s" : ""} (checked ${data.total_checked} places)`);
       setTimeout(() => setToast(null), 3000);
       await fetchData(true);
     } catch {
-      setToast("Failed to enrich ratings");
+      setToast("Failed to fetch photos");
       setTimeout(() => setToast(null), 2000);
     } finally {
-      setEnriching(false);
+      setFetchingPhotos(false);
     }
   };
 
@@ -334,11 +334,11 @@ function Home() {
           <a href="/stats" className="px-3 py-2 text-xs font-medium text-slate-500 hover:text-[#ff6b35] transition-colors">📊 Stats</a>
           <a href="/about" className="px-3 py-2 text-xs font-medium text-slate-500 hover:text-[#ff6b35] transition-colors">About</a>
           <button
-            onClick={handleEnrichRatings}
-            disabled={enriching}
-            className="px-3 py-2 min-h-[36px] bg-yellow-50 hover:bg-yellow-100 disabled:opacity-50 text-yellow-700 text-xs font-medium rounded-lg transition-colors border border-yellow-200"
+            onClick={handleFetchPhotos}
+            disabled={fetchingPhotos}
+            className="px-3 py-2 min-h-[36px] bg-green-50 hover:bg-green-100 disabled:opacity-50 text-green-700 text-xs font-medium rounded-lg transition-colors border border-green-200"
           >
-            {enriching ? "Enriching..." : "⭐ Enrich Ratings"}
+            {fetchingPhotos ? "Fetching..." : "📷 Fetch Photos"}
           </button>
           <button
             onClick={handleScrapePubs}
@@ -445,13 +445,13 @@ function Home() {
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => {
-                handleEnrichRatings();
+                handleFetchPhotos();
                 setMenuOpen(false);
               }}
-              disabled={enriching}
-              className="px-3 py-2 min-h-[36px] bg-yellow-50 border border-yellow-200 hover:bg-yellow-100 disabled:opacity-50 text-yellow-700 text-xs font-medium rounded-lg transition-colors"
+              disabled={fetchingPhotos}
+              className="px-3 py-2 min-h-[36px] bg-green-50 border border-green-200 hover:bg-green-100 disabled:opacity-50 text-green-700 text-xs font-medium rounded-lg transition-colors"
             >
-              {enriching ? "Enriching..." : "⭐ Enrich Ratings"}
+              {fetchingPhotos ? "Fetching..." : "📷 Fetch Photos"}
             </button>
             <button
               onClick={() => {

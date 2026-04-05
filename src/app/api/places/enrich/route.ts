@@ -1,102 +1,50 @@
 import { getDb } from "@/lib/db";
-import { enrichWithGoogleRating } from "@/lib/extract-restaurants";
+import { enrichPhoto } from "@/lib/photos";
+import { delay } from "@/lib/utils";
 
 export const maxDuration = 60;
-
-async function fetchPhotoUrl(photoReference: string, apiKey: string): Promise<string | null> {
-  try {
-    const photoApiUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${encodeURIComponent(photoReference)}&key=${apiKey}`;
-    const res = await fetch(photoApiUrl, { redirect: "follow", signal: AbortSignal.timeout(8000) });
-    if (!res.ok) return null;
-    // The final URL after redirect is the actual photo
-    return res.url || null;
-  } catch {
-    return null;
-  }
-}
 
 export async function GET(req: Request) {
   const sql = getDb();
   const url = new URL(req.url);
-  const limit = parseInt(url.searchParams.get("limit") || "15");
-  const photos = url.searchParams.get("photos") === "true";
+  const limit = Math.min(Math.max(1, parseInt(url.searchParams.get("limit") || "15", 10) || 15), 50);
+  const city = url.searchParams.get("city") || "toronto";
 
-  if (photos) {
-    // Photo enrichment mode
-    const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-    if (!apiKey) return Response.json({ error: "No API key" }, { status: 500 });
-
+  try {
+    // Find places missing photos or still using generic Unsplash fallbacks
     const places = await sql`
-      SELECT id, name, lat, lng FROM restaurants
-      WHERE photo_url IS NULL AND photo_reference IS NOT NULL
-      ORDER BY mention_count DESC
+      SELECT id, name, lat, lng, category FROM restaurants
+      WHERE photo_url IS NULL OR photo_url LIKE '%unsplash.com%'
+      ORDER BY first_seen_at DESC
       LIMIT ${limit}
     `;
 
     let enriched = 0;
+    const sources: Record<string, number> = { wikimedia: 0, yelp: 0, unsplash: 0 };
+
     for (const p of places) {
-      // First get the photo_reference from Google Places
-      const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${p.lat},${p.lng}&radius=150&keyword=${encodeURIComponent(p.name)}&key=${apiKey}`;
-      try {
-        const res = await fetch(searchUrl, { signal: AbortSignal.timeout(5000) });
-        const data = await res.json();
-        const result = data?.results?.[0];
-        const photoRef = result?.photos?.[0]?.photo_reference;
-        if (photoRef) {
-          const photoUrl = await fetchPhotoUrl(photoRef, apiKey);
-          if (photoUrl) {
-            await sql`UPDATE restaurants SET photo_url = ${photoUrl} WHERE id = ${p.id}`;
-            enriched++;
-          }
-        }
-      } catch {
-        // Skip on error
+      const result = await enrichPhoto(
+        { id: p.id, name: p.name, lat: p.lat, lng: p.lng, category: p.category || "other" },
+        city
+      );
+
+      // Only count as enriched if we found a real photo (not Unsplash fallback)
+      if (result.source !== "unsplash" || !p.photo_url) {
+        await sql`UPDATE restaurants SET photo_url = ${result.url} WHERE id = ${p.id}`;
+        if (result.source !== "unsplash") enriched++;
       }
-      await new Promise(r => setTimeout(r, 300));
+
+      sources[result.source]++;
+      await delay(1500); // respect rate limits across all sources
     }
 
-    return Response.json({ enriched, total_checked: places.length, mode: "photos" });
+    return Response.json({
+      enriched,
+      total_checked: places.length,
+      sources,
+    });
+  } catch (err) {
+    console.error("GET /api/places/enrich error:", err);
+    return Response.json({ error: "Failed to enrich photos" }, { status: 500 });
   }
-
-  // Default: rating + photo enrichment
-  const places = await sql`
-    SELECT id, name, lat, lng FROM restaurants
-    WHERE google_rating IS NULL
-    ORDER BY mention_count DESC
-    LIMIT ${limit}
-  `;
-
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-
-  let enriched = 0;
-  for (const p of places) {
-    const { rating, reviews_count } = await enrichWithGoogleRating(p.name, p.lat, p.lng);
-    if (rating !== null) {
-      await sql`UPDATE restaurants SET google_rating = ${rating}, google_reviews_count = ${reviews_count} WHERE id = ${p.id}`;
-      enriched++;
-    }
-
-    // Also try to grab a photo while we're here
-    if (apiKey) {
-      try {
-        const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${p.lat},${p.lng}&radius=150&keyword=${encodeURIComponent(p.name)}&key=${apiKey}`;
-        const res = await fetch(searchUrl, { signal: AbortSignal.timeout(5000) });
-        const data = await res.json();
-        const result = data?.results?.[0];
-        const photoRef = result?.photos?.[0]?.photo_reference;
-        if (photoRef) {
-          const photoUrl = await fetchPhotoUrl(photoRef, apiKey);
-          if (photoUrl) {
-            await sql`UPDATE restaurants SET photo_url = ${photoUrl} WHERE id = ${p.id}`;
-          }
-        }
-      } catch {
-        // Skip photo on error
-      }
-    }
-
-    await new Promise(r => setTimeout(r, 300));
-  }
-
-  return Response.json({ enriched, total_checked: places.length });
 }
