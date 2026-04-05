@@ -62,6 +62,60 @@ export async function extractVenuesWithAI(text: string): Promise<ExtractedVenue[
   }
 }
 
+// Blocklist of Toronto non-venue proper nouns that commonly create noise
+const NON_VENUE_BLOCKLIST = new Set([
+  // Neighborhoods / cities
+  "Scarborough", "Etobicoke", "North York", "East York", "York",
+  "Mississauga", "Brampton", "Markham", "Richmond Hill", "Vaughan",
+  "Oakville", "Burlington", "Hamilton", "Downtown", "Midtown", "Uptown",
+  "The Annex", "Parkdale", "Leslieville", "Kensington", "Liberty Village",
+  "Junction", "Beaches", "Danforth", "Roncesvalles", "Bloor West Village",
+  "High Park", "Bedford Park", "Lawrence Park", "Rosedale", "Forest Hill",
+  "Cabbagetown", "Regent Park", "Moss Park", "St. James Town",
+  "Chinatown", "Koreatown", "Little Italy", "Little Portugal", "Greektown",
+  // Subway stations (single-word ones are also in COMMON_ENGLISH_WORDS below)
+  "College", "Dundas", "Queen", "King", "Union", "Bloor-Yonge", "St. George",
+  "Spadina", "Bathurst", "Ossington", "Dufferin", "Lansdowne", "Keele",
+  "Jane", "Runnymede", "Broadview", "Chester", "Pape", "Donlands",
+  "Greenwood", "Coxwell", "Woodbine", "Main", "Victoria Park", "Warden",
+  "Kennedy", "Finch", "Sheppard-Yonge", "York Mills", "Lawrence", "Eglinton",
+  "Davisville", "St. Clair", "Summerhill", "Sherbourne", "Wellesley",
+  "Bay", "Museum", "Dupont", "Christie",
+  // Streets
+  "Yonge Street", "Queen Street", "King Street", "Dundas Street",
+  "Bloor Street", "College Street", "Bathurst Street", "Spadina Avenue",
+  "University Avenue", "Bay Street", "Front Street", "Lakeshore",
+  "Markham Street", "London Street", "Vancouver Avenue",
+  // Other non-venues
+  "TTC", "GO Transit", "TMU", "UofT", "Ryerson", "York University",
+  "Toronto Police", "City Hall",
+  // Generic false positives
+  "Toronto", "Ontario", "Canada", "Reddit", "The", "This", "That",
+  "Anyone", "Everyone", "Someone", "Does Anyone", "Has Anyone",
+  "Looking For", "Best", "Good", "Great", "New", "Old",
+]);
+
+// Single common English words that are likely not venue names on their own
+const COMMON_ENGLISH_WORDS = new Set([
+  "College", "Queen", "King", "Union", "Bay", "Main", "Jane",
+  "Museum", "Junction", "Beaches", "Village", "Market", "Park",
+  "Club", "Bar", "Pub", "Grill", "Diner", "Cafe", "Shop", "Store",
+  "Place", "House", "Room", "Corner", "Garden", "Kitchen", "Table",
+  "Station", "Square", "Court", "Lane", "Walk", "Way", "Drive",
+]);
+
+function looksLikeVenue(name: string): boolean {
+  const trimmed = name.trim();
+  // Reject names shorter than 3 chars
+  if (trimmed.length < 3) return false;
+  // Reject blocklisted names
+  if (NON_VENUE_BLOCKLIST.has(trimmed)) return false;
+  // Reject single common English words (not venue-specific enough)
+  const words = trimmed.split(/\s+/);
+  if (words.length === 1 && COMMON_ENGLISH_WORDS.has(trimmed)) return false;
+  return true;
+}
+
 // Keep old regex extraction as fallback
 export function extractRestaurantNames(
   title: string,
@@ -70,9 +124,11 @@ export function extractRestaurantNames(
   const text = `${title}\n${selftext}`;
   const names = new Set<string>();
 
+  // Quoted names
   const quoted = text.matchAll(/["']([A-Z][A-Za-z\s&'.-]{2,30})["']/g);
   for (const m of quoted) names.add(m[1].trim());
 
+  // Classic preposition patterns
   const atFrom = text.matchAll(
     /(?:at|from|called|try|tried|visit|visited)\s+([A-Z][A-Za-z\s&'.-]{2,30})(?:[,.\s!?]|$)/g
   );
@@ -81,14 +137,53 @@ export function extractRestaurantNames(
     if (name.split(/\s+/).length <= 5) names.add(name);
   }
 
-  const falsePositives = new Set([
-    "Toronto", "Ontario", "Canada", "Reddit", "The", "This", "That",
-    "Anyone", "Everyone", "Someone", "Does Anyone", "Has Anyone",
-    "Looking For", "Best", "Good", "Great", "New", "Old",
-  ]);
+  // "went to X", "love X", "recommend X", "check out X", "hit up X"
+  const recVerbs = text.matchAll(
+    /(?:went to|love|recommend|check out|hit up)\s+([A-Z][A-Za-z\s&'.-]{2,30})(?:[,.\s!?]|$)/g
+  );
+  for (const m of recVerbs) {
+    const name = m[1].trim().replace(/[.\s]+$/, "");
+    if (name.split(/\s+/).length <= 5) names.add(name);
+  }
+
+  // "ate at X", "dinner at X", "lunch at X", "brunch at X", "drinks at X"
+  const mealAt = text.matchAll(
+    /(?:ate at|dinner at|lunch at|brunch at|drinks at|eating at|dined at)\s+([A-Z][A-Za-z\s&'.-]{2,30})(?:[,.\s!?]|$)/g
+  );
+  for (const m of mealAt) {
+    const name = m[1].trim().replace(/[.\s]+$/, "");
+    if (name.split(/\s+/).length <= 5) names.add(name);
+  }
+
+  // "X is great/amazing/good/awesome/solid/fire/bussin"
+  const qualityAdj = text.matchAll(
+    /([A-Z][A-Za-z\s&'.-]{2,30})\s+is\s+(?:great|amazing|good|awesome|solid|fire|bussin|fantastic|excellent|incredible|delicious|the best)/g
+  );
+  for (const m of qualityAdj) {
+    const name = m[1].trim().replace(/[.\s]+$/, "");
+    if (name.split(/\s+/).length <= 5) names.add(name);
+  }
+
+  // "X on [Street/Ave/etc]" — e.g. "Pai on Duncan"
+  const onStreet = text.matchAll(
+    /([A-Z][A-Za-z\s&'.-]{2,25})\s+on\s+(?:[A-Z][A-Za-z]+(?:\s+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Boulevard|Blvd|Way|Lane|Ln))?)/g
+  );
+  for (const m of onStreet) {
+    const name = m[1].trim().replace(/[.\s]+$/, "");
+    if (name.split(/\s+/).length <= 4) names.add(name);
+  }
+
+  // "X in [Neighborhood]" — e.g. "Gusto in the Annex"
+  const inNeighbourhood = text.matchAll(
+    /([A-Z][A-Za-z\s&'.-]{2,25})\s+in\s+(?:the\s+)?(?:Annex|Parkdale|Leslieville|Kensington|Danforth|Roncesvalles|Junction|Beaches|Chinatown|Koreatown|Greektown|Cabbagetown|Rosedale|Yorkville|Distillery)/gi
+  );
+  for (const m of inNeighbourhood) {
+    const name = m[1].trim().replace(/[.\s]+$/, "");
+    if (name.split(/\s+/).length <= 4) names.add(name);
+  }
 
   return [...names].filter(
-    (n) => !falsePositives.has(n) && n.length > 2 && n.split(/\s+/).length <= 5
+    (n) => n.length >= 3 && n.split(/\s+/).length <= 5 && looksLikeVenue(n)
   );
 }
 
