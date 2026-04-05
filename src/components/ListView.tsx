@@ -283,7 +283,7 @@ export default function ListView({
           placeholder="Search places..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-[#ff6b35] mb-4 shadow-sm"
+          className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-base md:text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-[#ff6b35] mb-4 shadow-sm"
         />
 
         {/* Sort + filters */}

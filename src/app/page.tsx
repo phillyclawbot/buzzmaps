@@ -405,7 +405,7 @@ function Home() {
             placeholder="Search places..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3 py-2 min-h-[36px] bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-[#9ca3af] outline-none focus:border-[#ff6b35]"
+            className="w-full px-3 py-2 min-h-[36px] bg-slate-100 border border-slate-200 rounded-lg text-base text-slate-900 placeholder-[#9ca3af] outline-none focus:border-[#ff6b35]"
           />
           <div className="flex gap-1 flex-wrap">
             {filterButtons.map((f) => (
@@ -522,7 +522,7 @@ function Home() {
                   width: "100%",
                   border: "1px solid rgba(226,232,240,0.8)",
                   borderBottom: showSuggestions && mapSearchSuggestions.length > 0 ? "1px solid #f1f5f9" : "1px solid rgba(226,232,240,0.8)",
-                  fontSize: "13px",
+                  fontSize: "16px",
                   color: "#0f172a",
                   outline: "none",
                   boxSizing: "border-box",
@@ -550,7 +550,7 @@ function Home() {
                       style={{
                         padding: "8px 16px",
                         cursor: "pointer",
-                        fontSize: "13px",
+                        fontSize: "14px",
                         color: "#334155",
                         display: "flex",
                         alignItems: "center",
@@ -698,7 +698,7 @@ function Home() {
                       value={submitForm.name}
                       onChange={(e) => setSubmitForm((f) => ({ ...f, name: e.target.value }))}
                       placeholder="e.g. Bar Raval"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35]"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-base md:text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35]"
                     />
                   </div>
                   <div>
@@ -726,7 +726,7 @@ function Home() {
                       value={submitForm.address}
                       onChange={(e) => setSubmitForm((f) => ({ ...f, address: e.target.value }))}
                       placeholder="e.g. 123 Queen St W, Toronto"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35]"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-base md:text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35]"
                     />
                   </div>
                   <div>
