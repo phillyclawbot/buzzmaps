@@ -7,7 +7,7 @@ export const maxDuration = 60;
 export async function GET(req: Request) {
   const sql = getDb();
   const url = new URL(req.url);
-  const batch = parseInt(url.searchParams.get("batch") || "15");
+  const batch = Math.min(Math.max(1, parseInt(url.searchParams.get("batch") || "25", 10) || 25), 100);
 
   const posts = await sql`
     SELECT rp.id, rp.title, rp.selftext, rp.created_utc, rp.sentiment, rp.score, rp.subreddit

@@ -15,10 +15,13 @@ const PUBLICATION_FEEDS = [
   { name: "BlogTO", url: "https://www.blogto.com/city/rss.xml" },
   { name: "BlogTO", url: "https://www.blogto.com/arts/rss.xml" },
   { name: "BlogTO", url: "https://www.blogto.com/sports_play/rss.xml" },
+  { name: "BlogTO", url: "https://www.blogto.com/nightlife/rss.xml" },
+  { name: "BlogTO", url: "https://www.blogto.com/fashion_style/rss.xml" },
   // Toronto Life
   { name: "Toronto Life", url: "https://torontolife.com/feed/" },
   { name: "Toronto Life", url: "https://torontolife.com/food/feed/" },
   { name: "Toronto Life", url: "https://torontolife.com/city/feed/" },
+  { name: "Toronto Life", url: "https://torontolife.com/style/feed/" },
   // NOW Magazine
   { name: "NOW Magazine", url: "https://nowtoronto.com/feed/" },
   // Narcity Toronto
@@ -40,7 +43,13 @@ const PUBLICATION_FEEDS = [
   { name: "Post City", url: "https://www.postcity.com/feed/" },
   // The Grid TO / Spacing
   { name: "Spacing", url: "https://spacing.ca/toronto/feed/" },
-  // Reddit food/local subs as RSS
+  // Daily Hive Toronto
+  { name: "Daily Hive", url: "https://dailyhive.com/toronto/feed" },
+  // Toronto.com
+  { name: "Toronto.com", url: "https://www.toronto.com/feed/" },
+  // Curiocity Toronto
+  { name: "Curiocity", url: "https://curiocity.com/toronto/feed/" },
+  // Reddit food/local subs as RSS — expanded with more search queries
   { name: "r/FoodToronto", url: "https://www.reddit.com/r/FoodToronto/top/.rss?t=week&limit=50" },
   { name: "r/torontofood", url: "https://www.reddit.com/r/torontofood/top/.rss?t=week&limit=50" },
   { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=best+restaurant&sort=top&t=all&limit=50" },
@@ -48,7 +57,14 @@ const PUBLICATION_FEEDS = [
   { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=best+bar+toronto&sort=top&t=all&limit=50" },
   { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=best+coffee+toronto&sort=top&t=all&limit=50" },
   { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=hidden+gem+toronto&sort=top&t=all&limit=50" },
+  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=best+brunch+toronto&sort=top&t=all&limit=50" },
+  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=best+patio+toronto&sort=top&t=all&limit=50" },
+  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=new+opening+toronto&sort=top&t=all&limit=50" },
+  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=best+park+toronto&sort=top&t=all&limit=50" },
   { name: "r/toronto", url: "https://www.reddit.com/r/toronto/search.rss?q=best+place&sort=top&t=all&limit=50" },
+  { name: "r/toronto", url: "https://www.reddit.com/r/toronto/search.rss?q=favourite+restaurant&sort=top&t=all&limit=50" },
+  { name: "r/toronto", url: "https://www.reddit.com/r/toronto/search.rss?q=underrated+toronto&sort=top&t=all&limit=50" },
+  { name: "r/askToronto", url: "https://www.reddit.com/r/askToronto/top/.rss?t=month&limit=50" },
 ];
 
 interface FeedItem {
@@ -118,7 +134,7 @@ export async function GET() {
       const items = parseRSS(xml);
       if (!items.length) { feedResults[feed.name].error = "No items parsed"; continue; }
 
-      for (const item of items.slice(0, 15)) {
+      for (const item of items.slice(0, 25)) {
         const cleanDesc = stripHtml(item.description || "");
         const sentiment = extractSentiment(item.title, cleanDesc);
         const pubTs = item.pubDate ? Math.floor(new Date(item.pubDate).getTime() / 1000) : Math.floor(Date.now() / 1000);
