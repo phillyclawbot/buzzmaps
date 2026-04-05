@@ -55,6 +55,50 @@ export const NEIGHBOURHOODS: Neighbourhood[] = [
   { name: "Etobicoke",            minLat: 43.6200, maxLat: 43.7200, minLng: -79.5900, maxLng: -79.4700 },
 ];
 
+/** Maps our neighbourhood names to official City of Toronto AREA_NAME(s) in the GeoJSON */
+export const NEIGHBOURHOOD_GEOJSON_MAP: Record<string, string[]> = {
+  "The Junction": ["Junction Area"],
+  "Junction Triangle": ["Junction-Wallace Emerson"],
+  "Bloor West Village": ["Runnymede-Bloor West Village"],
+  "High Park": ["High Park-Swansea", "High Park North"],
+  "Roncesvalles": ["Roncesvalles"],
+  "Parkdale": ["South Parkdale"],
+  "Liberty Village": ["Fort York-Liberty Village"],
+  "West Queen West": ["West Queen West"],
+  "Queen West": ["Trinity-Bellwoods"],
+  "Ossington": ["Dovercourt Village"],
+  "Dundas West": ["Dufferin Grove"],
+  "Little Italy": ["Palmerston-Little Italy"],
+  "Trinity-Bellwoods": ["Trinity-Bellwoods"],
+  "Little Portugal": ["Little Portugal"],
+  "Kensington Market": ["Kensington-Chinatown"],
+  "Chinatown": ["Kensington-Chinatown"],
+  "The Annex": ["Annex"],
+  "Yorkville": ["Rosedale-Moore Park", "Bay-Cloverhill"],
+  "Harbord Village": ["University"],
+  "University": ["University"],
+  "Financial District": ["Wellington Place"],
+  "Entertainment District": ["Wellington Place"],
+  "St. Lawrence Market": ["St Lawrence-East Bayfront-The Islands"],
+  "Old Town": ["Moss Park", "Cabbagetown-South St.James Town"],
+  "Garden District": ["Church-Wellesley"],
+  "Waterfront": ["Harbourfront-CityPlace"],
+  "Corktown": ["Regent Park", "Moss Park"],
+  "Distillery District": ["St Lawrence-East Bayfront-The Islands"],
+  "Riverside": ["South Riverdale", "North Riverdale"],
+  "Leslieville": ["Greenwood-Coxwell", "Blake-Jones"],
+  "The Beaches": ["The Beaches", "Woodbine Corridor"],
+  "Greektown": ["Playter Estates-Danforth", "Danforth"],
+  "East Chinatown": ["South Riverdale"],
+  "Koreatown": ["Palmerston-Little Italy", "Wychwood"],
+  "Corso Italia": ["Corso Italia-Davenport"],
+  "St. Clair West": ["Humewood-Cedarvale", "Wychwood"],
+  "Midtown": ["South Eglinton-Davisville", "Yonge-Eglinton", "Mount Pleasant East"],
+  "North York": ["Yonge-Doris", "East Willowdale", "Willowdale West", "Lansing-Westgate", "Newtonbrook East", "Newtonbrook West"],
+  "Scarborough": ["Scarborough Village", "Bendale South", "Bendale-Glen Andrew", "Clairlea-Birchmount"],
+  "Etobicoke": ["Etobicoke City Centre", "Etobicoke West Mall", "Islington", "Mimico-Queensway"],
+};
+
 export function getNeighbourhood(lat: number, lng: number): string | null {
   for (const n of NEIGHBOURHOODS) {
     if (lat >= n.minLat && lat <= n.maxLat && lng >= n.minLng && lng <= n.maxLng) {

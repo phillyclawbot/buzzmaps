@@ -9,7 +9,7 @@ import {
   Marker,
   Popup,
   Circle,
-  Rectangle,
+  GeoJSON,
   useMap,
 } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
@@ -17,7 +17,7 @@ import type { Restaurant, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
 import { CATEGORY_COLORS, SENTIMENT_COLORS } from "@/lib/constants";
 import { formatTimeAgo, haversineDistance } from "@/lib/utils";
-import { NEIGHBOURHOODS, getNeighbourhood } from "@/lib/neighbourhoods";
+import { NEIGHBOURHOODS, NEIGHBOURHOOD_GEOJSON_MAP, getNeighbourhood } from "@/lib/neighbourhoods";
 
 const HOOD_PALETTE = [
   "#ff6b35", "#7c3aed", "#0891b2", "#16a34a", "#db2777",
@@ -199,6 +199,44 @@ export default function MapView({
       .filter((n) => n.count > 0);
   }, [restaurants]);
 
+  // Load GeoJSON polygon data for neighbourhood boundaries
+  const [geoData, setGeoData] = useState<GeoJSON.FeatureCollection | null>(null);
+  useEffect(() => {
+    fetch("/data/toronto-neighbourhoods.geojson")
+      .then((res) => res.json())
+      .then((data) => setGeoData(data))
+      .catch(() => {});
+  }, []);
+
+  // Build a colour map: official AREA_NAME -> colour from our palette
+  const areaColorMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const hood of activeHoods) {
+      const officialNames = NEIGHBOURHOOD_GEOJSON_MAP[hood.name] || [];
+      for (const name of officialNames) {
+        map[name] = hood.color;
+      }
+    }
+    return map;
+  }, [activeHoods]);
+
+  // Filter GeoJSON to only features for active neighbourhoods
+  const filteredGeoData = useMemo(() => {
+    if (!geoData) return null;
+    return {
+      ...geoData,
+      features: geoData.features.filter(
+        (f) => (f.properties as { AREA_NAME: string }).AREA_NAME in areaColorMap
+      ),
+    } as GeoJSON.FeatureCollection;
+  }, [geoData, areaColorMap]);
+
+  // Key to force GeoJSON re-render when active hoods change
+  const geoKey = useMemo(
+    () => activeHoods.map((h) => h.name).join(","),
+    [activeHoods]
+  );
+
   const handleNearMe = () => {
     if (nearMeActive) {
       if (onNearMeToggle) onNearMeToggle(null);
@@ -301,22 +339,25 @@ export default function MapView({
           pathOptions={{ color: "#3b82f6", fillColor: "#3b82f6", fillOpacity: 0.08, weight: 2, dashArray: "6 4" }}
         />
       )}
-      {/* Neighbourhood overlays */}
-      {!heatmapMode && activeHoods.map((n) => (
-        <Rectangle
-          key={n.name}
-          bounds={[[n.minLat, n.minLng], [n.maxLat, n.maxLng]]}
-          pathOptions={{
-            color: n.color,
-            fillColor: n.color,
-            fillOpacity: 0.06,
-            weight: 1.5,
-            opacity: 0.35,
-            dashArray: "4 3",
+      {/* Neighbourhood polygon overlays from real GeoJSON boundaries */}
+      {!heatmapMode && filteredGeoData && (
+        <GeoJSON
+          key={geoKey}
+          data={filteredGeoData}
+          style={(feature) => {
+            const name = feature?.properties?.AREA_NAME as string;
+            const color = areaColorMap[name] || "#94a3b8";
+            return {
+              color,
+              fillColor: color,
+              fillOpacity: 0.07,
+              weight: 1.5,
+              opacity: 0.4,
+            };
           }}
           interactive={false}
         />
-      ))}
+      )}
       {/* Neighbourhood name labels */}
       {!heatmapMode && activeHoods.map((n) => {
         const centerLat = (n.minLat + n.maxLat) / 2;
