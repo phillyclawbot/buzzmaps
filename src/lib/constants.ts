@@ -76,6 +76,13 @@ export const PUBLICATION_NAMES = new Set([
   "Spacing",
   "Toronto Guardian",
   "Exclaim",
+  "Streets of Toronto",
+  "Toronto Storeys",
+  "Notable.ca",
+  "insauga.com",
+  "The Local",
+  "Daily Hive",
+  "Curiocity",
 ]);
 
 export function isPublication(subreddit: string): boolean {

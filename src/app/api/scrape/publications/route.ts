@@ -63,6 +63,27 @@ const PUBLICATION_FEEDS = [
   { name: "r/toronto", url: "https://www.reddit.com/r/toronto/search.rss?q=things+to+do+toronto&sort=top&t=all&limit=50" },
   { name: "r/toronto", url: "https://www.reddit.com/r/toronto/search.rss?q=underrated+toronto&sort=top&t=all&limit=50" },
   { name: "r/askToronto", url: "https://www.reddit.com/r/askToronto/top/.rss?t=month&limit=50" },
+  // BlogTO additional sections
+  { name: "BlogTO", url: "https://www.blogto.com/real_estate/rss.xml" },
+  { name: "BlogTO", url: "https://www.blogto.com/travel/rss.xml" },
+  // Streets of Toronto
+  { name: "Streets of Toronto", url: "https://www.streetsoftoronto.com/feed/" },
+  // Toronto Storeys
+  { name: "Toronto Storeys", url: "https://torontostoreys.com/feed/" },
+  // Notable.ca Toronto
+  { name: "Notable.ca", url: "https://notable.ca/toronto/feed/" },
+  // insauga.com — covers Scarborough / east end
+  { name: "insauga.com", url: "https://www.insauga.com/feed/" },
+  // The Local TO
+  { name: "The Local", url: "https://thelocal.to/feed/" },
+  // Daily Hive additional sections
+  { name: "Daily Hive", url: "https://dailyhive.com/toronto/food/feed" },
+  { name: "Daily Hive", url: "https://dailyhive.com/toronto/listed/feed" },
+  // Neighbourhood Reddit subs as RSS
+  { name: "r/scarborough", url: "https://www.reddit.com/r/scarborough/top/.rss?t=week&limit=50" },
+  { name: "r/EtobicokeON", url: "https://www.reddit.com/r/EtobicokeON/top/.rss?t=week&limit=50" },
+  { name: "r/NorthYork", url: "https://www.reddit.com/r/NorthYork/top/.rss?t=week&limit=50" },
+  { name: "r/mississauga", url: "https://www.reddit.com/r/mississauga/top/.rss?t=week&limit=50" },
 ];
 
 interface FeedItem {

@@ -30,6 +30,7 @@ function Home() {
   const [toast, setToast] = useState<string | null>(null);
   const [scraping, setScraping] = useState(false);
   const [scrapingPubs, setScrapingPubs] = useState(false);
+  const [scrapingAll, setScrapingAll] = useState(false);
   const [fetchingPhotos, setFetchingPhotos] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [view, setView] = useState<"map" | "list">("map");
@@ -208,6 +209,24 @@ function Home() {
     }
   };
 
+  const handleScrapeAll = async () => {
+    setScrapingAll(true);
+    try {
+      await fetch("/api/scrape");
+      await fetch("/api/scrape/publications");
+      await fetch("/api/scrape/backfill");
+      await fetch("/api/scrape/popular");
+      await fetchData();
+      setToast("Scrape All complete ✓");
+      setTimeout(() => setToast(null), 3000);
+    } catch {
+      setToast("Scrape All failed");
+      setTimeout(() => setToast(null), 2000);
+    } finally {
+      setScrapingAll(false);
+    }
+  };
+
   const handleFetchPhotos = async () => {
     setFetchingPhotos(true);
     try {
@@ -353,6 +372,13 @@ function Home() {
           >
             {scraping ? "Scraping..." : "Scrape Reddit"}
           </button>
+          <button
+            onClick={handleScrapeAll}
+            disabled={scrapingAll}
+            className="px-3 py-2 min-h-[36px] bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+          >
+            {scrapingAll ? "Scraping All..." : "⚡ Scrape All"}
+          </button>
         </div>
 
         {/* Mobile: hamburger button */}
@@ -471,6 +497,16 @@ function Home() {
               className="px-3 py-2 min-h-[36px] bg-slate-100 border border-slate-200 hover:bg-slate-200 disabled:opacity-50 text-slate-500 text-xs font-medium rounded-lg transition-colors"
             >
               {scraping ? "Scraping..." : "Scrape Reddit"}
+            </button>
+            <button
+              onClick={() => {
+                handleScrapeAll();
+                setMenuOpen(false);
+              }}
+              disabled={scrapingAll}
+              className="px-3 py-2 min-h-[36px] bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+            >
+              {scrapingAll ? "Scraping All..." : "⚡ Scrape All"}
             </button>
           </div>
         </div>

@@ -358,7 +358,7 @@ export default function MapView({
             if (color) {
               return { color, fillColor: color, fillOpacity: 0.07, weight: 1.5, opacity: 0.4 };
             }
-            return { color: "#94a3b8", fillColor: "#f1f5f9", fillOpacity: 0.02, weight: 0.8, opacity: 0.2 };
+            return { color: "#94a3b8", fillColor: "#e2e8f0", fillOpacity: 0.04, weight: 1, opacity: 0.3 };
           }}
           interactive={false}
         />
