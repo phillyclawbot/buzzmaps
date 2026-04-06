@@ -31,14 +31,6 @@ const COLLECTIONS: CollectionDef[] = [
     linkParams: "?sort=mentions",
   },
   {
-    id: "new",
-    emoji: "🆕",
-    title: "New This Month",
-    description: "Places that just showed up on the radar in the last 30 days.",
-    query: { type: "recent", days: 30 },
-    linkParams: "?since=30d",
-  },
-  {
     id: "coffee",
     emoji: "☕",
     title: "Best Coffee Spots",
