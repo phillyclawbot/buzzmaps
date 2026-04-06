@@ -72,8 +72,7 @@ export default async function PlacePage({
         'num_comments', rp.num_comments,
         'permalink', rp.permalink,
         'sentiment', pr.sentiment,
-        'created_utc', rp.created_utc,
-        'mentions_in_thread', COALESCE(pr.mentions_in_thread, 1)
+        'created_utc', rp.created_utc
       ) ORDER BY rp.created_utc DESC) as posts
     FROM restaurants r
     JOIN post_restaurants pr ON pr.restaurant_id = r.id

@@ -222,25 +222,47 @@ export async function saveRestaurant(
 
   const metadataJson = metadata ? JSON.stringify(metadata) : null;
 
-  const rows = await sql`
-    INSERT INTO restaurants (name, place_id, address, lat, lng, google_rating, google_reviews_count, category, metadata)
-    VALUES (${place.name}, ${place.place_id}, ${place.address}, ${place.lat}, ${place.lng}, ${place.rating}, ${place.reviews_count}, ${category}, ${metadataJson}::jsonb)
-    ON CONFLICT (place_id) DO UPDATE SET
-      name = EXCLUDED.name,
-      address = EXCLUDED.address,
-      category = EXCLUDED.category,
-      metadata = COALESCE(EXCLUDED.metadata, restaurants.metadata)
-    RETURNING id
-  `;
+  let restaurantId: number;
+  try {
+    const rows = await sql`
+      INSERT INTO restaurants (name, place_id, address, lat, lng, google_rating, google_reviews_count, category, metadata)
+      VALUES (${place.name}, ${place.place_id}, ${place.address}, ${place.lat}, ${place.lng}, ${place.rating}, ${place.reviews_count}, ${category}, ${metadataJson}::jsonb)
+      ON CONFLICT (place_id) DO UPDATE SET
+        name = EXCLUDED.name,
+        address = EXCLUDED.address,
+        category = EXCLUDED.category,
+        metadata = COALESCE(EXCLUDED.metadata, restaurants.metadata)
+      RETURNING id
+    `;
+    restaurantId = rows[0].id;
+  } catch {
+    // Fallback if category/metadata columns don't exist yet
+    const rows = await sql`
+      INSERT INTO restaurants (name, place_id, address, lat, lng, google_rating, google_reviews_count)
+      VALUES (${place.name}, ${place.place_id}, ${place.address}, ${place.lat}, ${place.lng}, ${place.rating}, ${place.reviews_count})
+      ON CONFLICT (place_id) DO UPDATE SET
+        name = EXCLUDED.name,
+        address = EXCLUDED.address
+      RETURNING id
+    `;
+    restaurantId = rows[0].id;
+  }
 
-  const restaurantId = rows[0].id;
-
-  await sql`
-    INSERT INTO post_restaurants (post_id, restaurant_id, mention_context, sentiment, mentions_in_thread)
-    VALUES (${postId}, ${restaurantId}, ${context}, ${sentiment}, ${mentionsInThread})
-    ON CONFLICT (post_id, restaurant_id) DO UPDATE SET
-      mentions_in_thread = GREATEST(post_restaurants.mentions_in_thread, EXCLUDED.mentions_in_thread)
-  `;
+  try {
+    await sql`
+      INSERT INTO post_restaurants (post_id, restaurant_id, mention_context, sentiment, mentions_in_thread)
+      VALUES (${postId}, ${restaurantId}, ${context}, ${sentiment}, ${mentionsInThread})
+      ON CONFLICT (post_id, restaurant_id) DO UPDATE SET
+        mentions_in_thread = GREATEST(post_restaurants.mentions_in_thread, EXCLUDED.mentions_in_thread)
+    `;
+  } catch {
+    // Fallback if mentions_in_thread column doesn't exist yet
+    await sql`
+      INSERT INTO post_restaurants (post_id, restaurant_id, mention_context, sentiment)
+      VALUES (${postId}, ${restaurantId}, ${context}, ${sentiment})
+      ON CONFLICT (post_id, restaurant_id) DO NOTHING
+    `;
+  }
 }
 
 /**
