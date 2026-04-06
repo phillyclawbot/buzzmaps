@@ -5,6 +5,7 @@ import {
   extractRestaurantNames,
   geocodeRestaurant,
   saveRestaurant,
+  countMentions,
 } from "@/lib/extract-restaurants";
 import type { PlaceCategory } from "@/lib/types";
 
@@ -151,7 +152,8 @@ export async function GET() {
       for (const venue of venues.slice(0, 15)) {
         const place = await geocodeRestaurant(venue.name, venue.category);
         if (place) {
-          await saveRestaurant(place, postId, title.slice(0, 200), sentiment, venue.category);
+          const threadCount = countMentions(venue.name, combinedText);
+          await saveRestaurant(place, postId, title.slice(0, 200), sentiment, venue.category, undefined, threadCount);
           totalPlaces++;
           placesFromThisUrl++;
         }

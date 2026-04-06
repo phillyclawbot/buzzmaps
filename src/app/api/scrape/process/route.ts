@@ -1,5 +1,5 @@
 import { getDb } from "@/lib/db";
-import { extractVenuesWithAI, extractRestaurantNames, geocodeRestaurant, saveRestaurant } from "@/lib/extract-restaurants";
+import { extractVenuesWithAI, extractRestaurantNames, geocodeRestaurant, saveRestaurant, countMentions } from "@/lib/extract-restaurants";
 import { extractSentiment } from "@/lib/reddit";
 
 export const maxDuration = 60;
@@ -29,11 +29,13 @@ export async function GET(req: Request) {
       venues = names.map(name => ({ name, category: "restaurant" as const }));
     }
 
+    const combinedText = `${p.title}\n${p.selftext || ""}`;
     const sentiment = extractSentiment(p.title, p.selftext || "");
     for (const venue of venues.slice(0, 6)) {
       const place = await geocodeRestaurant(venue.name, venue.category);
       if (place) {
-        await saveRestaurant(place, p.id, p.title.slice(0, 200), sentiment, venue.category);
+        const threadCount = countMentions(venue.name, combinedText);
+        await saveRestaurant(place, p.id, p.title.slice(0, 200), sentiment, venue.category, undefined, threadCount);
         placed++;
       }
     }

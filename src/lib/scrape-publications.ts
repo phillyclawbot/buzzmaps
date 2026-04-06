@@ -5,6 +5,7 @@ import {
   extractRestaurantNames,
   geocodeRestaurant,
   saveRestaurant,
+  countMentions,
 } from "@/lib/extract-restaurants";
 import type { PlaceCategory } from "@/lib/types";
 
@@ -165,14 +166,25 @@ export async function scrapePublications(): Promise<PublicationsScrapeResult> {
 
       let postId: number;
       try {
+        // Insert new article, or retrieve existing one that has no linked venues
         const rows = await sql`
           INSERT INTO reddit_posts (reddit_id, subreddit, title, selftext, author, url, permalink, score, num_comments, is_food_related, sentiment, created_utc)
           VALUES (${redditId}, ${feed.name}, ${item.title.slice(0, 500)}, ${cleanDesc.slice(0, 5000)}, ${feed.name}, ${item.link}, ${item.link}, 10, 0, true, ${sentiment}, ${pubTs})
           ON CONFLICT (reddit_id) DO NOTHING
           RETURNING id
         `;
-        if (!rows?.length) continue;
-        postId = rows[0].id;
+        if (rows?.length) {
+          postId = rows[0].id;
+        } else {
+          // Article already exists — re-process if it has no linked venues
+          const existing = await sql`
+            SELECT rp.id FROM reddit_posts rp
+            WHERE rp.reddit_id = ${redditId}
+              AND NOT EXISTS (SELECT 1 FROM post_restaurants pr WHERE pr.post_id = rp.id)
+          `;
+          if (!existing?.length) continue;
+          postId = existing[0].id;
+        }
       } catch { continue; }
 
       totalPosts++;
@@ -188,7 +200,8 @@ export async function scrapePublications(): Promise<PublicationsScrapeResult> {
       for (const venue of venues.slice(0, 8)) {
         const place = await geocodeRestaurant(venue.name, venue.category);
         if (place) {
-          await saveRestaurant(place, postId, item.title.slice(0, 200), sentiment, venue.category);
+          const threadCount = countMentions(venue.name, combinedText);
+          await saveRestaurant(place, postId, item.title.slice(0, 200), sentiment, venue.category, undefined, threadCount);
           totalPlaces++;
           feedResults[feed.name].places++;
         }

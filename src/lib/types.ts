@@ -71,6 +71,7 @@ export interface PostMention {
   permalink: string;
   sentiment: string;
   created_utc: number;
+  mentions_in_thread?: number;
 }
 
 export interface RedditPostWithRestaurants {

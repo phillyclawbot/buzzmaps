@@ -6,6 +6,7 @@ import {
   geocodeRestaurant,
   saveRestaurant,
   fetchPostComments,
+  countMentions,
 } from "@/lib/extract-restaurants";
 
 export const maxDuration = 120;
@@ -74,7 +75,8 @@ export async function GET() {
               for (const venue of venues.slice(0, 8)) {
                 const place = await geocodeRestaurant(venue.name, venue.category);
                 if (place) {
-                  await saveRestaurant(place, id, row.title.slice(0, 200), sentiment, venue.category);
+                  const threadCount = countMentions(venue.name, combinedText);
+                  await saveRestaurant(place, id, row.title.slice(0, 200), sentiment, venue.category, undefined, threadCount);
                   totalPlaces++;
                   progress[sub.name].places++;
                 }

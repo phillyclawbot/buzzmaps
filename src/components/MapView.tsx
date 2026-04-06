@@ -552,6 +552,7 @@ export default function MapView({
                           </div>
                           <div style={{ color: "#64748b", fontSize: "10px", marginTop: "2px", paddingLeft: "14px" }}>
                             {isPub ? `📰 ${p.subreddit}` : `r/${p.subreddit} · ${p.score} pts`} · {formatTimeAgo(p.created_utc)}
+                            {(p.mentions_in_thread ?? 1) > 1 && <span style={{ color: "#ff6b35" }}> · {p.mentions_in_thread}x</span>}
                           </div>
                         </a>
                       );

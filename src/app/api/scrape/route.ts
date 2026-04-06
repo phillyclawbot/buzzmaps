@@ -6,6 +6,7 @@ import {
   geocodeRestaurant,
   saveRestaurant,
   fetchPostComments,
+  countMentions,
 } from "@/lib/extract-restaurants";
 import { scrapePublications } from "@/lib/scrape-publications";
 
@@ -60,7 +61,8 @@ export async function GET() {
           for (const venue of venues.slice(0, 8)) {
             const place = await geocodeRestaurant(venue.name, venue.category);
             if (place) {
-              await saveRestaurant(place, postId, p.title.slice(0, 200), sentiment, venue.category);
+              const threadCount = countMentions(venue.name, combinedText);
+              await saveRestaurant(place, postId, p.title.slice(0, 200), sentiment, venue.category, undefined, threadCount);
               totalPlaces++;
             }
           }

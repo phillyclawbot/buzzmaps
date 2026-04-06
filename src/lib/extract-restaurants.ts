@@ -215,7 +215,8 @@ export async function saveRestaurant(
   context: string,
   sentiment: string,
   category: PlaceCategory = "restaurant",
-  metadata?: Record<string, string>
+  metadata?: Record<string, string>,
+  mentionsInThread: number = 1
 ): Promise<void> {
   const sql = getDb();
 
@@ -235,10 +236,20 @@ export async function saveRestaurant(
   const restaurantId = rows[0].id;
 
   await sql`
-    INSERT INTO post_restaurants (post_id, restaurant_id, mention_context, sentiment)
-    VALUES (${postId}, ${restaurantId}, ${context}, ${sentiment})
-    ON CONFLICT (post_id, restaurant_id) DO NOTHING
+    INSERT INTO post_restaurants (post_id, restaurant_id, mention_context, sentiment, mentions_in_thread)
+    VALUES (${postId}, ${restaurantId}, ${context}, ${sentiment}, ${mentionsInThread})
+    ON CONFLICT (post_id, restaurant_id) DO UPDATE SET
+      mentions_in_thread = GREATEST(post_restaurants.mentions_in_thread, EXCLUDED.mentions_in_thread)
   `;
+}
+
+/**
+ * Count case-insensitive occurrences of a name in text.
+ */
+export function countMentions(name: string, text: string): number {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`\\b${escaped}\\b`, "gi");
+  return (text.match(re) || []).length;
 }
 
 export async function fetchPostComments(

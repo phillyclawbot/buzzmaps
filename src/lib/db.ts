@@ -73,8 +73,39 @@ export async function runMigrations() {
       restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE CASCADE,
       mention_context TEXT,
       sentiment TEXT DEFAULT 'neutral',
+      mentions_in_thread INTEGER DEFAULT 1,
       UNIQUE(post_id, restaurant_id)
     )
+  `;
+
+  // Migrate: add category + metadata columns to restaurants if missing
+  await sql`
+    DO $$ BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'restaurants' AND column_name = 'category'
+      ) THEN
+        ALTER TABLE restaurants ADD COLUMN category TEXT;
+      END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'restaurants' AND column_name = 'metadata'
+      ) THEN
+        ALTER TABLE restaurants ADD COLUMN metadata JSONB;
+      END IF;
+    END $$
+  `;
+
+  // Migrate: add mentions_in_thread to post_restaurants if missing
+  await sql`
+    DO $$ BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'post_restaurants' AND column_name = 'mentions_in_thread'
+      ) THEN
+        ALTER TABLE post_restaurants ADD COLUMN mentions_in_thread INTEGER DEFAULT 1;
+      END IF;
+    END $$
   `;
 
   await sql`

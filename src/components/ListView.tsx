@@ -214,6 +214,9 @@ function PlaceCard({
                       <span>r/{p.subreddit} · </span>
                     )}
                     {p.score} pts · {formatTimeAgo(p.created_utc)}
+                    {(p.mentions_in_thread ?? 1) > 1 && (
+                      <span className="ml-1 text-[#ff6b35]">· {p.mentions_in_thread}x mentioned</span>
+                    )}
                   </p>
                 </div>
               </a>
