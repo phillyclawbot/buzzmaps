@@ -10,7 +10,63 @@ interface ExtractedVenue {
 
 const VALID_CATEGORIES_SET = new Set(VALID_CATEGORIES);
 
+const EXTRACTION_PROMPT = (text: string) =>
+  `Extract ALL specifically named places in Toronto from this text — not just food. Include: restaurants, bars, cafes, clubs, parks, shops, gyms, music venues, markets, museums, galleries, bookstores, record stores, spas, skating rinks, beaches, trails, entertainment venues, sports facilities, community centres, hotels, theatres — anything with a real name that someone might visit. Do NOT include generic terms like "a restaurant" or "some bar". Only real named places.\n\nReturn JSON array: [{"name": "Exact Place Name", "category": "restaurant|bar|cafe|club|shop|park|gym|venue|market|museum|other"}]\nReturn [] if no specific named places found. Max 10. Return ONLY the JSON array.\n\nText:\n${text.slice(0, 4000)}`;
+
+function parseVenueResponse(content: string): ExtractedVenue[] {
+  const match = content.match(/\[[\s\S]*\]/);
+  if (!match) return [];
+  try {
+    const parsed = JSON.parse(match[0]);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(
+        (v: { name?: string; category?: string }) =>
+          v.name && typeof v.name === "string" && v.name.length > 2
+      )
+      .map((v: { name: string; category: string }) => ({
+        name: v.name,
+        category: VALID_CATEGORIES_SET.has(v.category as PlaceCategory) ? (v.category as PlaceCategory) : "other",
+      }))
+      .slice(0, 8);
+  } catch {
+    return [];
+  }
+}
+
 export async function extractVenuesWithAI(text: string): Promise<ExtractedVenue[]> {
+  const ollamaUrl = process.env.OLLAMA_URL || "http://localhost:11434";
+  const ollamaModel = process.env.OLLAMA_MODEL || "gemma4:e4b";
+  const prompt = EXTRACTION_PROMPT(text);
+
+  // Try Ollama first
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    const res = await fetch(`${ollamaUrl}/v1/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: ollamaModel,
+        messages: [{ role: "user", content: prompt }],
+      }),
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeout));
+
+    if (res.ok) {
+      const data = await res.json();
+      const content = data?.choices?.[0]?.message?.content || "[]";
+      const venues = parseVenueResponse(content);
+      if (venues.length > 0) {
+        console.log(`[Ollama/${ollamaModel}] extracted ${venues.length} venues`);
+        return venues;
+      }
+    }
+  } catch {
+    // Ollama unavailable or timed out — fall through to Anthropic
+  }
+
+  // Fall back to Anthropic
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return [];
 
@@ -25,34 +81,14 @@ export async function extractVenuesWithAI(text: string): Promise<ExtractedVenue[
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: `Extract ALL specifically named places in Toronto from this text — not just food. Include: restaurants, bars, cafes, clubs, parks, shops, gyms, music venues, markets, museums, galleries, bookstores, record stores, spas, skating rinks, beaches, trails, entertainment venues, sports facilities, community centres, hotels, theatres — anything with a real name that someone might visit. Do NOT include generic terms like "a restaurant" or "some bar". Only real named places.\n\nReturn JSON array: [{"name": "Exact Place Name", "category": "restaurant|bar|cafe|club|shop|park|gym|venue|market|museum|other"}]\nReturn [] if no specific named places found. Max 10. Return ONLY the JSON array.\n\nText:\n${text.slice(0, 4000)}`,
-          },
-        ],
+        messages: [{ role: "user", content: prompt }],
       }),
     });
 
     if (!res.ok) return [];
     const data = await res.json();
     const content = data?.content?.[0]?.text || "[]";
-    const match = content.match(/\[[\s\S]*\]/);
-    if (!match) return [];
-
-    const parsed = JSON.parse(match[0]);
-    if (!Array.isArray(parsed)) return [];
-
-    return parsed
-      .filter(
-        (v: { name?: string; category?: string }) =>
-          v.name && typeof v.name === "string" && v.name.length > 2
-      )
-      .map((v: { name: string; category: string }) => ({
-        name: v.name,
-        category: VALID_CATEGORIES_SET.has(v.category as PlaceCategory) ? (v.category as PlaceCategory) : "other",
-      }))
-      .slice(0, 8);
+    return parseVenueResponse(content);
   } catch {
     return [];
   }
