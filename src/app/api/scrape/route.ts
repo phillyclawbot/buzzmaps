@@ -7,6 +7,7 @@ import {
   saveRestaurant,
   fetchPostComments,
 } from "@/lib/extract-restaurants";
+import { scrapePublications } from "@/lib/scrape-publications";
 
 export const maxDuration = 60;
 
@@ -71,10 +72,16 @@ export async function GET() {
       }
     }
 
+    const pubResults = await scrapePublications();
+
     return Response.json({
       success: true,
-      posts_saved: totalPosts,
-      places_found: totalPlaces,
+      reddit: { posts_saved: totalPosts, places_found: totalPlaces },
+      publications: pubResults,
+      totals: {
+        posts_saved: totalPosts + pubResults.posts_saved,
+        places_found: totalPlaces + pubResults.places_found,
+      },
     });
   } catch (err) {
     return Response.json({ error: String(err) }, { status: 500 });
