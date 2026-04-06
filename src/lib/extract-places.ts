@@ -129,6 +129,46 @@ export function extractVenuesFromText(text: string): string[] {
     if (name.split(/\s+/).length <= 5) names.add(name);
   }
 
+  // Publication headline patterns
+  // "X is opening/closing/now open in Toronto"
+  const openingClosing = text.matchAll(
+    /([A-Z][A-Za-z\s&'.-]{2,40})\s+(?:is|has|will|just)\s+(?:opening|closing|opened|closed|now open|coming)/g
+  );
+  for (const m of openingClosing) {
+    const name = m[1].trim().replace(/[.\s]+$/, "");
+    if (name.split(/\s+/).length <= 6) names.add(name);
+  }
+
+  // "X just opened in [neighbourhood/Toronto]"
+  const justOpened = text.matchAll(
+    /([A-Z][A-Za-z\s&'.-]{2,40})\s+(?:just|has just|recently)\s+opened/g
+  );
+  for (const m of justOpened) {
+    const name = m[1].trim().replace(/[.\s]+$/, "");
+    if (name.split(/\s+/).length <= 6) names.add(name);
+  }
+
+  // "Toronto's X is..." — possessive headline form
+  const torontosPossessive = text.matchAll(/Toronto['']s\s+([A-Z][A-Za-z\s&'.-]{2,40})\s+is\b/g);
+  for (const m of torontosPossessive) {
+    const name = m[1].trim().replace(/[.\s]+$/, "");
+    if (name.split(/\s+/).length <= 6) names.add(name);
+  }
+
+  // "Why X is Toronto's best/favourite..."
+  const whyX = text.matchAll(/[Ww]hy\s+([A-Z][A-Za-z\s&'.-]{2,40})\s+is\s+Toronto['']s/g);
+  for (const m of whyX) {
+    const name = m[1].trim().replace(/[.\s]+$/, "");
+    if (name.split(/\s+/).length <= 6) names.add(name);
+  }
+
+  // "new X in Toronto/[neighbourhood]" where X starts with uppercase
+  const newIn = text.matchAll(/[Nn]ew\s+([A-Z][A-Za-z\s&'.-]{2,40})\s+(?:in|opens in|coming to)\s+(?:Toronto|[A-Z])/g);
+  for (const m of newIn) {
+    const name = m[1].trim().replace(/[.\s]+$/, "");
+    if (name.split(/\s+/).length <= 6) names.add(name);
+  }
+
   return [...names].filter((n) => {
     if (n.length < 3) return false;
     if (BLOCKLIST.has(n)) return false;

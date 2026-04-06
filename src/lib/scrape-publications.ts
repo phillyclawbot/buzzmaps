@@ -48,6 +48,14 @@ const PUBLICATION_FEEDS = [
   { name: "insauga.com", url: "https://www.insauga.com/feed/" },
   // The Local TO
   { name: "The Local", url: "https://thelocal.to/feed/" },
+  // BlogTO food & drink section (supplements main feed with deeper food coverage)
+  { name: "BlogTO Food", url: "https://www.blogto.com/eat_drink/feed/" },
+  // Google News RSS — keyword searches for Toronto places
+  { name: "Google News: Toronto restaurants", url: "https://news.google.com/rss/search?q=toronto+restaurants&hl=en-CA&gl=CA&ceid=CA:en" },
+  { name: "Google News: Toronto things to do", url: "https://news.google.com/rss/search?q=toronto+things+to+do&hl=en-CA&gl=CA&ceid=CA:en" },
+  { name: "Google News: Toronto best places", url: "https://news.google.com/rss/search?q=toronto+best+places&hl=en-CA&gl=CA&ceid=CA:en" },
+  { name: "Google News: Toronto food", url: "https://news.google.com/rss/search?q=toronto+food+2026&hl=en-CA&gl=CA&ceid=CA:en" },
+  { name: "Google News: Toronto new openings", url: "https://news.google.com/rss/search?q=toronto+new+restaurant+opening&hl=en-CA&gl=CA&ceid=CA:en" },
 ];
 
 interface FeedItem {
