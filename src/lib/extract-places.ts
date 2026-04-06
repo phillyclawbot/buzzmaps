@@ -10,39 +10,15 @@ interface ExtractedVenue {
 
 const VALID_CATEGORIES_SET = new Set(VALID_CATEGORIES);
 
-export async function extractVenuesWithAI(text: string): Promise<ExtractedVenue[]> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return [];
+const EXTRACTION_PROMPT = (text: string) =>
+  `Extract ALL specifically named places in Toronto from this text — not just food. Include: restaurants, bars, cafes, clubs, parks, shops, gyms, music venues, markets, museums, galleries, bookstores, record stores, spas, skating rinks, beaches, trails, entertainment venues, sports facilities, community centres, hotels, theatres — anything with a real name that someone might visit. Do NOT include generic terms like "a restaurant" or "some bar". Only real named places.\n\nReturn JSON array: [{"name": "Exact Place Name", "category": "restaurant|bar|cafe|club|shop|park|gym|venue|market|museum|other"}]\nReturn [] if no specific named places found. Max 10. Return ONLY the JSON array.\n\nText:\n${text.slice(0, 4000)}`;
 
+function parseVenuesFromContent(content: string): ExtractedVenue[] {
+  const match = content.match(/\[[\s\S]*\]/);
+  if (!match) return [];
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: `Extract ALL specifically named places in Toronto from this text — not just food. Include: restaurants, bars, cafes, clubs, parks, shops, gyms, music venues, markets, museums, galleries, bookstores, record stores, spas, skating rinks, beaches, trails, entertainment venues, sports facilities, community centres, hotels, theatres — anything with a real name that someone might visit. Do NOT include generic terms like "a restaurant" or "some bar". Only real named places.\n\nReturn JSON array: [{"name": "Exact Place Name", "category": "restaurant|bar|cafe|club|shop|park|gym|venue|market|museum|other"}]\nReturn [] if no specific named places found. Max 10. Return ONLY the JSON array.\n\nText:\n${text.slice(0, 4000)}`,
-          },
-        ],
-      }),
-    });
-
-    if (!res.ok) return [];
-    const data = await res.json();
-    const content = data?.content?.[0]?.text || "[]";
-    const match = content.match(/\[[\s\S]*\]/);
-    if (!match) return [];
-
     const parsed = JSON.parse(match[0]);
     if (!Array.isArray(parsed)) return [];
-
     return parsed
       .filter(
         (v: { name?: string; category?: string }) =>
@@ -56,6 +32,63 @@ export async function extractVenuesWithAI(text: string): Promise<ExtractedVenue[
   } catch {
     return [];
   }
+}
+
+async function extractWithOllama(text: string): Promise<ExtractedVenue[] | null> {
+  const ollamaBase = process.env.OLLAMA_URL ?? "http://localhost:11434";
+  try {
+    const res = await fetch(`${ollamaBase}/v1/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "gemma4:e4b",
+        messages: [{ role: "user", content: EXTRACTION_PROMPT(text) }],
+      }),
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const content: string = data?.choices?.[0]?.message?.content ?? "";
+    return parseVenuesFromContent(content);
+  } catch {
+    return null;
+  }
+}
+
+async function extractWithAnthropic(text: string): Promise<ExtractedVenue[] | null> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return null;
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1024,
+        messages: [{ role: "user", content: EXTRACTION_PROMPT(text) }],
+      }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const content: string = data?.content?.[0]?.text ?? "";
+    return parseVenuesFromContent(content);
+  } catch {
+    return null;
+  }
+}
+
+export async function extractVenuesWithAI(text: string): Promise<ExtractedVenue[]> {
+  const ollamaResult = await extractWithOllama(text);
+  if (ollamaResult !== null) return ollamaResult;
+
+  const anthropicResult = await extractWithAnthropic(text);
+  if (anthropicResult !== null) return anthropicResult;
+
+  return [];
 }
 
 const BLOCKLIST = new Set([
