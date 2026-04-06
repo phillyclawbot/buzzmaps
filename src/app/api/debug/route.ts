@@ -1,37 +1,63 @@
 import { getDb } from "@/lib/db";
-import { extractVenuesWithAI, extractRestaurantNames, geocodeRestaurant } from "@/lib/extract-places";
-import { extractSentiment } from "@/lib/reddit";
+import { PUBLICATION_NAMES } from "@/lib/constants";
 
 export async function GET() {
   const sql = getDb();
-  
-  // Get one promising unprocessed post
-  const posts = await sql`
-    SELECT rp.id, rp.title, rp.selftext, rp.score, rp.subreddit
-    FROM reddit_posts rp
-    WHERE NOT EXISTS (SELECT 1 FROM post_restaurants pm WHERE pm.post_id = rp.id)
-    AND rp.subreddit IN ('askTO', 'torontofood', 'FoodToronto')
-    AND rp.score >= 5
-    ORDER BY rp.score DESC
-    LIMIT 1
+
+  // 1. Count posts by source type
+  const [totals] = await sql`
+    SELECT
+      COUNT(*) FILTER (WHERE reddit_id LIKE 'pub_%') AS publication_posts,
+      COUNT(*) FILTER (WHERE reddit_id NOT LIKE 'pub_%') AS reddit_posts,
+      COUNT(*) AS total_posts
+    FROM reddit_posts
   `;
-  
-  if (!posts.length) return Response.json({ error: "No posts found" });
-  const p = posts[0];
-  
-  const text = `${p.title}\n${p.selftext || ""}`;
-  const venues = await extractVenuesWithAI(text);
-  const regexNames = extractRestaurantNames(p.title, p.selftext || "");
-  
-  let geoResult = null;
-  if (venues[0]) {
-    geoResult = await geocodeRestaurant(venues[0].name, venues[0].category);
-  }
-  
+
+  // 2. Publication posts broken down by publication name, with linked places
+  const pubBreakdown = await sql`
+    SELECT
+      rp.subreddit AS source,
+      COUNT(DISTINCT rp.id) AS articles,
+      COUNT(DISTINCT pr.restaurant_id) AS linked_places
+    FROM reddit_posts rp
+    LEFT JOIN post_restaurants pr ON pr.post_id = rp.id
+    WHERE rp.reddit_id LIKE 'pub_%'
+    GROUP BY rp.subreddit
+    ORDER BY articles DESC
+  `;
+
+  // 3. Sample places that have at least one publication mention
+  const samplePlaces = await sql`
+    SELECT DISTINCT r.name, r.category, rp.subreddit AS source, rp.title AS article_title
+    FROM restaurants r
+    JOIN post_restaurants pr ON pr.restaurant_id = r.id
+    JOIN reddit_posts rp ON rp.id = pr.post_id
+    WHERE rp.reddit_id LIKE 'pub_%'
+    ORDER BY r.name
+    LIMIT 20
+  `;
+
+  // 4. Which publication names in the DB are not in PUBLICATION_NAMES set (would show as Reddit)
+  const allPubSources = await sql`
+    SELECT DISTINCT subreddit FROM reddit_posts WHERE reddit_id LIKE 'pub_%' ORDER BY subreddit
+  `;
+  const unrecognised = (allPubSources as Record<string, string>[])
+    .map((r) => r.subreddit)
+    .filter((s) => !PUBLICATION_NAMES.has(s));
+
   return Response.json({
-    post: { id: p.id, title: p.title.slice(0,100), subreddit: p.subreddit, score: p.score },
-    venues_from_ai: venues,
-    names_from_regex: regexNames,
-    geocode_test: geoResult,
+    summary: {
+      publication_posts: Number(totals.publication_posts),
+      reddit_posts: Number(totals.reddit_posts),
+      total_posts: Number(totals.total_posts),
+    },
+    by_publication: (pubBreakdown as Record<string, unknown>[]).map((r) => ({
+      source: r.source,
+      articles: Number(r.articles),
+      linked_places: Number(r.linked_places),
+    })),
+    sample_places_with_publication_mentions: samplePlaces,
+    unrecognised_as_publications: unrecognised,
+    note: "Unrecognised sources will display as Reddit posts (r/...) instead of publication badge",
   });
 }

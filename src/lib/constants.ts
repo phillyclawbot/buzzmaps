@@ -87,6 +87,7 @@ export const PUBLICATION_NAMES = new Set([
   "The Local",
   "Daily Hive",
   "Curiocity",
+  "Toronto.com",
 ]);
 
 export function isPublication(subreddit: string): boolean {
