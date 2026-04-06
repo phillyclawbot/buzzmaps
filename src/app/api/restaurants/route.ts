@@ -1,9 +1,15 @@
-import { getDb } from "@/lib/db";
+import { getDb, runMigrations } from "@/lib/db";
 import { NextRequest } from "next/server";
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MAX_SEARCH_QUERY_LENGTH } from "@/lib/constants";
 
+let migrated = false;
+
 export async function GET(request: NextRequest) {
   try {
+    if (!migrated) {
+      await runMigrations();
+      migrated = true;
+    }
     const sql = getDb();
     const params = request.nextUrl.searchParams;
 
