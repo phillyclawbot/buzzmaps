@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Sidebar from "@/components/Sidebar";
 import ListView from "@/components/ListView";
@@ -59,6 +59,7 @@ function Home() {
   const highlightedPlace = useRef<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   // Keyboard shortcut: "/" opens search, Escape clears/closes
   useEffect(() => {
@@ -331,6 +332,12 @@ function Home() {
           >
             List
           </button>
+          <button
+            onClick={() => router.push("/collections")}
+            className="px-3 py-1 rounded-md text-xs font-semibold transition-all text-slate-400 hover:text-slate-600"
+          >
+            Collections
+          </button>
         </div>
 
         {/* Desktop search */}
@@ -362,8 +369,6 @@ function Home() {
 
         {/* Desktop nav links */}
         <div className="hidden md:flex ml-auto gap-1 items-center">
-          <a href="/collections" className="px-2 py-1 text-xs text-slate-400 hover:text-[#ff6b35] transition-colors">Collections</a>
-          <a href="/stats" className="px-2 py-1 text-xs text-slate-400 hover:text-[#ff6b35] transition-colors">Stats</a>
           <a href="/about" className="px-2 py-1 text-xs text-slate-400 hover:text-[#ff6b35] transition-colors">About</a>
           <button
             onClick={handleScrapeAll}
@@ -439,8 +444,6 @@ function Home() {
             ))}
           </div>
           <div className="flex gap-1.5 flex-wrap">
-            <a href="/collections" className="px-3 py-1.5 text-xs text-slate-500 bg-slate-50 rounded-lg">Collections</a>
-            <a href="/stats" className="px-3 py-1.5 text-xs text-slate-500 bg-slate-50 rounded-lg">Stats</a>
             <button
               onClick={() => { handleScrapeAll(); setMenuOpen(false); }}
               disabled={scrapingAll}
