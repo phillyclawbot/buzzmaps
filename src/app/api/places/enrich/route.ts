@@ -24,7 +24,7 @@ export async function GET(req: Request) {
           SELECT id, name, lat, lng, category, photo_url FROM restaurants
           WHERE photo_url IS NULL
              OR photo_url LIKE '%unsplash.com%'
-             OR photo_url LIKE '%wikimedia.org%'
+             OR (photo_url LIKE '%wikimedia.org%' AND photo_url NOT LIKE '%Special:FilePath%')
           ORDER BY first_seen_at DESC
           LIMIT ${limit}
         `;
