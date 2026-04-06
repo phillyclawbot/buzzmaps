@@ -226,7 +226,7 @@ export default function MapView({
     </div>
     <MapContainer
       center={initialCenter}
-      zoom={14}
+      zoom={18}
       className="h-full w-full"
       zoomControl={false}
       ref={mapRef}
