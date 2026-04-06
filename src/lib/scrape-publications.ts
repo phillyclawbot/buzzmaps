@@ -7,6 +7,7 @@ import {
   saveRestaurant,
   countMentions,
 } from "@/lib/extract-places";
+import { delay } from "@/lib/utils";
 import type { PlaceCategory } from "@/lib/types";
 
 // Toronto publications + blogs with working RSS feeds
@@ -124,6 +125,30 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, " ").replace(/&amp;/g, "&").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
 }
 
+async function fetchArticleText(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; BuzzMaps/1.0; +https://buzzmaps.ca)",
+        "Accept": "text/html,application/xhtml+xml,*/*",
+      },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const cleaned = html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<nav[\s\S]*?<\/nav>/gi, " ")
+      .replace(/<header[\s\S]*?<\/header>/gi, " ")
+      .replace(/<footer[\s\S]*?<\/footer>/gi, " ")
+      .replace(/<!--[\s\S]*?-->/g, " ");
+    return stripHtml(cleaned).slice(0, 8000);
+  } catch {
+    return null;
+  }
+}
+
 export interface PublicationsScrapeResult {
   posts_saved: number;
   places_found: number;
@@ -190,10 +215,17 @@ export async function scrapePublications(): Promise<PublicationsScrapeResult> {
       totalPosts++;
       feedResults[feed.name].posts++;
 
-      const combinedText = `${item.title}\n${cleanDesc}`;
+      let articleText = cleanDesc;
+      if (item.link && !item.link.includes("reddit.com")) {
+        const fullText = await fetchArticleText(item.link);
+        if (fullText && fullText.length > cleanDesc.length) articleText = fullText;
+        await delay(500);
+      }
+
+      const combinedText = `${item.title}\n${articleText}`;
       let venues = await extractVenuesWithAI(combinedText);
       if (!venues.length) {
-        const names = extractRestaurantNames(item.title, cleanDesc);
+        const names = extractRestaurantNames(item.title, articleText);
         venues = names.map(name => ({ name, category: "restaurant" as PlaceCategory }));
       }
 
