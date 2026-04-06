@@ -1,7 +1,7 @@
 import { getDb } from "@/lib/db";
 import Link from "next/link";
 
-export const revalidate = 300; // revalidate every 5 minutes
+export const dynamic = "force-dynamic";
 
 interface TopPlace {
   name: string;

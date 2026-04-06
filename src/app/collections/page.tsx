@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 interface CollectionDef {
   id: string;
