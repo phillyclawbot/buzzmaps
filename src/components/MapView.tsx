@@ -107,6 +107,40 @@ export default function MapView({
   const mapRef = useRef<L.Map | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [initialCenter, setInitialCenter] = useState<[number, number]>([43.6532, -79.3832]);
+  const hasRequestedLocation = useRef(false);
+
+  // On mount, try to get user location for initial center
+  useEffect(() => {
+    if (hasRequestedLocation.current) return;
+    hasRequestedLocation.current = true;
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setInitialCenter([latitude, longitude]);
+        setUserCoords({ lat: latitude, lng: longitude });
+        if (mapRef.current) {
+          mapRef.current.flyTo([latitude, longitude], 14, { duration: 1 });
+          if (userMarkerRef.current) {
+            mapRef.current.removeLayer(userMarkerRef.current);
+          }
+          const pulseIcon = L.divIcon({
+            html: `<div style="width:20px;height:20px;position:relative;">
+              <div style="position:absolute;inset:0;border-radius:50%;background:#3b82f6;opacity:0.3;animation:nearMePulse 1.5s ease-out infinite;"></div>
+              <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:#3b82f6;border:2px solid white;box-shadow:0 0 6px rgba(59,130,246,0.6);"></div>
+            </div>`,
+            className: '',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
+          });
+          userMarkerRef.current = L.marker([latitude, longitude], { icon: pulseIcon }).addTo(mapRef.current);
+        }
+      },
+      () => { /* permission denied or error — keep Toronto default */ },
+      { timeout: 5000 }
+    );
+  }, []);
 
   const handleNearMe = () => {
     if (nearMeActive) {
@@ -191,8 +225,8 @@ export default function MapView({
       </button>
     </div>
     <MapContainer
-      center={[43.6532, -79.3832]}
-      zoom={12}
+      center={initialCenter}
+      zoom={14}
       className="h-full w-full"
       zoomControl={false}
       ref={mapRef}
