@@ -64,6 +64,16 @@ export default function CollectionCard({
           <span className="text-xs font-semibold bg-[#ff6b35]/10 text-[#ff6b35] px-2.5 py-1 rounded-full">
             {places.length} place{places.length !== 1 ? "s" : ""}
           </span>
+          <button
+            onClick={() => {
+              const url = `${window.location.origin}/collections/${id}`;
+              navigator.clipboard.writeText(url);
+            }}
+            className="text-xs text-slate-400 hover:text-[#ff6b35] transition-colors cursor-pointer"
+            title="Copy link"
+          >
+            🔗 Share
+          </button>
           {hasMore && (
             <button
               onClick={() => setExpanded(!expanded)}

@@ -74,8 +74,8 @@ function PlaceCard({
 
   return (
     <div
-      className="group rounded-xl overflow-hidden bg-white border border-slate-200/60 hover:border-slate-300 shadow-sm hover:shadow-md transition-all duration-200"
-      style={{ cursor: hasPosts ? "pointer" : "default" }}
+      className="group rounded-xl overflow-hidden bg-white border border-slate-200/60 hover:border-slate-300 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-[1.01]"
+      style={isEvent ? { borderLeft: `3px solid ${color}` } : undefined}
       onClick={() => hasPosts && setExpanded(!expanded)}
     >
       {/* Image — clean, no overlay */}
@@ -104,17 +104,27 @@ function PlaceCard({
 
       {/* Body */}
       <div className="p-3.5">
-        {/* Category pill */}
-        <span
-          className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mb-2"
-          style={{ background: `${color}12`, color }}
-        >
-          {CATEGORY_EMOJI[r.category]} {r.category}
-        </span>
+        {/* Category pill + event badge */}
+        <div className="flex items-center gap-1.5 mb-2">
+          <span
+            className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full"
+            style={{ background: `${color}12`, color }}
+          >
+            {CATEGORY_EMOJI[r.category]} {r.category}
+          </span>
+          {isEvent && (
+            <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-600">
+              📅 Upcoming
+            </span>
+          )}
+        </div>
 
         {/* Title */}
         <h3 className="font-semibold text-sm text-slate-900 leading-snug mb-0.5">{r.name}</h3>
-        <p className="text-xs text-slate-400 truncate mb-3">{r.address}</p>
+        {r.cuisine_type && (
+          <p className="text-[11px] text-slate-500 mb-0.5">{r.cuisine_type}{r.price_level ? ` · ${"$".repeat(r.price_level)}` : ""}</p>
+        )}
+        <p className="text-xs text-slate-400 truncate mb-3" title={r.address}>{r.address}</p>
 
         {/* Stats */}
         <div className="flex items-center gap-2 mb-3">
@@ -304,7 +314,7 @@ export default function ListView({
   }, [filtered, sort]);
 
   return (
-    <div className="h-full pt-[88px] pb-8 overflow-y-auto bg-slate-50/50 page-enter">
+    <div className="h-full pt-[88px] pb-16 md:pb-8 overflow-y-auto bg-slate-50/50 page-enter">
       <div className="max-w-5xl mx-auto px-4 py-4">
         {/* Search + sort controls */}
         <div className="flex flex-col sm:flex-row gap-2 mb-4">
@@ -382,9 +392,15 @@ export default function ListView({
             {searchQuery ? (
               <>
                 <p className="text-sm">No places found for &ldquo;{searchQuery}&rdquo;</p>
+                <p className="text-xs text-slate-400 mt-1">Try searching for a neighbourhood name or cuisine type</p>
                 <button onClick={() => onSearchChange("")} className="mt-3 px-4 py-1.5 bg-slate-900 text-white text-xs rounded-lg font-medium hover:bg-slate-800 transition-colors">
                   Clear search
                 </button>
+              </>
+            ) : activeCategory !== "all" ? (
+              <>
+                <p className="text-sm">No {activeCategory} places match these filters</p>
+                <p className="text-xs text-slate-400 mt-1">Try adjusting your neighbourhood or sort options</p>
               </>
             ) : (
               <p className="text-sm">No places match these filters</p>

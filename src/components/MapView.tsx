@@ -15,8 +15,7 @@ import {
 import MarkerClusterGroup from "react-leaflet-cluster";
 import type { Place, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
-import { CATEGORY_COLORS, SENTIMENT_COLORS, isPublication } from "@/lib/constants";
-import { formatTimeAgo, haversineDistance } from "@/lib/utils";
+import { CATEGORY_COLORS, SENTIMENT_COLORS } from "@/lib/constants";
 import { NEIGHBOURHOODS, NEIGHBOURHOOD_GEOJSON_MAP, getNeighbourhood, computeFeatureCentroid } from "@/lib/neighbourhoods";
 
 const HOOD_PALETTE = [
@@ -123,23 +122,6 @@ function createClusterIcon(cluster: { getChildCount: () => number; getAllChildMa
   });
 }
 
-function sentimentDot(sentiment: string): string {
-  return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${SENTIMENT_COLORS[sentiment] || SENTIMENT_COLORS.neutral};margin-right:4px;"></span>`;
-}
-
-function renderStars(rating: number | null): string {
-  if (!rating) return "";
-  const full = Math.floor(rating);
-  const half = rating - full >= 0.5 ? 1 : 0;
-  const empty = 5 - full - half;
-  return (
-    '<span style="color:#f59e0b;font-size:13px;letter-spacing:1px;">' +
-    "\u2605".repeat(full) +
-    (half ? '<span style="color:#fcd34d;">\u2605</span>' : "") +
-    '<span style="color:#e2e8f0;">\u2605</span>'.repeat(empty) +
-    "</span> <span style='font-size:12px;font-weight:700;color:#374151;'>" + rating.toFixed(1) + "</span>"
-  );
-}
 
 function InitialLocationHandler() {
   const map = useMap();
@@ -173,7 +155,7 @@ function FlyToHandler({ target }: { target: [number, number] | null }) {
   return null;
 }
 
-const calcDist = haversineDistance;
+
 
 export default function MapView({
   places,
@@ -438,30 +420,15 @@ export default function MapView({
           const isRecent = Date.now() / 1000 - r.latest_mention < 86400;
           const color = CATEGORY_COLORS[category] || CATEGORY_COLORS.other;
 
-          // Build unique sources list (up to 3)
-          const sources = Array.from(
-            new Set((r.posts ?? []).map((p) => p.subreddit))
-          ).slice(0, 3);
-          const sourcesLabel = sources
-            .map((s) => isPublication(s) ? s : s.startsWith("r/") ? s : `r/${s}`)
-            .join(", ");
-
-          const nearbyPlaces = places
-            .filter((n) => n.id !== r.id)
-            .map((n) => ({ ...n, dist: calcDist(r.lat, r.lng, n.lat, n.lng) }))
-            .filter((n) => n.dist <= 500)
-            .sort((a, b) => a.dist - b.dist)
-            .slice(0, 3);
-
           return (
             <Marker
               key={r.id}
               position={[r.lat, r.lng]}
               icon={createPinIcon(category, mentionCount, isRecent)}
             >
-              <Popup maxWidth={320} minWidth={280}>
+              <Popup maxWidth={300} minWidth={240}>
                 <div style={{ fontFamily: "inherit" }}>
-                  {/* Header gradient */}
+                  {/* Compact header */}
                   <div style={{
                     background: `linear-gradient(135deg, ${color}18 0%, ${color}08 100%)`,
                     borderRadius: "8px 8px 0 0",
@@ -470,144 +437,71 @@ export default function MapView({
                     borderBottom: `2px solid ${color}20`,
                   }}>
                     {r.photo_url && (
-                      <img
-                        src={r.photo_url}
-                        alt={r.name}
-                        style={{ width: "100%", maxHeight: "100px", objectFit: "cover", borderRadius: "6px", marginBottom: "8px", display: "block" }}
-                      />
+                      <a href={`/place/${encodeURIComponent(r.name)}`}>
+                        <img
+                          src={r.photo_url}
+                          alt={r.name}
+                          style={{ width: "100%", maxHeight: "90px", objectFit: "cover", borderRadius: "6px", marginBottom: "8px", display: "block", cursor: "pointer" }}
+                        />
+                      </a>
                     )}
-                    <div style={{ fontSize: "16px", fontWeight: 800, marginBottom: "2px", color, lineHeight: 1.2 }}>
-                      {CATEGORY_EMOJI[category]} {r.name}
-                    </div>
-                    {r.address && (
-                      <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
-                        {r.address}
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <div style={{ fontSize: "15px", fontWeight: 800, color, lineHeight: 1.2, flex: 1 }}>
+                        {CATEGORY_EMOJI[category]} {r.name}
                       </div>
-                    )}
+                      {isRecent && mentionCount >= 2 && (
+                        <span style={{ fontSize: "9px", fontWeight: 700, background: "#ff6b35", color: "white", padding: "2px 6px", borderRadius: "999px" }}>🔥 Trending</span>
+                      )}
+                    </div>
                   </div>
-                  {r.google_rating && (
-                    <div
-                      style={{ fontSize: "13px", marginBottom: "6px" }}
-                      dangerouslySetInnerHTML={{
-                        __html: `${renderStars(r.google_rating)} <span style="color:#9ca3af;font-size:10px;">${r.google_reviews_count ? `(${r.google_reviews_count.toLocaleString()} reviews)` : ""}</span>`,
-                      }}
-                    />
-                  )}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "8px" }}>
+
+                  {/* Quick stats row */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px", alignItems: "center" }}>
+                    {r.google_rating && (
+                      <span style={{ fontSize: "12px", fontWeight: 700, color: "#374151" }}>⭐ {r.google_rating.toFixed(1)}</span>
+                    )}
                     <span style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "3px",
-                      background: "#ff6b3520",
-                      color: "#ff6b35",
-                      fontWeight: 700,
-                      fontSize: "11px",
-                      padding: "3px 10px",
-                      borderRadius: "999px",
-                      border: "1px solid #ff6b3540",
+                      display: "inline-flex", alignItems: "center", gap: "3px",
+                      background: "#ff6b3520", color: "#ff6b35", fontWeight: 700, fontSize: "11px",
+                      padding: "3px 10px", borderRadius: "999px", border: "1px solid #ff6b3540",
                     }}>
                       💬 {r.mention_count} mention{Number(r.mention_count) !== 1 ? "s" : ""}
                     </span>
-                    {sources.slice(0, 3).map((s) => {
-                      const isPub = isPublication(s);
-                      return (
-                        <span key={s} style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "3px",
-                          background: isPub ? "#eff6ff" : "#f0fdf4",
-                          color: isPub ? "#3b82f6" : "#16a34a",
-                          fontWeight: 600,
-                          fontSize: "10px",
-                          padding: "2px 7px",
-                          borderRadius: "999px",
-                          border: isPub ? "1px solid #bfdbfe" : "1px solid #bbf7d0",
-                        }}>
-                          {isPub ? "📰" : "🤖"} {isPub ? s : s.startsWith("r/") ? s : `r/${s}`}
-                        </span>
-                      );
-                    })}
+                    {r.posts?.[0] && (
+                      <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: SENTIMENT_COLORS[r.posts[0].sentiment] || SENTIMENT_COLORS.neutral }} />
+                    )}
                   </div>
-                  <div style={{ maxHeight: "180px", overflowY: "auto" }}>
-                    {r.posts?.slice(0, 3).map((p) => {
-                      const isPub = isPublication(p.subreddit);
-                      return (
-                        <a
-                          key={p.id}
-                          href={isPub ? p.permalink : `https://reddit.com${p.permalink}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            display: "block",
-                            padding: "6px 0",
-                            borderTop: "1px solid #e2e8f0",
-                            textDecoration: "none",
-                            color: "#334155",
-                            fontSize: "12px",
-                          }}
-                        >
-                          <div style={{ display: "flex", alignItems: "flex-start", gap: "6px" }}>
-                            <span dangerouslySetInnerHTML={{ __html: sentimentDot(p.sentiment) }} />
-                            <span style={{ fontWeight: 500, color: isPub ? "#3b82f6" : "#ff6b35", flex: 1 }}>{p.title.slice(0, 60)}{p.title.length > 60 ? "..." : ""}</span>
-                          </div>
-                          <div style={{ color: "#64748b", fontSize: "10px", marginTop: "2px", paddingLeft: "14px" }}>
-                            {isPub ? `📰 ${p.subreddit}` : `r/${p.subreddit} · ${p.score} pts`} · {formatTimeAgo(p.created_utc)}
-                            {(p.mentions_in_thread ?? 1) > 1 && <span style={{ color: "#ff6b35" }}> · {p.mentions_in_thread}x</span>}
-                          </div>
-                        </a>
-                      );
-                    })}
-                  </div>
-                  {sources.length > 0 && (
-                    <div style={{ fontSize: "10px", color: "#64748b", marginTop: "6px", borderTop: "1px solid #f1f5f9", paddingTop: "6px" }}>
-                      Mentioned in: {sourcesLabel}
+
+                  {/* Top post preview */}
+                  {r.posts?.[0] && (
+                    <div style={{ fontSize: "11px", color: "#64748b", fontStyle: "italic", marginBottom: "8px", lineHeight: 1.4 }}>
+                      &ldquo;{r.posts[0].title.slice(0, 80)}{r.posts[0].title.length > 80 ? "..." : ""}&rdquo;
                     </div>
                   )}
-                  {nearbyPlaces.length > 0 && (
-                    <div style={{ marginTop: "8px", borderTop: "1px solid #f1f5f9", paddingTop: "6px" }}>
-                      <div style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "6px" }}>Nearby</div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-                        {nearbyPlaces.map((np) => (
-                          <a
-                            key={np.id}
-                            href={`/place/${encodeURIComponent(np.name)}`}
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "3px",
-                              padding: "3px 8px",
-                              background: "#f8fafc",
-                              border: "1px solid #e2e8f0",
-                              borderRadius: "999px",
-                              fontSize: "11px",
-                              color: "#334155",
-                              textDecoration: "none",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {CATEGORY_EMOJI[np.category] || "📍"} {np.name.length > 18 ? np.name.slice(0, 18) + "…" : np.name}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div style={{ marginTop: "8px", borderTop: "1px solid #f1f5f9", paddingTop: "8px" }}>
+
+                  {/* Action buttons row */}
+                  <div style={{ display: "flex", gap: "6px", borderTop: "1px solid #f1f5f9", paddingTop: "8px" }}>
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        flex: 1, textAlign: "center", padding: "6px 8px",
+                        background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: "8px",
+                        color: "#0369a1", fontWeight: 600, fontSize: "11px", textDecoration: "none",
+                      }}
+                    >
+                      🧭 Directions
+                    </a>
                     <a
                       href={`/place/${encodeURIComponent(r.name)}`}
                       style={{
-                        display: "block",
-                        textAlign: "center",
-                        padding: "6px 12px",
-                        background: "#fff7f4",
-                        border: "1px solid #ff6b3540",
-                        borderRadius: "8px",
-                        color: "#ff6b35",
-                        fontWeight: 700,
-                        fontSize: "12px",
-                        textDecoration: "none",
+                        flex: 1, textAlign: "center", padding: "6px 8px",
+                        background: "#fff7f4", border: "1px solid #ff6b3540", borderRadius: "8px",
+                        color: "#ff6b35", fontWeight: 700, fontSize: "11px", textDecoration: "none",
                       }}
                     >
-                      View Profile →
+                      Details →
                     </a>
                   </div>
                 </div>
