@@ -6,7 +6,7 @@ import {
   geocodeRestaurant,
   saveRestaurant,
   countMentions,
-} from "@/lib/extract-restaurants";
+} from "@/lib/extract-places";
 import type { PlaceCategory } from "@/lib/types";
 
 // Toronto publications + blogs with working RSS feeds

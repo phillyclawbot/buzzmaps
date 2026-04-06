@@ -9,7 +9,7 @@ export async function GET() {
     const [lastScraped] = await sql`SELECT MAX(last_scraped_at) as last_scraped FROM subreddits`;
 
     return Response.json({
-      restaurants: restaurantCount.count,
+      places: restaurantCount.count,
       posts: postCount.count,
       last_scraped: lastScraped.last_scraped,
     });

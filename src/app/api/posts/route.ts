@@ -15,7 +15,7 @@ export async function GET() {
           'lng', r.lng,
           'sentiment', pr.sentiment,
           'category', r.category
-        )) FILTER (WHERE r.id IS NOT NULL) as restaurants
+        )) FILTER (WHERE r.id IS NOT NULL) as places
       FROM reddit_posts rp
       LEFT JOIN post_restaurants pr ON pr.post_id = rp.id
       LEFT JOIN restaurants r ON r.id = pr.restaurant_id

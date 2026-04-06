@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import Sidebar from "@/components/Sidebar";
 import ListView from "@/components/ListView";
-import type { Restaurant, RedditPostWithRestaurants, Stats, PlaceCategory } from "@/lib/types";
+import type { Place, RedditPostWithPlaces, Stats, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
 import { CATEGORY_FILTERS, CATEGORY_COLORS } from "@/lib/constants";
 import { formatLastScraped, haversineDistance } from "@/lib/utils";
@@ -20,9 +20,9 @@ const MapView = dynamic(() => import("@/components/MapView"), {
 });
 
 function Home() {
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [posts, setPosts] = useState<RedditPostWithRestaurants[]>([]);
-  const [stats, setStats] = useState<Stats>({ restaurants: 0, posts: 0, last_scraped: null });
+  const [places, setPlaces] = useState<Place[]>([]);
+  const [posts, setPosts] = useState<RedditPostWithPlaces[]>([]);
+  const [stats, setStats] = useState<Stats>({ places: 0, posts: 0, last_scraped: null });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [flyTo, setFlyTo] = useState<[number, number] | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -42,7 +42,7 @@ function Home() {
   });
   const [mapSearch, setMapSearch] = useState("");
   const [mapSearchInput, setMapSearchInput] = useState("");
-  const [mapSearchSuggestions, setMapSearchSuggestions] = useState<Restaurant[]>([]);
+  const [mapSearchSuggestions, setMapSearchSuggestions] = useState<Place[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const [showLegend, setShowLegend] = useState(false);
@@ -85,7 +85,7 @@ function Home() {
     mapSearchTimerRef.current = setTimeout(() => setMapSearch(val), 300);
     if (val.trim().length >= 1) {
       const q = val.toLowerCase();
-      const suggestions = restaurants
+      const suggestions = places
         .filter((r) => r.name.toLowerCase().includes(q))
         .slice(0, 6);
       setMapSearchSuggestions(suggestions);
@@ -96,7 +96,7 @@ function Home() {
     }
   };
 
-  const handleSuggestionClick = (r: Restaurant) => {
+  const handleSuggestionClick = (r: Place) => {
     handleFlyTo(r.lat, r.lng);
     setMapSearchInput("");
     setMapSearch("");
@@ -106,10 +106,10 @@ function Home() {
 
   const sevenDaysAgo = useMemo(() => Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000), []);
 
-  const trendingNow = useMemo(() => restaurants.filter(r => r.latest_mention > Date.now()/1000 - 7*86400).sort((a,b) => b.mention_count - a.mention_count).slice(0, 5), [restaurants]);
+  const trendingNow = useMemo(() => places.filter(r => r.latest_mention > Date.now()/1000 - 7*86400).sort((a,b) => b.mention_count - a.mention_count).slice(0, 5), [places]);
 
-  const filteredRestaurants = useMemo(() => {
-    let items = restaurants;
+  const filteredPlaces = useMemo(() => {
+    let items = places;
     if (mapSearch) {
       const q = mapSearch.toLowerCase();
       items = items.filter(
@@ -128,7 +128,7 @@ function Home() {
       });
     }
     return items;
-  }, [restaurants, mapSearch, thisWeekOnly, sevenDaysAgo, nearMeActive, nearMeCoords, nearMeRadius]);
+  }, [places, mapSearch, thisWeekOnly, sevenDaysAgo, nearMeActive, nearMeCoords, nearMeRadius]);
 
   const fetchData = useCallback(async (background = false) => {
     if (!background) setLoading(true);
@@ -140,7 +140,7 @@ function Home() {
       if (searchQuery) params.set("q", searchQuery);
 
       const [rRes, pRes, sRes] = await Promise.all([
-        fetch(`/api/restaurants?${params}`),
+        fetch(`/api/places??${params}`),
         fetch("/api/posts"),
         fetch("/api/stats"),
       ]);
@@ -150,9 +150,9 @@ function Home() {
         sRes.json(),
       ]);
 
-      if (Array.isArray(rData)) setRestaurants(rData);
+      if (Array.isArray(rData)) setPlaces(rData);
       if (Array.isArray(pData)) setPosts(pData);
-      if (sData.restaurants !== undefined) setStats(sData);
+      if (sData.places !== undefined) setStats(sData);
 
       if (background) {
         setToast("Updated ✓");
@@ -178,17 +178,17 @@ function Home() {
   // URL-based place highlighting
   useEffect(() => {
     const placeName = searchParams.get("place");
-    if (!placeName || restaurants.length === 0) return;
+    if (!placeName || places.length === 0) return;
     if (highlightedPlace.current === placeName) return;
     highlightedPlace.current = placeName;
-    const found = restaurants.find(
+    const found = places.find(
       (r) => r.name.toLowerCase() === placeName.toLowerCase()
     );
     if (found) {
       handleFlyTo(found.lat, found.lng);
       setView("map");
     }
-  }, [searchParams, restaurants]);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchParams, places]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleScrape = async () => {
     setScraping(true);
@@ -472,7 +472,7 @@ function Home() {
             isOpen={sidebarOpen}
             onToggle={() => setSidebarOpen(!sidebarOpen)}
             onFlyTo={handleFlyTo}
-            totalRestaurants={stats.restaurants}
+            totalRestaurants={stats.places}
             totalPosts={stats.posts}
           />
 
@@ -598,12 +598,12 @@ function Home() {
               )}
             </div>
 
-<MapView restaurants={filteredRestaurants} flyTo={flyTo} nearMeActive={nearMeActive} nearMeRadius={nearMeRadius} onNearMeToggle={(coords) => { setNearMeCoords(coords); setNearMeActive(coords !== null); }} onRadiusChange={setNearMeRadius} nearMeCount={filteredRestaurants.length} />
+<MapView places={filteredPlaces} flyTo={flyTo} nearMeActive={nearMeActive} nearMeRadius={nearMeRadius} onNearMeToggle={(coords) => { setNearMeCoords(coords); setNearMeActive(coords !== null); }} onRadiusChange={setNearMeRadius} nearMeCount={filteredPlaces.length} />
           </div>
         </>
       ) : (
         <ListView
-          restaurants={restaurants}
+          places={places}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           loading={loading}
@@ -775,7 +775,7 @@ function Home() {
 
       {/* Bottom bar */}
       <div className="fixed bottom-0 left-0 right-0 h-8 bg-white/95 backdrop-blur-sm border-t border-slate-200 z-[1000] flex items-center px-4 text-xs text-slate-500">
-        <span>🗺️ <span className="text-[#ff6b35] font-medium">{stats.restaurants}</span> places · 💬 <span className="text-[#ff6b35] font-medium">{stats.posts}</span> posts · Updated {formatLastScraped(stats.last_scraped)}</span>
+        <span>🗺️ <span className="text-[#ff6b35] font-medium">{stats.places}</span> places · 💬 <span className="text-[#ff6b35] font-medium">{stats.posts}</span> posts · Updated {formatLastScraped(stats.last_scraped)}</span>
         <a href="/stats" className="ml-auto text-slate-500 hover:text-[#ff6b35] transition-colors">📊 Stats</a>
       </div>
     </div>

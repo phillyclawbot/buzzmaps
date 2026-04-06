@@ -13,7 +13,7 @@ import {
   useMap,
 } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
-import type { Restaurant, PlaceCategory } from "@/lib/types";
+import type { Place, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
 import { CATEGORY_COLORS, SENTIMENT_COLORS, isPublication } from "@/lib/constants";
 import { formatTimeAgo, haversineDistance } from "@/lib/utils";
@@ -176,7 +176,7 @@ function FlyToHandler({ target }: { target: [number, number] | null }) {
 const calcDist = haversineDistance;
 
 export default function MapView({
-  restaurants,
+  places,
   flyTo,
   onNearMeToggle,
   nearMeActive = false,
@@ -184,7 +184,7 @@ export default function MapView({
   onRadiusChange,
   nearMeCount,
 }: {
-  restaurants: Restaurant[];
+  places: Place[];
   flyTo: [number, number] | null;
   onNearMeToggle?: (coords: { lat: number; lng: number } | null) => void;
   nearMeActive?: boolean;
@@ -199,26 +199,26 @@ export default function MapView({
   // Determine which neighbourhoods have places and assign colours
   const activeHoods = useMemo(() => {
     const hoodCounts: Record<string, number> = {};
-    for (const r of restaurants) {
+    for (const r of places) {
       const hood = getNeighbourhood(r.lat, r.lng);
       if (hood) hoodCounts[hood] = (hoodCounts[hood] || 0) + 1;
     }
     return NEIGHBOURHOODS
       .map((n, i) => ({ ...n, count: hoodCounts[n.name] || 0, color: getHoodColor(i) }))
       .filter((n) => n.count > 0);
-  }, [restaurants]);
+  }, [places]);
 
   // All neighbourhoods with colours (for labels on all areas)
   const allHoods = useMemo(() => {
     const hoodCounts: Record<string, number> = {};
-    for (const r of restaurants) {
+    for (const r of places) {
       const hood = getNeighbourhood(r.lat, r.lng);
       if (hood) hoodCounts[hood] = (hoodCounts[hood] || 0) + 1;
     }
     return NEIGHBOURHOODS.map((n, i) => ({
       ...n, count: hoodCounts[n.name] || 0, color: getHoodColor(i),
     }));
-  }, [restaurants]);
+  }, [places]);
 
   // Load GeoJSON polygon data for neighbourhood boundaries
   const [geoData, setGeoData] = useState<GeoJSON.FeatureCollection | null>(null);
@@ -432,7 +432,7 @@ export default function MapView({
           disableClusteringAtZoom={16}
           animate
         >
-        {restaurants.map((r) => {
+        {places.map((r) => {
           const category = r.category || "other";
           const mentionCount = Number(r.mention_count);
           const isRecent = Date.now() / 1000 - r.latest_mention < 86400;
@@ -446,7 +446,7 @@ export default function MapView({
             .map((s) => isPublication(s) ? s : s.startsWith("r/") ? s : `r/${s}`)
             .join(", ");
 
-          const nearbyPlaces = restaurants
+          const nearbyPlaces = places
             .filter((n) => n.id !== r.id)
             .map((n) => ({ ...n, dist: calcDist(r.lat, r.lng, n.lat, n.lng) }))
             .filter((n) => n.dist <= 500)

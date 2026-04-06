@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { RedditPostWithRestaurants, PlaceCategory } from "@/lib/types";
+import type { RedditPostWithPlaces, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
 import { SENTIMENT_COLORS, isPublication } from "@/lib/constants";
 import { formatTimeAgo } from "@/lib/utils";
@@ -25,7 +25,7 @@ export default function Sidebar({
   totalRestaurants,
   totalPosts,
 }: {
-  posts: RedditPostWithRestaurants[];
+  posts: RedditPostWithPlaces[];
   isOpen: boolean;
   onToggle: () => void;
   onFlyTo: (lat: number, lng: number) => void;
@@ -41,10 +41,10 @@ export default function Sidebar({
     if (search) {
       const q = search.toLowerCase();
       const matchesTitle = p.title.toLowerCase().includes(q);
-      const matchesRestaurant = p.restaurants?.some((r) =>
+      const matchesPlace = p.places?.some((r) =>
         r.name.toLowerCase().includes(q)
       );
-      if (!matchesTitle && !matchesRestaurant) return false;
+      if (!matchesTitle && !matchesPlace) return false;
     }
     if (filter === "today" && now - p.created_utc > 86400) return false;
     if (filter === "week" && now - p.created_utc > 604800) return false;
@@ -170,7 +170,7 @@ function SidebarContent({
   filter: Filter;
   setFilter: (v: Filter) => void;
   filters: { key: Filter; label: string }[];
-  filtered: RedditPostWithRestaurants[];
+  filtered: RedditPostWithPlaces[];
   onFlyTo: (lat: number, lng: number) => void;
   totalRestaurants: number;
   totalPosts: number;
@@ -238,7 +238,7 @@ function SidebarContent({
                 e.currentTarget.style.background = "";
               }}
               onClick={() => {
-                const r = post.restaurants?.[0];
+                const r = post.places?.[0];
                 if (r) onFlyTo(r.lat, r.lng);
               }}
             >
@@ -264,9 +264,9 @@ function SidebarContent({
                       {formatTimeAgo(post.created_utc)}
                     </span>
                   </div>
-                  {post.restaurants && post.restaurants.length > 0 && (
+                  {post.places && post.places.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {post.restaurants.map((r) => (
+                      {post.places.map((r) => (
                         <span
                           key={r.id}
                           className="inline-flex items-center gap-1 text-xs text-slate-800 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full font-medium"

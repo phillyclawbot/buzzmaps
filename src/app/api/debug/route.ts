@@ -1,5 +1,5 @@
 import { getDb } from "@/lib/db";
-import { extractVenuesWithAI, extractRestaurantNames, geocodeRestaurant } from "@/lib/extract-restaurants";
+import { extractVenuesWithAI, extractRestaurantNames, geocodeRestaurant } from "@/lib/extract-places";
 import { extractSentiment } from "@/lib/reddit";
 
 export async function GET() {

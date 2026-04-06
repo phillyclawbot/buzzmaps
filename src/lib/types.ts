@@ -43,7 +43,7 @@ export interface PlaceMetadata {
   [key: string]: string | undefined;
 }
 
-export interface Restaurant {
+export interface Place {
   id: number;
   name: string;
   place_id: string;
@@ -62,6 +62,9 @@ export interface Restaurant {
   posts: PostMention[];
 }
 
+/** @deprecated Use Place instead */
+export type Restaurant = Place;
+
 export interface PostMention {
   id: number;
   title: string;
@@ -74,7 +77,7 @@ export interface PostMention {
   mentions_in_thread?: number;
 }
 
-export interface RedditPostWithRestaurants {
+export interface RedditPostWithPlaces {
   id: number;
   title: string;
   subreddit: string;
@@ -84,7 +87,7 @@ export interface RedditPostWithRestaurants {
   sentiment: string;
   created_utc: number;
   author: string;
-  restaurants: {
+  places: {
     id: number;
     name: string;
     lat: number;
@@ -94,8 +97,11 @@ export interface RedditPostWithRestaurants {
   }[] | null;
 }
 
+/** @deprecated Use RedditPostWithPlaces instead */
+export type RedditPostWithRestaurants = RedditPostWithPlaces;
+
 export interface Stats {
-  restaurants: number;
+  places: number;
   posts: number;
   last_scraped: string | null;
 }

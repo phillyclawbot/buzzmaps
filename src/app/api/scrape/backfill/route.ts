@@ -7,7 +7,7 @@ import {
   saveRestaurant,
   fetchPostComments,
   countMentions,
-} from "@/lib/extract-restaurants";
+} from "@/lib/extract-places";
 
 const SUBREDDITS = ["askTO", "toronto", "torontofood", "FoodToronto", "askToronto", "torontoevents"];
 

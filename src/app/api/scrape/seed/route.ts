@@ -7,7 +7,7 @@ import {
   saveRestaurant,
   fetchPostComments,
   countMentions,
-} from "@/lib/extract-restaurants";
+} from "@/lib/extract-places";
 
 export const maxDuration = 120;
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import type { Restaurant, PlaceCategory } from "@/lib/types";
+import type { Place, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
 import { NEIGHBOURHOODS, filterByNeighbourhood, getNeighbourhood } from "@/lib/neighbourhoods";
 import CheckinButton from "@/components/CheckinButton";
@@ -10,7 +10,7 @@ import { formatTimeAgo } from "@/lib/utils";
 
 type SortMode = "mentions" | "newest" | "az" | "rating" | "buzz" | "neighbourhood";
 
-function buzzScore(r: Restaurant): number {
+function buzzScore(r: Place): number {
   const now = Date.now() / 1000;
   const posts = r.posts ?? [];
   const recent7  = posts.filter(p => p.created_utc > now - 7  * 86400).length;
@@ -50,7 +50,7 @@ function PlaceCard({
   r,
   onViewOnMap,
 }: {
-  r: Restaurant;
+  r: Place;
   onViewOnMap: (lat: number, lng: number) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -234,14 +234,14 @@ function PlaceCard({
 }
 
 export default function ListView({
-  restaurants,
+  places,
   searchQuery,
   onSearchChange,
   onViewOnMap,
   loading = false,
   activeCategory = "all",
 }: {
-  restaurants: Restaurant[];
+  places: Place[];
   searchQuery: string;
   onSearchChange: (q: string) => void;
   onViewOnMap: (lat: number, lng: number) => void;
@@ -254,13 +254,13 @@ export default function ListView({
   const isFiltersActive = !!(searchQuery || activeCategory !== "all" || neighbourhood !== "all");
 
   const mostLoved = useMemo(() => {
-    return [...restaurants]
+    return [...places]
       .sort((a, b) => b.mention_count - a.mention_count)
       .slice(0, 5);
-  }, [restaurants]);
+  }, [places]);
 
   const filtered = useMemo(() => {
-    let items = restaurants;
+    let items = places;
     if (activeCategory !== "all") items = items.filter((r) => r.category === activeCategory);
     if (neighbourhood !== "all") items = filterByNeighbourhood(items, neighbourhood);
     if (searchQuery) {
@@ -290,11 +290,11 @@ export default function ListView({
       default: break;
     }
     return sorted;
-  }, [restaurants, activeCategory, neighbourhood, searchQuery, sort]);
+  }, [places, activeCategory, neighbourhood, searchQuery, sort]);
 
   const grouped = useMemo(() => {
     if (sort !== "neighbourhood") return null;
-    const groups: Record<string, Restaurant[]> = {};
+    const groups: Record<string, Place[]> = {};
     for (const r of filtered) {
       const hood = getNeighbourhood(r.lat, r.lng) || "Other Areas";
       if (!groups[hood]) groups[hood] = [];

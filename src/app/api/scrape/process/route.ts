@@ -1,5 +1,5 @@
 import { getDb } from "@/lib/db";
-import { extractVenuesWithAI, extractRestaurantNames, geocodeRestaurant, saveRestaurant, countMentions } from "@/lib/extract-restaurants";
+import { extractVenuesWithAI, extractRestaurantNames, geocodeRestaurant, saveRestaurant, countMentions } from "@/lib/extract-places";
 import { extractSentiment } from "@/lib/reddit";
 
 export const maxDuration = 60;
