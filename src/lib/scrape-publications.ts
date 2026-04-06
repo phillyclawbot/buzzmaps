@@ -12,80 +12,42 @@ import type { PlaceCategory } from "@/lib/types";
 
 // Toronto publications + blogs with working RSS feeds
 const PUBLICATION_FEEDS = [
-  // BlogTO - Toronto's biggest lifestyle publication
-  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/rss.xml" },
-  { name: "BlogTO", url: "https://www.blogto.com/city/rss.xml" },
-  { name: "BlogTO", url: "https://www.blogto.com/arts/rss.xml" },
-  { name: "BlogTO", url: "https://www.blogto.com/sports_play/rss.xml" },
-  { name: "BlogTO", url: "https://www.blogto.com/nightlife/rss.xml" },
-  { name: "BlogTO", url: "https://www.blogto.com/fashion_style/rss.xml" },
+  // BlogTO - Toronto's biggest lifestyle publication (main feed covers all sections)
+  { name: "BlogTO", url: "https://www.blogto.com/rss/articles.xml" },
   // Toronto Life
   { name: "Toronto Life", url: "https://torontolife.com/feed/" },
-  { name: "Toronto Life", url: "https://torontolife.com/food/feed/" },
-  { name: "Toronto Life", url: "https://torontolife.com/city/feed/" },
-  { name: "Toronto Life", url: "https://torontolife.com/style/feed/" },
   // NOW Magazine
   { name: "NOW Magazine", url: "https://nowtoronto.com/feed/" },
-  // Narcity Toronto
-  { name: "Narcity", url: "https://www.narcity.com/toronto/feed" },
-  { name: "Narcity", url: "https://www.narcity.com/feed/rss.xml" },
+  // Narcity Toronto (toronto.rss is the confirmed working Toronto-specific feed)
+  { name: "Narcity", url: "https://www.narcity.com/feeds/toronto.rss" },
   // Eater Toronto - restaurant and food scene coverage
   { name: "Eater Toronto", url: "https://toronto.eater.com/rss/index.xml" },
-  // Toronto Star
-  { name: "Toronto Star", url: "https://www.thestar.com/content/thestar/feed.RSSManagerServlet.TopStories.rss" },
   // Toronto Sun
   { name: "Toronto Sun", url: "https://torontosun.com/feed" },
   // Globe and Mail Toronto
   { name: "Globe and Mail", url: "https://www.theglobeandmail.com/arc/outboundfeeds/rss/category/life/" },
-  // Exclaim - Toronto music/arts
-  { name: "Exclaim", url: "https://exclaim.ca/rss" },
+  // Exclaim - Toronto music/arts (via FeedBurner — direct /rss path returns 404)
+  { name: "Exclaim", url: "http://feeds.feedburner.com/ExclaimCaAllArticles" },
   // Toronto Guardian
   { name: "Toronto Guardian", url: "https://torontoguardian.com/feed/" },
-  // Post City Toronto
-  { name: "Post City", url: "https://www.postcity.com/feed/" },
-  // The Grid TO / Spacing
-  { name: "Spacing", url: "https://spacing.ca/toronto/feed/" },
-  // Daily Hive Toronto
-  { name: "Daily Hive", url: "https://dailyhive.com/toronto/feed" },
+  // Daily Hive Toronto (main feed — toronto-specific section paths return 404)
+  { name: "Daily Hive", url: "https://dailyhive.com/feed" },
   // Toronto.com
   { name: "Toronto.com", url: "https://www.toronto.com/feed/" },
   // Curiocity Toronto
   { name: "Curiocity", url: "https://curiocity.com/toronto/feed/" },
-  // Reddit local subs as RSS
-  { name: "r/FoodToronto", url: "https://www.reddit.com/r/FoodToronto/top/.rss?t=week&limit=50" },
-  { name: "r/torontofood", url: "https://www.reddit.com/r/torontofood/top/.rss?t=week&limit=50" },
-  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=best+place+toronto&sort=top&t=all&limit=50" },
-  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=recommendation+toronto&sort=top&t=all&limit=50" },
-  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=hidden+gem+toronto&sort=top&t=all&limit=50" },
-  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=things+to+do+toronto&sort=top&t=all&limit=50" },
-  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=underrated+toronto&sort=top&t=all&limit=50" },
-  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=new+opening+toronto&sort=top&t=all&limit=50" },
-  { name: "r/askTO", url: "https://www.reddit.com/r/askTO/search.rss?q=best+park+toronto&sort=top&t=all&limit=50" },
-  { name: "r/toronto", url: "https://www.reddit.com/r/toronto/search.rss?q=best+place&sort=top&t=all&limit=50" },
-  { name: "r/toronto", url: "https://www.reddit.com/r/toronto/search.rss?q=things+to+do+toronto&sort=top&t=all&limit=50" },
-  { name: "r/toronto", url: "https://www.reddit.com/r/toronto/search.rss?q=underrated+toronto&sort=top&t=all&limit=50" },
-  { name: "r/askToronto", url: "https://www.reddit.com/r/askToronto/top/.rss?t=month&limit=50" },
-  // BlogTO additional sections
-  { name: "BlogTO", url: "https://www.blogto.com/real_estate/rss.xml" },
-  { name: "BlogTO", url: "https://www.blogto.com/travel/rss.xml" },
-  // Streets of Toronto
+  // Streets of Toronto (Post City content now lives here; postcity.com returns 403)
   { name: "Streets of Toronto", url: "https://www.streetsoftoronto.com/feed/" },
   // Toronto Storeys
   { name: "Toronto Storeys", url: "https://torontostoreys.com/feed/" },
-  // Notable.ca Toronto
-  { name: "Notable.ca", url: "https://notable.ca/toronto/feed/" },
+  // Notable Life (notable.ca redirects here; toronto sub-path returns 404)
+  { name: "Notable Life", url: "https://notablelife.com/feed/" },
+  // Spacing Toronto
+  { name: "Spacing", url: "https://spacing.ca/feed/" },
   // insauga.com — covers Scarborough / east end
   { name: "insauga.com", url: "https://www.insauga.com/feed/" },
   // The Local TO
   { name: "The Local", url: "https://thelocal.to/feed/" },
-  // Daily Hive additional sections
-  { name: "Daily Hive", url: "https://dailyhive.com/toronto/food/feed" },
-  { name: "Daily Hive", url: "https://dailyhive.com/toronto/listed/feed" },
-  // Neighbourhood Reddit subs as RSS
-  { name: "r/scarborough", url: "https://www.reddit.com/r/scarborough/top/.rss?t=week&limit=50" },
-  { name: "r/EtobicokeON", url: "https://www.reddit.com/r/EtobicokeON/top/.rss?t=week&limit=50" },
-  { name: "r/NorthYork", url: "https://www.reddit.com/r/NorthYork/top/.rss?t=week&limit=50" },
-  { name: "r/mississauga", url: "https://www.reddit.com/r/mississauga/top/.rss?t=week&limit=50" },
 ];
 
 interface FeedItem {
