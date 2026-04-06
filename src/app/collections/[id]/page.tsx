@@ -221,21 +221,34 @@ export default async function CollectionDetailPage({
         </div>
       </div>
 
-      {/* Collection header */}
+      {/* Hero header */}
       <div className="bg-gradient-to-br from-[#ff6b35]/10 to-[#f59e0b]/5 border-b border-slate-200">
-        <div className="max-w-2xl mx-auto px-4 py-6">
+        <div className="max-w-2xl mx-auto px-4 py-8">
           <div className="flex items-start gap-4">
-            <span className="text-5xl leading-none">{collection.emoji}</span>
+            <span className="text-6xl leading-none drop-shadow-sm">{collection.emoji}</span>
             <div>
               <h1 className="text-2xl font-bold text-slate-900">
                 {collection.title}
               </h1>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-sm text-slate-500 mt-1 leading-relaxed">
                 {collection.description}
               </p>
-              <span className="inline-block mt-2 text-xs font-semibold bg-[#ff6b35]/10 text-[#ff6b35] px-2.5 py-1 rounded-full">
-                {places.length} place{places.length !== 1 ? "s" : ""}
-              </span>
+              <div className="flex items-center gap-2 mt-3">
+                <span className="inline-block text-xs font-semibold bg-[#ff6b35]/10 text-[#ff6b35] px-2.5 py-1 rounded-full">
+                  {places.length} place{places.length !== 1 ? "s" : ""}
+                </span>
+                <span className="text-xs text-slate-400">
+                  · {places.reduce((sum, p) => sum + p.mention_count, 0)} total mentions
+                </span>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <Link
+                  href={`/?category=${collection.query.type === "category" ? collection.query.category : "all"}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-medium hover:border-[#ff6b35] hover:text-[#ff6b35] transition-all shadow-sm"
+                >
+                  🗺️ View on Map
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -244,8 +257,16 @@ export default async function CollectionDetailPage({
       {/* Places list */}
       <div className="max-w-2xl mx-auto px-4 py-6 pb-20 page-enter">
         {places.length === 0 ? (
-          <div className="text-center py-16 text-slate-400 text-sm">
-            No places found in this collection yet.
+          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+            <span className="text-4xl mb-3">{collection.emoji}</span>
+            <p className="text-sm">No places found in this collection yet.</p>
+            <p className="text-xs mt-1">Know a place that belongs here?</p>
+            <Link
+              href="/"
+              className="mt-3 px-4 py-1.5 bg-[#ff6b35] text-white text-xs rounded-lg font-medium hover:bg-[#ea580c] transition-colors"
+            >
+              Submit a Place
+            </Link>
           </div>
         ) : (
           <div className="space-y-4">

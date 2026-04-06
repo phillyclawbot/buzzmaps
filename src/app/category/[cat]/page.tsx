@@ -75,7 +75,14 @@ export default async function CategoryPage({
         {places.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400">
             <span className="text-4xl mb-3">{emoji}</span>
-            <p className="text-sm">No {label.toLowerCase()} places tracked yet.</p>
+            <p className="text-sm font-medium text-slate-500">No {label.toLowerCase()} places tracked yet</p>
+            <p className="text-xs text-slate-400 mt-1">Be the first to suggest one!</p>
+            <Link
+              href="/"
+              className="mt-4 px-5 py-2 bg-[#ff6b35] text-white text-xs font-semibold rounded-lg hover:bg-[#ea580c] transition-colors"
+            >
+              ➕ Submit a {label}
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -83,7 +90,7 @@ export default async function CategoryPage({
               <Link
                 key={place.id}
                 href={`/place/${encodeURIComponent(place.name)}`}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#ff6b35]/40 transition-all overflow-hidden"
+                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#ff6b35]/40 transition-all overflow-hidden cursor-pointer hover:scale-[1.01]"
               >
                 {place.photo_url && (
                   <img

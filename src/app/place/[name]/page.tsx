@@ -6,6 +6,8 @@ import { notFound } from "next/navigation";
 import PlaceMapWrapper from "@/components/PlaceMapWrapper";
 import ShareButton from "@/app/place/ShareButton";
 import CheckinButton from "@/components/CheckinButton";
+import { CATEGORY_GRADIENT, SENTIMENT_COLORS, SENTIMENT_LABELS } from "@/lib/constants";
+import { haversineDistance } from "@/lib/utils";
 
 function formatDate(utc: number): string {
   return new Date(utc * 1000).toLocaleDateString("en-CA", {
@@ -32,22 +34,6 @@ function SentimentBadge({ sentiment }: { sentiment: string }) {
   );
 }
 
-const CATEGORY_GRADIENT: Record<string, string> = {
-  restaurant: "from-orange-500 to-amber-400",
-  bar: "from-purple-500 to-fuchsia-400",
-  cafe: "from-indigo-500 to-blue-400",
-  club: "from-pink-500 to-rose-400",
-  shop: "from-cyan-500 to-sky-400",
-  park: "from-green-500 to-emerald-400",
-  gym: "from-red-500 to-orange-400",
-  venue: "from-amber-500 to-yellow-400",
-  market: "from-teal-500 to-green-400",
-  museum: "from-blue-500 to-indigo-400",
-  event: "from-fuchsia-500 to-purple-400",
-  landmark: "from-sky-500 to-cyan-400",
-  attraction: "from-rose-500 to-pink-400",
-  other: "from-slate-500 to-slate-400",
-};
 
 export default async function PlacePage({
   params,
@@ -110,7 +96,7 @@ export default async function PlacePage({
 
   // Related places nearby
   const nearby = await sql`
-    SELECT r.name, r.category, r.mention_count
+    SELECT r.name, r.category, r.mention_count, r.google_rating, r.lat, r.lng, r.photo_url
     FROM restaurants r
     WHERE ABS(r.lat - ${place.lat}) < 0.01
       AND ABS(r.lng - ${place.lng}) < 0.01
@@ -213,15 +199,26 @@ export default async function PlacePage({
             {posts.length > 0 && (
               <div className="flex items-center gap-1.5">
                 <span className="text-lg">📊</span>
-                <div>
-                  <div className="text-base font-bold text-slate-900 flex gap-2">
-                    <span className="text-green-600">{sentimentCounts.positive}</span>
-                    <span className="text-slate-300">/</span>
-                    <span className="text-yellow-500">{sentimentCounts.neutral}</span>
-                    <span className="text-slate-300">/</span>
-                    <span className="text-red-500">{sentimentCounts.negative}</span>
+                <div className="min-w-[120px]">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    {(["positive", "neutral", "negative"] as const).map((s) => (
+                      <span key={s} className="text-[11px] font-medium flex items-center gap-1">
+                        <span className="inline-block w-2 h-2 rounded-full" style={{ background: SENTIMENT_COLORS[s] }} />
+                        {SENTIMENT_LABELS[s]} {sentimentCounts[s]}
+                      </span>
+                    ))}
                   </div>
-                  <div className="text-xs text-slate-400">pos / neu / neg</div>
+                  <div className="flex h-2 rounded-full overflow-hidden bg-slate-100">
+                    {sentimentCounts.positive > 0 && (
+                      <div className="h-full" style={{ width: `${(sentimentCounts.positive / posts.length) * 100}%`, background: SENTIMENT_COLORS.positive }} />
+                    )}
+                    {sentimentCounts.neutral > 0 && (
+                      <div className="h-full" style={{ width: `${(sentimentCounts.neutral / posts.length) * 100}%`, background: SENTIMENT_COLORS.neutral }} />
+                    )}
+                    {sentimentCounts.negative > 0 && (
+                      <div className="h-full" style={{ width: `${(sentimentCounts.negative / posts.length) * 100}%`, background: SENTIMENT_COLORS.negative }} />
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -288,6 +285,14 @@ export default async function PlacePage({
         {/* Map embed */}
         <div className="mb-4">
           <PlaceMapWrapper lat={place.lat} lng={place.lng} name={place.name} category={place.category} />
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl text-sm font-medium hover:bg-blue-100 transition-colors"
+          >
+            🧭 Get Directions
+          </a>
         </div>
 
         {/* Buzz over time timeline */}
@@ -406,22 +411,33 @@ export default async function PlacePage({
               📍 Nearby Places
             </h2>
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm divide-y divide-slate-100 overflow-hidden">
-              {(nearby as { name: string; category: PlaceCategory; mention_count: number }[]).map((r) => (
-                <Link
-                  key={r.name}
-                  href={`/place/${encodeURIComponent(r.name)}`}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors group"
-                >
-                  <span className="text-xl leading-none">{CATEGORY_EMOJI[r.category] || "📍"}</span>
-                  <span className="flex-1 text-sm font-medium text-slate-800 group-hover:text-[#ff6b35] transition-colors">{r.name}</span>
-                  <span className="text-xs text-[#ff6b35] font-semibold bg-[#ff6b35]/10 px-2 py-0.5 rounded-full">
-                    {r.mention_count} 💬
-                  </span>
-                  <svg className="text-slate-300 group-hover:text-[#ff6b35] transition-colors" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 18l6-6-6-6" />
-                  </svg>
-                </Link>
-              ))}
+              {(nearby as { name: string; category: PlaceCategory; mention_count: number; google_rating: number | null; lat: number; lng: number; photo_url: string | null }[]).map((r) => {
+                const dist = haversineDistance(place.lat, place.lng, r.lat, r.lng);
+                const distLabel = dist < 1000 ? `${Math.round(dist)}m away` : `${(dist / 1000).toFixed(1)}km away`;
+                return (
+                  <Link
+                    key={r.name}
+                    href={`/place/${encodeURIComponent(r.name)}`}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors group"
+                  >
+                    {r.photo_url ? (
+                      <img src={r.photo_url} alt={r.name} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                    ) : (
+                      <span className="text-xl leading-none shrink-0">{CATEGORY_EMOJI[r.category] || "📍"}</span>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-slate-800 group-hover:text-[#ff6b35] transition-colors block truncate">{r.name}</span>
+                      <span className="text-[10px] text-slate-400">{CATEGORY_EMOJI[r.category] || "📍"} {r.category} · {distLabel}{r.google_rating ? ` · ⭐ ${r.google_rating.toFixed(1)}` : ""}</span>
+                    </div>
+                    <span className="text-xs text-[#ff6b35] font-semibold bg-[#ff6b35]/10 px-2 py-0.5 rounded-full shrink-0">
+                      {r.mention_count} 💬
+                    </span>
+                    <svg className="text-slate-300 group-hover:text-[#ff6b35] transition-colors shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}

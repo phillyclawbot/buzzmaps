@@ -94,6 +94,31 @@ export function isPublication(subreddit: string): boolean {
   return PUBLICATION_NAMES.has(subreddit);
 }
 
+// Category gradient classes for hero sections (single source of truth)
+export const CATEGORY_GRADIENT: Record<PlaceCategory, string> = {
+  restaurant: "from-orange-500 to-amber-400",
+  bar: "from-purple-500 to-fuchsia-400",
+  cafe: "from-indigo-500 to-blue-400",
+  club: "from-pink-500 to-rose-400",
+  shop: "from-cyan-500 to-sky-400",
+  park: "from-green-500 to-emerald-400",
+  gym: "from-red-500 to-orange-400",
+  venue: "from-amber-500 to-yellow-400",
+  market: "from-teal-500 to-green-400",
+  museum: "from-blue-500 to-indigo-400",
+  event: "from-fuchsia-500 to-purple-400",
+  landmark: "from-sky-500 to-cyan-400",
+  attraction: "from-rose-500 to-pink-400",
+  other: "from-slate-500 to-slate-400",
+};
+
+// Sentiment text labels for accessibility
+export const SENTIMENT_LABELS: Record<string, string> = {
+  positive: "Positive",
+  negative: "Negative",
+  neutral: "Neutral",
+};
+
 // API pagination defaults
 export const DEFAULT_PAGE_SIZE = 100;
 export const MAX_PAGE_SIZE = 500;

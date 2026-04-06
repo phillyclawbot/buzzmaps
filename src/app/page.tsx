@@ -28,6 +28,7 @@ function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState(false);
   const [scraping, setScraping] = useState(false);
   const [scrapingPubs, setScrapingPubs] = useState(false);
   const [scrapingEvents, setScrapingEvents] = useState(false);
@@ -154,6 +155,7 @@ function Home() {
       if (Array.isArray(rData)) setPlaces(rData);
       if (Array.isArray(pData)) setPosts(pData);
       if (sData.places !== undefined) setStats(sData);
+      setFetchError(false);
 
       if (background) {
         setToast("Updated ✓");
@@ -162,8 +164,7 @@ function Home() {
     } catch (err) {
       console.error("Failed to fetch data:", err);
       if (!background) {
-        setToast("Failed to load data. Please try again.");
-        setTimeout(() => setToast(null), 3000);
+        setFetchError(true);
       }
     } finally {
       if (!background) setLoading(false);
@@ -379,18 +380,14 @@ function Home() {
           </button>
         </div>
 
-        {/* Mobile: hamburger */}
+        {/* Mobile: search toggle (hamburger replaced by bottom nav) */}
         <button
-          onClick={() => setMenuOpen(!menuOpen)}
+          onClick={() => { setSearchOpen(!searchOpen); if (!searchOpen) setTimeout(() => searchInputRef.current?.focus(), 0); }}
           className="md:hidden ml-auto p-2 text-slate-600"
-          aria-label="Toggle menu"
+          aria-label="Search"
         >
-          <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-            {menuOpen ? (
-              <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            ) : (
-              <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            )}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
         </button>
       </div>
@@ -418,16 +415,23 @@ function Home() {
         <div className="shrink-0 border-l border-slate-200 pl-1.5 ml-0.5">{thisWeekChip}</div>
       </div>
 
-      {/* Mobile dropdown panel */}
-      {menuOpen && (
-        <div className="fixed top-[88px] left-0 right-0 z-[998] bg-white/95 backdrop-blur-sm border-b border-slate-200 p-3 flex flex-col gap-3 md:hidden">
+      {/* Mobile search panel */}
+      {searchOpen && (
+        <div className="fixed top-[88px] left-0 right-0 z-[998] bg-white/95 backdrop-blur-sm border-b border-slate-200 p-3 md:hidden">
           <input
+            ref={searchInputRef}
             type="text"
             placeholder="Search places..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35]"
           />
+        </div>
+      )}
+
+      {/* Mobile "More" dropdown panel */}
+      {menuOpen && (
+        <div className="fixed top-[88px] left-0 right-0 z-[998] bg-white/95 backdrop-blur-sm border-b border-slate-200 p-3 flex flex-col gap-3 md:hidden">
           <div className="flex gap-1 flex-wrap">
             {filterButtons.map((f) => (
               <button
@@ -443,7 +447,12 @@ function Home() {
               </button>
             ))}
           </div>
-          <div className="flex gap-1.5 flex-wrap">
+          <div className="flex flex-col gap-1.5">
+            <a href="/about" className="px-3 py-2 text-sm text-slate-600 hover:text-[#ff6b35] transition-colors rounded-lg hover:bg-slate-50">About</a>
+            <a href="/stats" className="px-3 py-2 text-sm text-slate-600 hover:text-[#ff6b35] transition-colors rounded-lg hover:bg-slate-50">📊 Stats</a>
+            <a href="/digest" className="px-3 py-2 text-sm text-slate-600 hover:text-[#ff6b35] transition-colors rounded-lg hover:bg-slate-50">📬 Digest</a>
+          </div>
+          <div className="flex gap-1.5 flex-wrap border-t border-slate-100 pt-3">
             <button
               onClick={() => { handleScrapeAll(); setMenuOpen(false); }}
               disabled={scrapingAll}
@@ -455,9 +464,45 @@ function Home() {
         </div>
       )}
 
+      {/* Active filter chips */}
+      {(filter.category !== "all" || filter.since !== "all" || filter.sentiment !== "all" || searchQuery) && (
+        <div className="fixed top-[88px] left-0 right-0 z-[597] px-3 py-1.5 flex items-center gap-2 overflow-x-auto no-scrollbar bg-white/80 backdrop-blur-sm border-b border-slate-100" style={{ top: view === "map" && trendingNow.length > 0 ? "118px" : "88px" }}>
+          <span className="text-[10px] text-slate-400 shrink-0">Showing {filteredPlaces.length} of {places.length} places</span>
+          <div className="flex gap-1.5 ml-auto">
+            {filter.category !== "all" && (
+              <button
+                onClick={() => setFilter((prev) => ({ ...prev, category: "all" }))}
+                className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-[#ff6b35]/10 text-[#ff6b35] text-[11px] font-medium rounded-full hover:bg-[#ff6b35]/20 transition-colors"
+              >
+                {CATEGORY_EMOJI[filter.category as PlaceCategory] || ""} {filter.category}
+                <span className="ml-0.5">&times;</span>
+              </button>
+            )}
+            {filter.since !== "all" && (
+              <button
+                onClick={() => setFilter((prev) => ({ ...prev, since: "all" }))}
+                className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-600 text-[11px] font-medium rounded-full hover:bg-slate-200 transition-colors"
+              >
+                {filter.since}
+                <span className="ml-0.5">&times;</span>
+              </button>
+            )}
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-600 text-[11px] font-medium rounded-full hover:bg-slate-200 transition-colors"
+              >
+                &ldquo;{searchQuery.slice(0, 20)}{searchQuery.length > 20 ? "..." : ""}&rdquo;
+                <span className="ml-0.5">&times;</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {view === "map" && trendingNow.length > 0 && (
         <div className="fixed top-[88px] left-0 right-0 z-[600] px-3 py-1.5 overflow-x-auto no-scrollbar flex gap-2 pointer-events-none">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide shrink-0 self-center pointer-events-none">🔥 Trending</span>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide shrink-0 self-center pointer-events-none">🔥 Trending this week</span>
           {trendingNow.map(r => (
             <button key={r.id} onClick={() => { handleFlyTo(r.lat, r.lng); }}
               className="shrink-0 px-3 py-1 bg-white/90 backdrop-blur-sm border border-[#ff6b35]/30 rounded-full text-xs font-medium text-slate-700 hover:border-[#ff6b35] hover:text-[#ff6b35] shadow-sm transition-all pointer-events-auto whitespace-nowrap">
@@ -480,7 +525,7 @@ function Home() {
           />
 
           {/* Map */}
-          <div className="h-full w-full pt-[88px] pb-8 relative">
+          <div className="h-full w-full pt-[88px] pb-14 md:pb-8 relative">
             {/* Floating search */}
             <div ref={searchContainerRef} style={{ position: "absolute", top: "8px", left: "50%", transform: "translateX(-50%)", zIndex: 600, width: "280px" }}>
               <input
@@ -618,10 +663,10 @@ function Home() {
         />
       )}
 
-      {/* Submit a Place Button */}
+      {/* Submit a Place Button — hidden on mobile (bottom nav has Submit) */}
       <button
         onClick={() => { setSubmitOpen(true); setSubmitState("idle"); setSubmitError(""); setSubmitForm({ name: "", category: "other", address: "", reason: "", eventDate: "", ticketUrl: "" }); }}
-        className="fixed z-50 bg-white border border-slate-200 shadow-lg rounded-full px-4 py-2 text-sm font-semibold text-slate-700 hover:border-[#ff6b35] hover:text-[#ff6b35] transition-all flex items-center gap-1.5"
+        className="fixed z-50 bg-white border border-slate-200 shadow-lg rounded-full px-4 py-2 text-sm font-semibold text-slate-700 hover:border-[#ff6b35] hover:text-[#ff6b35] transition-all hidden md:flex items-center gap-1.5"
         style={{ bottom: "44px", right: "12px" }}
       >
         ➕ Submit a Place
@@ -769,6 +814,19 @@ function Home() {
         </div>
       )}
 
+      {/* Inline error retry banner */}
+      {fetchError && (
+        <div className="fixed top-[88px] left-1/2 -translate-x-1/2 z-[2000] bg-red-50 border border-red-200 text-red-700 text-xs font-medium px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 mt-2">
+          <span>Something went wrong loading data.</span>
+          <button
+            onClick={() => { setFetchError(false); fetchData(); }}
+            className="px-2 py-0.5 bg-red-100 hover:bg-red-200 rounded-md font-semibold transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Toast notification */}
       {toast && (
         <div className="fixed bottom-14 left-1/2 -translate-x-1/2 z-[2000] bg-slate-800 text-white text-xs font-medium px-4 py-2 rounded-full shadow-lg pointer-events-none">
@@ -776,10 +834,49 @@ function Home() {
         </div>
       )}
 
-      {/* Bottom bar */}
-      <div className="fixed bottom-0 left-0 right-0 h-8 bg-white/95 backdrop-blur-sm border-t border-slate-200 z-[1000] flex items-center px-4 text-xs text-slate-500">
+      {/* Bottom bar — hidden on mobile where bottom nav is shown */}
+      <div className="fixed bottom-0 left-0 right-0 h-8 bg-white/95 backdrop-blur-sm border-t border-slate-200 z-[1000] hidden md:flex items-center px-4 text-xs text-slate-500">
         <span>🗺️ <span className="text-[#ff6b35] font-medium">{stats.places}</span> places · 💬 <span className="text-[#ff6b35] font-medium">{stats.posts}</span> posts · Updated {formatLastScraped(stats.last_scraped)}</span>
         <a href="/stats" className="ml-auto text-slate-500 hover:text-[#ff6b35] transition-colors">📊 Stats</a>
+      </div>
+
+      {/* Mobile bottom navigation bar */}
+      <div className="fixed bottom-0 left-0 right-0 h-14 bg-white/95 backdrop-blur-sm border-t border-slate-200 z-[1000] md:hidden flex items-stretch">
+        <button
+          onClick={() => setView("map")}
+          className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${view === "map" ? "text-[#ff6b35]" : "text-slate-400"}`}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+          <span className="text-[10px] font-semibold">Explore</span>
+        </button>
+        <button
+          onClick={() => setView("list")}
+          className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${view === "list" ? "text-[#ff6b35]" : "text-slate-400"}`}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          <span className="text-[10px] font-semibold">List</span>
+        </button>
+        <button
+          onClick={() => router.push("/collections")}
+          className="flex-1 flex flex-col items-center justify-center gap-0.5 text-slate-400 transition-colors"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+          <span className="text-[10px] font-semibold">Collections</span>
+        </button>
+        <button
+          onClick={() => { setSubmitOpen(true); setSubmitState("idle"); setSubmitError(""); setSubmitForm({ name: "", category: "other", address: "", reason: "", eventDate: "", ticketUrl: "" }); }}
+          className="flex-1 flex flex-col items-center justify-center gap-0.5 text-slate-400 transition-colors"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span className="text-[10px] font-semibold">Submit</span>
+        </button>
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${menuOpen ? "text-[#ff6b35]" : "text-slate-400"}`}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+          <span className="text-[10px] font-semibold">More</span>
+        </button>
       </div>
     </div>
   );
