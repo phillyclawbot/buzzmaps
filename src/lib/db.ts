@@ -64,7 +64,12 @@ export async function runMigrations() {
         SELECT 1 FROM information_schema.columns
         WHERE table_name = 'restaurants' AND column_name = 'photo_url'
       ) THEN
-        ALTER TABLE restaurants RENAME COLUMN photo_reference TO photo_url;
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'restaurants' AND column_name = 'photo_url'
+        ) THEN
+          ALTER TABLE restaurants RENAME COLUMN photo_reference TO photo_url;
+        END IF;
       END IF;
     END $$
   `;
