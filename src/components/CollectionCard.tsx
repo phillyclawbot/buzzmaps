@@ -6,18 +6,18 @@ import type { CollectionPlaceRow } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
 
 interface CollectionCardProps {
+  id: string;
   emoji: string;
   title: string;
   description: string;
-  linkParams: string;
   places: CollectionPlaceRow[];
 }
 
 export default function CollectionCard({
+  id,
   emoji,
   title,
   description,
-  linkParams,
   places,
 }: CollectionCardProps) {
   const [expanded, setExpanded] = useState(false);
@@ -26,12 +26,12 @@ export default function CollectionCard({
   const visiblePlaces = expanded ? places : places.slice(0, previewCount);
 
   return (
-    <div
-      className="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#ff6b35]/40 transition-all overflow-hidden cursor-pointer"
-      onClick={() => setExpanded(!expanded)}
-    >
-      {/* Header */}
-      <div className="bg-gradient-to-br from-[#ff6b35]/10 to-[#f59e0b]/5 px-5 pt-5 pb-3">
+    <div className="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#ff6b35]/40 transition-all overflow-hidden">
+      {/* Clickable header links to detail page */}
+      <Link
+        href={`/collections/${id}`}
+        className="block bg-gradient-to-br from-[#ff6b35]/10 to-[#f59e0b]/5 px-5 pt-5 pb-3"
+      >
         <div className="flex items-start gap-3">
           <span className="text-3xl leading-none">{emoji}</span>
           <div className="flex-1 min-w-0">
@@ -42,36 +42,36 @@ export default function CollectionCard({
               {description}
             </p>
           </div>
-          {/* Chevron indicator */}
           <svg
-            width="16"
-            height="16"
+            width="14"
+            height="14"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className={`text-slate-400 shrink-0 mt-1 transition-transform duration-300 ${expanded ? "rotate-180" : ""}`}
+            className="text-slate-300 group-hover:text-[#ff6b35] transition-colors shrink-0 mt-1"
           >
-            <path d="M6 9l6 6 6-6" />
+            <path d="M9 18l6-6-6-6" />
           </svg>
         </div>
-      </div>
+      </Link>
 
-      {/* Count badge + place list */}
+      {/* Place list with expand/collapse */}
       <div className="px-5 pb-5 pt-3">
         <div className="flex items-center gap-2 mb-3">
           <span className="text-xs font-semibold bg-[#ff6b35]/10 text-[#ff6b35] px-2.5 py-1 rounded-full">
             {places.length} place{places.length !== 1 ? "s" : ""}
           </span>
-          <Link
-            href={`/${linkParams}`}
-            className="text-xs text-slate-400 hover:text-[#ff6b35] transition-colors ml-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            View all →
-          </Link>
+          {hasMore && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="text-xs text-slate-400 hover:text-[#ff6b35] transition-colors ml-auto cursor-pointer"
+            >
+              {expanded ? "Show less" : "Show all"}
+            </button>
+          )}
         </div>
 
         {places.length === 0 ? (
@@ -84,7 +84,7 @@ export default function CollectionCard({
                   {i + 1}
                 </span>
                 <span className="text-sm leading-none shrink-0">
-                  {CATEGORY_EMOJI[place.category] || "📍"}
+                  {CATEGORY_EMOJI[place.category] || "\u{1F4CD}"}
                 </span>
                 <span className="text-xs font-medium text-slate-700 flex-1 truncate">
                   {place.name}
