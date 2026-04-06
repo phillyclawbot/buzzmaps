@@ -7,7 +7,7 @@ import Sidebar from "@/components/Sidebar";
 import ListView from "@/components/ListView";
 import type { Restaurant, RedditPostWithRestaurants, Stats, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
-import { CATEGORY_FILTERS } from "@/lib/constants";
+import { CATEGORY_FILTERS, CATEGORY_COLORS } from "@/lib/constants";
 import { formatLastScraped, haversineDistance } from "@/lib/utils";
 
 const MapView = dynamic(() => import("@/components/MapView"), {
@@ -294,10 +294,10 @@ function Home() {
   const thisWeekChip = (
     <button
       onClick={() => setThisWeekOnly((v) => !v)}
-      className={`min-h-[36px] px-3 py-2 rounded-full text-xs font-medium transition-colors ${
+      className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-medium transition-all border ${
         thisWeekOnly
-          ? "bg-gradient-to-r from-[#ff6b35] to-[#ea580c] text-white"
-          : "bg-slate-100 text-slate-500 hover:text-slate-900"
+          ? "bg-slate-900 text-white border-slate-900"
+          : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
       }`}
     >
       🆕 This Week
@@ -307,58 +307,52 @@ function Home() {
   return (
     <div className="h-full w-full relative overflow-hidden">
       {/* Top bar */}
-      <div className="fixed top-0 left-0 right-0 h-12 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-[1000] flex items-center px-4 gap-3">
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#ff6b35] shrink-0" />
-          <div className="flex flex-col leading-none">
-            <span className="font-semibold text-sm tracking-tight bg-gradient-to-r from-[#ff6b35] to-[#f59e0b] bg-clip-text text-transparent leading-tight">BuzzMaps</span>
-            <span className="text-[10px] text-slate-400 leading-tight">Toronto&#39;s places, as told by the internet</span>
-          </div>
+      <div className="fixed top-0 left-0 right-0 h-12 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-[1000] flex items-center px-4 gap-2">
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="w-2.5 h-2.5 rounded-full bg-[#ff6b35]" />
+          <span className="font-semibold text-sm tracking-tight bg-gradient-to-r from-[#ff6b35] to-[#f59e0b] bg-clip-text text-transparent">BuzzMaps</span>
         </div>
 
         {/* View toggle */}
-        <div className="flex bg-slate-100 rounded-full border border-slate-200 overflow-hidden ml-2 p-0.5">
+        <div className="flex bg-slate-100 rounded-lg overflow-hidden ml-2 p-0.5 shrink-0">
           <button
             onClick={() => setView("map")}
-            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
-              view === "map"
-                ? "bg-gradient-to-r from-[#ff6b35] to-[#ea580c] text-white shadow-sm"
-                : "text-slate-500 hover:text-slate-900"
+            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+              view === "map" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
             }`}
           >
             Map
           </button>
           <button
             onClick={() => setView("list")}
-            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
-              view === "list"
-                ? "bg-gradient-to-r from-[#ff6b35] to-[#ea580c] text-white shadow-sm"
-                : "text-slate-500 hover:text-slate-900"
+            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+              view === "list" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
             }`}
           >
             List
           </button>
         </div>
 
-        {/* Desktop: inline search + filters + scrape */}
+        {/* Desktop search */}
         <input
           ref={searchInputRef}
           type="text"
-          placeholder="Search places... (press / to focus)"
+          placeholder="Search places..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="hidden md:block ml-4 flex-1 max-w-xs px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-[#9ca3af] outline-none focus:border-[#ff6b35]"
+          className="hidden md:block ml-2 flex-1 max-w-xs px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35] focus:ring-1 focus:ring-[#ff6b35]/20"
         />
 
-        <div className="hidden md:flex gap-1">
+        {/* Desktop time filters */}
+        <div className="hidden md:flex gap-0.5 ml-2">
           {filterButtons.map((f) => (
             <button
               key={f.since}
               onClick={() => setFilter((prev) => ({ ...prev, since: f.since }))}
-              className={`min-h-[36px] px-3 py-2 rounded-full text-xs font-medium transition-colors ${
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
                 filter.since === f.since
-                  ? "bg-gradient-to-r from-[#ff6b35] to-[#ea580c] text-white"
-                  : "bg-slate-100 text-slate-500 hover:text-slate-900"
+                  ? "bg-slate-900 text-white"
+                  : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
               }`}
             >
               {f.label}
@@ -366,207 +360,100 @@ function Home() {
           ))}
         </div>
 
-        <div className="hidden md:flex gap-1 border-l border-slate-200 pl-2 ml-1 overflow-x-auto no-scrollbar flex-nowrap">
-          {CATEGORY_FILTERS.map((c) => (
-            <button
-              key={c.value}
-              onClick={() => setFilter((prev) => ({ ...prev, category: c.value }))}
-              className={`min-h-[36px] px-3 py-2 rounded-full text-xs font-medium transition-colors shrink-0 ${
-                filter.category === c.value
-                  ? "bg-gradient-to-r from-[#ff6b35] to-[#ea580c] text-white"
-                  : "bg-slate-100 text-slate-500 hover:text-slate-900"
-              }`}
-            >
-              {c.label}
-            </button>
-          ))}
-          <div className="border-l border-slate-200 pl-2 ml-1 shrink-0">{thisWeekChip}</div>
-        </div>
-
-        <div className="hidden md:flex ml-auto gap-2 items-center">
-          <a href="/collections" className="px-3 py-2 text-xs font-medium text-slate-500 hover:text-[#ff6b35] transition-colors">📚 Collections</a>
-          <a href="/stats" className="px-3 py-2 text-xs font-medium text-slate-500 hover:text-[#ff6b35] transition-colors">📊 Stats</a>
-          <a href="/about" className="px-3 py-2 text-xs font-medium text-slate-500 hover:text-[#ff6b35] transition-colors">About</a>
-          <button
-            onClick={handleFetchPhotos}
-            disabled={fetchingPhotos}
-            className="px-3 py-2 min-h-[36px] bg-green-50 hover:bg-green-100 disabled:opacity-50 text-green-700 text-xs font-medium rounded-lg transition-colors border border-green-200"
-          >
-            {fetchingPhotos ? "Fetching..." : "📷 Fetch Photos"}
-          </button>
-          <button
-            onClick={handleScrapePubs}
-            disabled={scrapingPubs}
-            className="px-3 py-2 min-h-[36px] bg-blue-50 hover:bg-blue-100 disabled:opacity-50 text-blue-600 text-xs font-medium rounded-lg transition-colors border border-blue-200"
-          >
-            {scrapingPubs ? "Scraping..." : "📰 Scrape Publications"}
-          </button>
-          <button
-            onClick={handleScrapeEvents}
-            disabled={scrapingEvents}
-            className="px-3 py-2 min-h-[36px] bg-purple-50 hover:bg-purple-100 disabled:opacity-50 text-purple-600 text-xs font-medium rounded-lg transition-colors border border-purple-200"
-          >
-            {scrapingEvents ? "Scraping..." : "🎪 Scrape Events"}
-          </button>
-          <button
-            onClick={handleScrape}
-            disabled={scraping}
-            className="px-3 py-2 min-h-[36px] bg-gradient-to-r from-[#ff6b35] to-[#ea580c] hover:bg-[#ea580c] disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
-          >
-            {scraping ? "Scraping..." : "Scrape Sources"}
-          </button>
+        {/* Desktop nav links */}
+        <div className="hidden md:flex ml-auto gap-1 items-center">
+          <a href="/collections" className="px-2 py-1 text-xs text-slate-400 hover:text-[#ff6b35] transition-colors">Collections</a>
+          <a href="/stats" className="px-2 py-1 text-xs text-slate-400 hover:text-[#ff6b35] transition-colors">Stats</a>
+          <a href="/about" className="px-2 py-1 text-xs text-slate-400 hover:text-[#ff6b35] transition-colors">About</a>
           <button
             onClick={handleScrapeAll}
             disabled={scrapingAll}
-            className="px-3 py-2 min-h-[36px] bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+            className="ml-1 px-3 py-1.5 bg-[#ff6b35] hover:bg-[#ea580c] disabled:opacity-50 text-white text-[11px] font-semibold rounded-lg transition-colors"
           >
-            {scrapingAll ? "Scraping All..." : "⚡ Scrape All"}
+            {scrapingAll ? "Scraping..." : "⚡ Scrape All"}
           </button>
         </div>
 
-        {/* Mobile: hamburger button */}
+        {/* Mobile: hamburger */}
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className="md:hidden ml-auto p-2 min-h-[36px] text-slate-900"
+          className="md:hidden ml-auto p-2 text-slate-600"
           aria-label="Toggle menu"
         >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
             {menuOpen ? (
               <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             ) : (
-              <>
-                <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </>
+              <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             )}
           </svg>
         </button>
       </div>
 
+      {/* Category filter bar — always visible */}
+      <div className="fixed top-12 left-0 right-0 h-10 bg-white/95 backdrop-blur-sm border-b border-slate-100 z-[999] flex items-center px-3 gap-1.5 overflow-x-auto no-scrollbar">
+        {CATEGORY_FILTERS.map((c) => {
+          const isActive = filter.category === c.value;
+          const catColor = c.value !== "all" ? CATEGORY_COLORS[c.value as PlaceCategory] : undefined;
+          return (
+            <button
+              key={c.value}
+              onClick={() => setFilter((prev) => ({ ...prev, category: c.value }))}
+              className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-medium transition-all border ${
+                isActive
+                  ? "text-white border-transparent shadow-sm"
+                  : "bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700"
+              }`}
+              style={isActive && catColor ? { background: catColor, borderColor: catColor } : isActive ? { background: "#0f172a", borderColor: "#0f172a" } : undefined}
+            >
+              {c.label}
+            </button>
+          );
+        })}
+        <div className="shrink-0 border-l border-slate-200 pl-1.5 ml-0.5">{thisWeekChip}</div>
+      </div>
+
       {/* Mobile dropdown panel */}
       {menuOpen && (
-        <div className="fixed top-12 left-0 right-0 z-[999] bg-white/95 backdrop-blur-sm border-b border-slate-200 p-3 flex flex-col gap-3 md:hidden">
-          {/* Mobile view toggle */}
-          <div className="flex bg-slate-100 rounded-full border border-slate-200 overflow-hidden self-start p-0.5">
-            <button
-              onClick={() => setView("map")}
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-                view === "map"
-                  ? "bg-gradient-to-r from-[#ff6b35] to-[#ea580c] text-white shadow-sm"
-                  : "text-slate-500 hover:text-slate-900"
-              }`}
-            >
-              Map
-            </button>
-            <button
-              onClick={() => setView("list")}
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-                view === "list"
-                  ? "bg-gradient-to-r from-[#ff6b35] to-[#ea580c] text-white shadow-sm"
-                  : "text-slate-500 hover:text-slate-900"
-              }`}
-            >
-              List
-            </button>
-          </div>
+        <div className="fixed top-[88px] left-0 right-0 z-[998] bg-white/95 backdrop-blur-sm border-b border-slate-200 p-3 flex flex-col gap-3 md:hidden">
           <input
             type="text"
             placeholder="Search places..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3 py-2 min-h-[36px] bg-slate-100 border border-slate-200 rounded-lg text-base text-slate-900 placeholder-[#9ca3af] outline-none focus:border-[#ff6b35]"
+            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35]"
           />
           <div className="flex gap-1 flex-wrap">
             {filterButtons.map((f) => (
               <button
                 key={f.since}
-                onClick={() => {
-                  setFilter((prev) => ({ ...prev, since: f.since }));
-                }}
-                className={`min-h-[36px] px-3 py-2 rounded-full text-xs font-medium transition-colors ${
+                onClick={() => setFilter((prev) => ({ ...prev, since: f.since }))}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
                   filter.since === f.since
-                    ? "bg-gradient-to-r from-[#ff6b35] to-[#ea580c] text-white"
-                    : "bg-slate-100 text-slate-500 hover:text-slate-900"
+                    ? "bg-slate-900 text-white"
+                    : "text-slate-400 hover:text-slate-600 bg-slate-50"
                 }`}
               >
                 {f.label}
               </button>
             ))}
           </div>
-          <div className="flex gap-1 flex-nowrap overflow-x-auto no-scrollbar pb-1">
-            {CATEGORY_FILTERS.map((c) => (
-              <button
-                key={c.value}
-                onClick={() => {
-                  setFilter((prev) => ({ ...prev, category: c.value }));
-                }}
-                className={`min-h-[36px] px-3 py-2 rounded-full text-xs font-medium transition-colors shrink-0 ${
-                  filter.category === c.value
-                    ? "bg-gradient-to-r from-[#ff6b35] to-[#ea580c] text-white"
-                    : "bg-slate-100 text-slate-500 hover:text-slate-900"
-                }`}
-              >
-                {c.label}
-              </button>
-            ))}
-            <div className="shrink-0">{thisWeekChip}</div>
-          </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-1.5 flex-wrap">
+            <a href="/collections" className="px-3 py-1.5 text-xs text-slate-500 bg-slate-50 rounded-lg">Collections</a>
+            <a href="/stats" className="px-3 py-1.5 text-xs text-slate-500 bg-slate-50 rounded-lg">Stats</a>
             <button
-              onClick={() => {
-                handleFetchPhotos();
-                setMenuOpen(false);
-              }}
-              disabled={fetchingPhotos}
-              className="px-3 py-2 min-h-[36px] bg-green-50 border border-green-200 hover:bg-green-100 disabled:opacity-50 text-green-700 text-xs font-medium rounded-lg transition-colors"
-            >
-              {fetchingPhotos ? "Fetching..." : "📷 Fetch Photos"}
-            </button>
-            <button
-              onClick={() => {
-                handleScrapePubs();
-                setMenuOpen(false);
-              }}
-              disabled={scrapingPubs}
-              className="px-3 py-2 min-h-[36px] bg-blue-50 border border-blue-200 hover:bg-blue-100 disabled:opacity-50 text-blue-600 text-xs font-medium rounded-lg transition-colors"
-            >
-              {scrapingPubs ? "Scraping..." : "📰 Scrape Publications"}
-            </button>
-            <button
-              onClick={() => {
-                handleScrapeEvents();
-                setMenuOpen(false);
-              }}
-              disabled={scrapingEvents}
-              className="px-3 py-2 min-h-[36px] bg-purple-50 border border-purple-200 hover:bg-purple-100 disabled:opacity-50 text-purple-600 text-xs font-medium rounded-lg transition-colors"
-            >
-              {scrapingEvents ? "Scraping..." : "🎪 Scrape Events"}
-            </button>
-            <button
-              onClick={() => {
-                handleScrape();
-                setMenuOpen(false);
-              }}
-              disabled={scraping}
-              className="px-3 py-2 min-h-[36px] bg-slate-100 border border-slate-200 hover:bg-slate-200 disabled:opacity-50 text-slate-500 text-xs font-medium rounded-lg transition-colors"
-            >
-              {scraping ? "Scraping..." : "Scrape Sources"}
-            </button>
-            <button
-              onClick={() => {
-                handleScrapeAll();
-                setMenuOpen(false);
-              }}
+              onClick={() => { handleScrapeAll(); setMenuOpen(false); }}
               disabled={scrapingAll}
-              className="px-3 py-2 min-h-[36px] bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+              className="px-3 py-1.5 bg-[#ff6b35] disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors"
             >
-              {scrapingAll ? "Scraping All..." : "⚡ Scrape All"}
+              {scrapingAll ? "Scraping..." : "⚡ Scrape All"}
             </button>
           </div>
         </div>
       )}
 
       {view === "map" && trendingNow.length > 0 && (
-        <div className="fixed top-12 left-0 right-0 z-[600] px-3 py-1.5 overflow-x-auto no-scrollbar flex gap-2 pointer-events-none">
+        <div className="fixed top-[88px] left-0 right-0 z-[600] px-3 py-1.5 overflow-x-auto no-scrollbar flex gap-2 pointer-events-none">
           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide shrink-0 self-center pointer-events-none">🔥 Trending</span>
           {trendingNow.map(r => (
             <button key={r.id} onClick={() => { handleFlyTo(r.lat, r.lng); }}
@@ -590,9 +477,9 @@ function Home() {
           />
 
           {/* Map */}
-          <div className="h-full w-full pt-12 pb-8 relative">
+          <div className="h-full w-full pt-[88px] pb-8 relative">
             {/* Floating search */}
-            <div ref={searchContainerRef} style={{ position: "absolute", top: "56px", left: "50%", transform: "translateX(-50%)", zIndex: 600, width: "280px" }}>
+            <div ref={searchContainerRef} style={{ position: "absolute", top: "8px", left: "50%", transform: "translateX(-50%)", zIndex: 600, width: "280px" }}>
               <input
                 type="text"
                 placeholder="🔍 Search places..."
@@ -720,6 +607,7 @@ function Home() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           loading={loading}
+          activeCategory={filter.category}
           onViewOnMap={(lat, lng) => {
             handleFlyTo(lat, lng);
             setView("map");
