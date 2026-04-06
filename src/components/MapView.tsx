@@ -68,10 +68,14 @@ function InitialLocationHandler() {
   useEffect(() => {
     if (hasRun.current) return;
     hasRun.current = true;
+
+    // Force zoom to street level immediately
+    map.setZoom(16);
+
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        map.flyTo([pos.coords.latitude, pos.coords.longitude], 15, { duration: 1 });
+        map.flyTo([pos.coords.latitude, pos.coords.longitude], 16, { duration: 1 });
       },
       () => { /* denied — stay on default */ },
       { timeout: 5000 }
