@@ -15,6 +15,14 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "s3-media*.yelpcdn.com",
       },
+      {
+        protocol: "https",
+        hostname: "fastly.4sqi.net",
+      },
+      {
+        protocol: "https",
+        hostname: "*.wikipedia.org",
+      },
     ],
   },
 };

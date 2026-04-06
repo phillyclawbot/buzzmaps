@@ -3,6 +3,92 @@ import type { PlaceCategory } from "./types";
 
 const USER_AGENT = "BuzzMaps/1.0 (https://buzzmaps.vercel.app; buzzmaps@example.com)";
 
+// ─── Wikipedia article images ──────────────────────────────────────────────
+
+/**
+ * Search Wikipedia for the place by name and return its article's main image.
+ * Tries exact name first, then "{name} Toronto".
+ */
+export async function fetchWikipediaPhoto(name: string): Promise<string | null> {
+  const queries = [name, `${name} Toronto`];
+  for (const q of queries) {
+    try {
+      const url =
+        `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(q)}` +
+        `&prop=pageimages&pithumbsize=600&format=json&redirects=1`;
+      const res = await fetch(url, {
+        headers: { "User-Agent": USER_AGENT },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const pages = data?.query?.pages ?? {};
+      for (const page of Object.values(pages) as Array<{ thumbnail?: { source?: string }; missing?: boolean }>) {
+        if (page.missing) continue;
+        if (page.thumbnail?.source) return page.thumbnail.source;
+      }
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+// ─── Foursquare Places API ─────────────────────────────────────────────────
+
+/**
+ * Search Foursquare for a venue by name + coordinates, then fetch its photo.
+ * Requires FOURSQUARE_API_KEY env var. Gracefully returns null if not set.
+ */
+export async function fetchFoursquarePhoto(
+  name: string,
+  lat: number,
+  lng: number
+): Promise<string | null> {
+  const apiKey = process.env.FOURSQUARE_API_KEY;
+  if (!apiKey) return null;
+
+  try {
+    // Search for venue
+    const searchParams = new URLSearchParams({
+      query: name,
+      ll: `${lat},${lng}`,
+      radius: "500",
+      limit: "1",
+    });
+    const searchRes = await fetch(
+      `https://api.foursquare.com/v3/places/search?${searchParams}`,
+      {
+        headers: { Authorization: apiKey, Accept: "application/json" },
+        signal: AbortSignal.timeout(8000),
+      }
+    );
+    if (!searchRes.ok) return null;
+    const searchData = await searchRes.json();
+    const venue = searchData?.results?.[0];
+    if (!venue?.fsq_id) return null;
+
+    await delay(500);
+
+    // Fetch photos for venue
+    const photosRes = await fetch(
+      `https://api.foursquare.com/v3/places/${venue.fsq_id}/photos?limit=1`,
+      {
+        headers: { Authorization: apiKey, Accept: "application/json" },
+        signal: AbortSignal.timeout(8000),
+      }
+    );
+    if (!photosRes.ok) return null;
+    const photos = await photosRes.json();
+    const photo = photos?.[0];
+    if (!photo?.prefix || !photo?.suffix) return null;
+
+    return `${photo.prefix}600x400${photo.suffix}`;
+  } catch {
+    return null;
+  }
+}
+
 // ─── Wikimedia Commons geosearch ────────────────────────────────────────────
 
 /** Image filename patterns to skip (maps, diagrams, logos, icons). */
@@ -33,7 +119,7 @@ export async function fetchWikimediaPhoto(
     // Step 1: geosearch for images near the coordinates
     const geoUrl =
       `https://commons.wikimedia.org/w/api.php?action=query&list=geosearch` +
-      `&gscoord=${lat}|${lng}&gsradius=500&gsnamespace=6&gslimit=10&format=json`;
+      `&gscoord=${lat}|${lng}&gsradius=200&gsnamespace=6&gslimit=10&format=json`;
 
     const geoRes = await fetch(geoUrl, {
       headers: { "User-Agent": USER_AGENT },
@@ -274,23 +360,33 @@ export interface PlaceForEnrichment {
   category: string;
 }
 
+export type PhotoSource = "wikipedia" | "foursquare" | "wikimedia" | "yelp" | "unsplash";
+
 /**
  * Try all free photo sources for a place, returning the first successful URL.
- * Order: Wikimedia Commons → Yelp → Unsplash fallback.
+ * Order: Wikipedia → Foursquare → Wikimedia Commons → Yelp → Unsplash fallback.
  */
 export async function enrichPhoto(
   place: PlaceForEnrichment,
   city: string = "toronto"
-): Promise<{ url: string; source: "wikimedia" | "yelp" | "unsplash" }> {
-  // 1. Wikimedia Commons
+): Promise<{ url: string; source: PhotoSource }> {
+  // 1. Wikipedia article image (name-based, most accurate)
+  const wp = await fetchWikipediaPhoto(place.name);
+  if (wp) return { url: wp, source: "wikipedia" };
+
+  // 2. Foursquare venue photo (name + location)
+  const fsq = await fetchFoursquarePhoto(place.name, place.lat, place.lng);
+  if (fsq) return { url: fsq, source: "foursquare" };
+
+  // 3. Wikimedia Commons geosearch
   const wiki = await fetchWikimediaPhoto(place.lat, place.lng, place.name);
   if (wiki) return { url: wiki, source: "wikimedia" };
 
-  // 2. Yelp
+  // 4. Yelp OG image scraping
   const yelp = await fetchYelpPhoto(place.name, city);
   if (yelp) return { url: yelp, source: "yelp" };
 
-  // 3. Unsplash fallback (always succeeds)
+  // 5. Unsplash fallback (always succeeds)
   const unsplash = getUnsplashFallback(place.name, place.category, place.id);
   return { url: unsplash, source: "unsplash" };
 }
