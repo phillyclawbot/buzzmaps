@@ -3,6 +3,65 @@ import type { PlaceCategory } from "./types";
 
 const USER_AGENT = "BuzzMaps/1.0 (https://buzzmaps.vercel.app; buzzmaps@example.com)";
 
+// ─── Wikidata SPARQL geosearch ─────────────────────────────────────────────
+
+/**
+ * Query the Wikidata SPARQL endpoint for entities with an image (P18) property
+ * within 100m of the given coordinates. Prefers results whose label matches the
+ * place name. Far more accurate than Wikimedia Commons geosearch because each
+ * result's image is directly attributed to a specific named entity.
+ */
+export async function fetchWikidataPhoto(
+  lat: number,
+  lng: number,
+  name: string
+): Promise<string | null> {
+  try {
+    const sparql = `
+SELECT ?item ?itemLabel ?image WHERE {
+  SERVICE wikibase:around {
+    ?item wdt:P625 ?coord .
+    bd:serviceParam wikibase:center "Point(${lng} ${lat})"^^geo:wktLiteral .
+    bd:serviceParam wikibase:radius "0.1" .
+  }
+  ?item wdt:P18 ?image .
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en" }
+}
+LIMIT 5`.trim();
+
+    const endpoint =
+      `https://query.wikidata.org/sparql?query=${encodeURIComponent(sparql)}&format=json`;
+
+    const res = await fetch(endpoint, {
+      headers: { "User-Agent": USER_AGENT, Accept: "application/sparql-results+json" },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    const bindings: Array<Record<string, { value: string }>> =
+      data?.results?.bindings ?? [];
+    if (bindings.length === 0) return null;
+
+    // Prefer the result whose label best matches the place name
+    const nameWords = name.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+    const best =
+      bindings.find((b) => {
+        const label = (b.itemLabel?.value ?? "").toLowerCase();
+        return nameWords.some((w) => label.includes(w));
+      }) ?? bindings[0];
+
+    const imageUrl = best?.image?.value;
+    if (!imageUrl) return null;
+
+    // Wikidata returns: http://commons.wikimedia.org/wiki/Special:FilePath/File.jpg
+    // Append ?width=600 to get a resized thumbnail
+    return imageUrl.replace(/^http:\/\//, "https://") + "?width=600";
+  } catch {
+    return null;
+  }
+}
+
 // ─── Wikipedia article images ──────────────────────────────────────────────
 
 /**
@@ -360,33 +419,37 @@ export interface PlaceForEnrichment {
   category: string;
 }
 
-export type PhotoSource = "wikipedia" | "foursquare" | "wikimedia" | "yelp" | "unsplash";
+export type PhotoSource = "wikidata" | "wikipedia" | "foursquare" | "wikimedia" | "yelp" | "unsplash";
 
 /**
  * Try all free photo sources for a place, returning the first successful URL.
- * Order: Wikipedia → Foursquare → Wikimedia Commons → Yelp → Unsplash fallback.
+ * Order: Wikidata → Wikipedia → Foursquare → Wikimedia Commons → Yelp → Unsplash fallback.
  */
 export async function enrichPhoto(
   place: PlaceForEnrichment,
   city: string = "toronto"
 ): Promise<{ url: string; source: PhotoSource }> {
-  // 1. Wikipedia article image (name-based, most accurate)
+  // 1. Wikidata SPARQL geosearch (geo-accurate, image linked directly to entity)
+  const wd = await fetchWikidataPhoto(place.lat, place.lng, place.name);
+  if (wd) return { url: wd, source: "wikidata" };
+
+  // 2. Wikipedia article image (name-based)
   const wp = await fetchWikipediaPhoto(place.name);
   if (wp) return { url: wp, source: "wikipedia" };
 
-  // 2. Foursquare venue photo (name + location)
+  // 3. Foursquare venue photo (name + location)
   const fsq = await fetchFoursquarePhoto(place.name, place.lat, place.lng);
   if (fsq) return { url: fsq, source: "foursquare" };
 
-  // 3. Wikimedia Commons geosearch
+  // 4. Wikimedia Commons geosearch
   const wiki = await fetchWikimediaPhoto(place.lat, place.lng, place.name);
   if (wiki) return { url: wiki, source: "wikimedia" };
 
-  // 4. Yelp OG image scraping
+  // 5. Yelp OG image scraping
   const yelp = await fetchYelpPhoto(place.name, city);
   if (yelp) return { url: yelp, source: "yelp" };
 
-  // 5. Unsplash fallback (always succeeds)
+  // 6. Unsplash fallback (always succeeds)
   const unsplash = getUnsplashFallback(place.name, place.category, place.id);
   return { url: unsplash, source: "unsplash" };
 }

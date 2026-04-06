@@ -22,7 +22,9 @@ export async function GET(req: Request) {
         `
       : await sql`
           SELECT id, name, lat, lng, category, photo_url FROM restaurants
-          WHERE photo_url IS NULL OR photo_url LIKE '%unsplash.com%'
+          WHERE photo_url IS NULL
+             OR photo_url LIKE '%unsplash.com%'
+             OR photo_url LIKE '%wikimedia.org%'
           ORDER BY first_seen_at DESC
           LIMIT ${limit}
         `;
@@ -30,6 +32,7 @@ export async function GET(req: Request) {
     let enriched = 0;
     let upgraded = 0;
     const sources: Record<PhotoSource, number> = {
+      wikidata: 0,
       wikipedia: 0,
       foursquare: 0,
       wikimedia: 0,
@@ -39,11 +42,12 @@ export async function GET(req: Request) {
 
     // Source priority for upgrade decisions (lower = better)
     const priority: Record<string, number> = {
-      wikipedia: 0,
-      foursquare: 1,
-      wikimedia: 2,
-      yelp: 3,
-      unsplash: 4,
+      wikidata: 0,
+      wikipedia: 1,
+      foursquare: 2,
+      wikimedia: 3,
+      yelp: 4,
+      unsplash: 5,
     };
 
     for (const p of places) {
@@ -56,9 +60,11 @@ export async function GET(req: Request) {
 
       // Determine current source from URL
       const currentUrl: string | null = p.photo_url;
-      let currentPriority = 5; // no photo
+      let currentPriority = 6; // no photo
       if (currentUrl) {
-        if (currentUrl.includes("wikipedia.org")) currentPriority = priority.wikipedia;
+        // Special:FilePath URLs come from Wikidata SPARQL results
+        if (currentUrl.includes("Special:FilePath")) currentPriority = priority.wikidata;
+        else if (currentUrl.includes("wikipedia.org")) currentPriority = priority.wikipedia;
         else if (currentUrl.includes("4sqi.net") || currentUrl.includes("foursquare")) currentPriority = priority.foursquare;
         else if (currentUrl.includes("wikimedia.org")) currentPriority = priority.wikimedia;
         else if (currentUrl.includes("yelpcdn.com")) currentPriority = priority.yelp;
