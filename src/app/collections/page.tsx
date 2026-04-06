@@ -1,7 +1,7 @@
 import { getDb } from "@/lib/db";
 import Link from "next/link";
 import type { PlaceCategory } from "@/lib/types";
-import { CATEGORY_EMOJI } from "@/lib/types";
+import CollectionCard from "@/components/CollectionCard";
 
 export const dynamic = "force-dynamic";
 
@@ -234,57 +234,14 @@ export default async function CollectionsPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {collectionsWithData.map((col) => (
-            <Link
+            <CollectionCard
               key={col.id}
-              href={`/${col.linkParams}`}
-              className="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#ff6b35]/40 transition-all overflow-hidden"
-            >
-              {/* Header */}
-              <div className="bg-gradient-to-br from-[#ff6b35]/10 to-[#f59e0b]/5 px-5 pt-5 pb-3">
-                <div className="flex items-start gap-3">
-                  <span className="text-3xl leading-none">{col.emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <h2 className="text-sm font-bold text-slate-900 group-hover:text-[#ff6b35] transition-colors leading-tight">
-                      {col.title}
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{col.description}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Count badge + place list */}
-              <div className="px-5 pb-5 pt-3">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs font-semibold bg-[#ff6b35]/10 text-[#ff6b35] px-2.5 py-1 rounded-full">
-                    {col.places.length} place{col.places.length !== 1 ? "s" : ""}
-                  </span>
-                  <span className="text-xs text-slate-400 ml-auto">View all →</span>
-                </div>
-
-                {col.places.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic">No places found yet</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {col.places.slice(0, 5).map((place, i) => (
-                      <div key={place.id} className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-slate-400 w-4 shrink-0">{i + 1}</span>
-                        <span className="text-sm leading-none shrink-0">{CATEGORY_EMOJI[place.category] || "📍"}</span>
-                        <span className="text-xs font-medium text-slate-700 flex-1 truncate">{place.name}</span>
-                        {place.google_rating && (
-                          <span className="text-[10px] text-slate-400 shrink-0">⭐ {place.google_rating.toFixed(1)}</span>
-                        )}
-                        <span className="text-[10px] text-[#ff6b35] font-semibold shrink-0 bg-[#ff6b35]/10 px-1.5 py-0.5 rounded-full">
-                          {place.mention_count}💬
-                        </span>
-                      </div>
-                    ))}
-                    {col.places.length > 5 && (
-                      <p className="text-[10px] text-slate-400 pl-10">+{col.places.length - 5} more</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </Link>
+              emoji={col.emoji}
+              title={col.title}
+              description={col.description}
+              linkParams={col.linkParams}
+              places={col.places}
+            />
           ))}
         </div>
       </div>

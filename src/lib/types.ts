@@ -31,6 +31,14 @@ export const CATEGORY_EMOJI: Record<PlaceCategory, string> = {
   other: "📍",
 };
 
+export interface CollectionPlaceRow {
+  id: number;
+  name: string;
+  category: PlaceCategory;
+  mention_count: number;
+  google_rating: number | null;
+}
+
 /** Entity-specific metadata for different place types */
 export interface PlaceMetadata {
   event_date?: string;
