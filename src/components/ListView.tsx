@@ -234,7 +234,7 @@ export default function ListView({
   onViewOnMap: (lat: number, lng: number) => void;
   loading?: boolean;
 }) {
-  const [sort, setSort] = useState<SortMode>("mentions");
+  const [sort, setSort] = useState<SortMode>("buzz");
   const [category, setCategory] = useState("all");
   const [neighbourhood, setNeighbourhood] = useState("all");
 
