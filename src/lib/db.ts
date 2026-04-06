@@ -66,6 +66,10 @@ export async function runMigrations() {
     END $$
   `;
 
+  // Add category and metadata columns (used by saveRestaurant, events, and submit routes)
+  await sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'other'`;
+  await sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS metadata JSONB`;
+
   await sql`
     CREATE TABLE IF NOT EXISTS post_restaurants (
       id SERIAL PRIMARY KEY,

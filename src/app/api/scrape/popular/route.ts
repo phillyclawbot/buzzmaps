@@ -16,20 +16,25 @@ export const maxDuration = 60;
  * high-value targets for extracting place names.
  */
 const CURATED_LIST_URLS = [
-  // BlogTO listicles
-  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2024/01/best-restaurants-toronto/" },
-  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2024/01/best-new-restaurants-toronto/" },
-  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2024/01/best-brunch-toronto/" },
-  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2024/01/best-cheap-eats-toronto/" },
-  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2024/01/best-patios-toronto/" },
-  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2024/01/best-bars-toronto/" },
-  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2024/01/best-coffee-shops-toronto/" },
-  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2024/01/best-bakeries-toronto/" },
-  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2024/01/best-pizza-toronto/" },
-  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2024/01/best-ramen-toronto/" },
-  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2024/01/best-sushi-toronto/" },
-  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2024/01/best-burgers-toronto/" },
-  { name: "BlogTO", url: "https://www.blogto.com/sports_play/2024/01/best-parks-toronto/" },
+  // BlogTO listicles — use 2026 URLs (BlogTO republishes annually)
+  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2026/01/best-restaurants-toronto/" },
+  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2026/01/best-new-restaurants-toronto/" },
+  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2026/01/best-brunch-toronto/" },
+  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2026/01/best-cheap-eats-toronto/" },
+  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2026/01/best-patios-toronto/" },
+  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2026/01/best-bars-toronto/" },
+  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2026/01/best-coffee-shops-toronto/" },
+  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2026/01/best-bakeries-toronto/" },
+  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2026/01/best-pizza-toronto/" },
+  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2026/01/best-ramen-toronto/" },
+  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2026/01/best-sushi-toronto/" },
+  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2026/01/best-burgers-toronto/" },
+  { name: "BlogTO", url: "https://www.blogto.com/sports_play/2026/01/best-parks-toronto/" },
+  // BlogTO fallback — 2025 URLs in case 2026 aren't live yet
+  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2025/01/best-restaurants-toronto/" },
+  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2025/01/best-new-restaurants-toronto/" },
+  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2025/01/best-brunch-toronto/" },
+  { name: "BlogTO", url: "https://www.blogto.com/eat_drink/2025/01/best-bars-toronto/" },
   // Eater Toronto maps (curated best-of lists)
   { name: "Eater Toronto", url: "https://toronto.eater.com/maps/best-restaurants-toronto" },
   { name: "Eater Toronto", url: "https://toronto.eater.com/maps/best-new-restaurants-toronto" },
@@ -100,12 +105,16 @@ export async function GET() {
           redirect: "follow",
         });
         if (!res.ok) {
-          results.push({ url: source.url, name: source.name, places: 0, error: `HTTP ${res.status}` });
+          const msg = `HTTP ${res.status}`;
+          console.warn(`[popular] ${source.name} (${source.url}): ${msg}`);
+          results.push({ url: source.url, name: source.name, places: 0, error: msg });
           continue;
         }
         html = await res.text();
       } catch (e) {
-        results.push({ url: source.url, name: source.name, places: 0, error: String(e).slice(0, 80) });
+        const msg = String(e).slice(0, 80);
+        console.warn(`[popular] ${source.name} fetch error: ${msg}`);
+        results.push({ url: source.url, name: source.name, places: 0, error: msg });
         continue;
       }
 

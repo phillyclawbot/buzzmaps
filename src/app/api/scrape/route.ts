@@ -22,7 +22,9 @@ export async function GET() {
 
     for (const sub of subreddits) {
       try {
+        console.log(`[scrape] Fetching r/${sub.name}...`);
         const { posts } = await fetchSubredditPosts(sub.name, 100);
+        console.log(`[scrape] r/${sub.name}: ${posts.length} posts fetched`);
 
         for (const p of posts) {
           // Save every post (no longer filtering by is_food_related only)
@@ -67,8 +69,8 @@ export async function GET() {
         }
 
         await sql`UPDATE subreddits SET last_scraped_at = NOW() WHERE name = ${sub.name}`;
-      } catch {
-        // continue with next subreddit
+      } catch (e) {
+        console.warn(`[scrape] r/${sub.name} failed: ${e}`);
       }
     }
 
