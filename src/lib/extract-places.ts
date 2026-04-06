@@ -94,32 +94,6 @@ export async function extractVenuesWithAI(text: string): Promise<ExtractedVenue[
   }
 }
 
-const BLOCKLIST = new Set([
-  // Neighbourhoods
-  "Scarborough", "Etobicoke", "North York", "Parkdale", "Leslieville",
-  "Kensington", "Liberty Village", "Junction", "Beaches", "Danforth",
-  "Roncesvalles", "Bedford Park", "Rosedale", "Forest Hill", "Cabbagetown",
-  "Chinatown", "Koreatown", "Little Italy", "Greektown",
-  // Subway stations
-  "College", "Dundas", "Queen", "King", "Union", "Bloor-Yonge", "St. George",
-  "Spadina", "Bathurst", "Ossington", "Dufferin", "Broadview", "Pape",
-  "Woodbine", "Finch", "Sheppard-Yonge", "York Mills", "Lawrence", "Eglinton",
-  "St. Clair", "Wellesley", "Bay", "Museum",
-  // Streets
-  "Yonge Street", "Queen Street", "King Street", "Bloor Street",
-  "College Street", "Spadina Avenue", "Bay Street", "Front Street",
-  // Other
-  "TTC", "GO Transit", "TMU", "UofT", "Toronto Police", "City Hall", "Levi's",
-  // Common false positives
-  "Toronto", "Ontario", "Canada", "Reddit", "The", "This", "That",
-  "Anyone", "Everyone", "Someone", "Does Anyone", "Has Anyone",
-  "Looking For", "Best", "Good", "Great", "New", "Old",
-]);
-
-const COMMON_SINGLE_WORDS = new Set([
-  "College", "Queen", "King", "Union", "Bay", "Church", "Front",
-  "Main", "Park", "Market", "Lawrence", "Finch", "Jane",
-]);
 
 export function extractVenuesFromText(text: string): string[] {
   const names = new Set<string>();
@@ -207,8 +181,6 @@ export function extractVenuesFromText(text: string): string[] {
 
   return [...names].filter((n) => {
     if (n.length < 3) return false;
-    if (BLOCKLIST.has(n)) return false;
-    if (n.split(/\s+/).length === 1 && COMMON_SINGLE_WORDS.has(n)) return false;
     if (n.split(/\s+/).length > 5) return false;
     return true;
   });
