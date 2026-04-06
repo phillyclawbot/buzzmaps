@@ -149,12 +149,12 @@ function InitialLocationHandler() {
     hasRun.current = true;
 
     // Force zoom to street level immediately
-    map.setZoom(16);
+    map.setZoom(13);
 
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        map.flyTo([pos.coords.latitude, pos.coords.longitude], 16, { duration: 1 });
+        map.flyTo([pos.coords.latitude, pos.coords.longitude], 13, { duration: 1 });
       },
       () => { /* denied — stay on default */ },
       { timeout: 5000 }
@@ -363,7 +363,7 @@ export default function MapView({
     </div>
     <MapContainer
       center={[43.6532, -79.3832]}
-      zoom={18}
+      zoom={13}
       className="h-full w-full"
       zoomControl={false}
       ref={mapRef}
