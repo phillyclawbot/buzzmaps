@@ -5,6 +5,7 @@ import { CATEGORY_EMOJI } from "@/lib/types";
 import type { PlaceCategory } from "@/lib/types";
 import { getCollectionById } from "@/lib/collections";
 import type { CollectionQuery } from "@/lib/collections";
+import { isPublication } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -294,10 +295,12 @@ export default async function CollectionDetailPage({
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                         Mentions
                       </p>
-                      {posts.map((post) => (
+                      {posts.map((post) => {
+                        const isPub = isPublication(post.subreddit);
+                        return (
                         <a
                           key={post.id}
-                          href={`https://reddit.com${post.permalink}`}
+                          href={isPub ? post.permalink : `https://reddit.com${post.permalink}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-start gap-2.5 group"
@@ -308,9 +311,15 @@ export default async function CollectionDetailPage({
                               {post.title}
                             </p>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-[10px] text-[#ff6b35]/80 font-medium">
-                                r/{post.subreddit}
-                              </span>
+                              {isPub ? (
+                                <span className="text-[10px] px-1 py-0.5 bg-blue-50 text-blue-500 rounded font-medium">
+                                  📰 {post.subreddit}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-[#ff6b35]/80 font-medium">
+                                  r/{post.subreddit}
+                                </span>
+                              )}
                               <span className="text-[10px] text-slate-400">
                                 ↑{post.score}
                               </span>
@@ -336,7 +345,8 @@ export default async function CollectionDetailPage({
                             <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
                           </svg>
                         </a>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
