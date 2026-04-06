@@ -38,8 +38,8 @@ export const CATEGORY_COLORS: Record<PlaceCategory, string> = {
   market: "#10b981",
   museum: "#3b82f6",
   event: "#d946ef",
-  landmark: "#0ea5e9",
-  attraction: "#f43f5e",
+  landmark: "#78716c",
+  attraction: "#f97316",
   other: "#64748b",
 };
 

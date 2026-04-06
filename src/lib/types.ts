@@ -33,16 +33,13 @@ export const CATEGORY_EMOJI: Record<PlaceCategory, string> = {
 
 /** Entity-specific metadata for different place types */
 export interface PlaceMetadata {
-  // Events
   event_date?: string;
   event_end_date?: string;
   ticket_url?: string;
-  // Landmarks / attractions
+  venue_name?: string;
   hours?: string;
   admission_fee?: string;
-  // Shops / businesses
   website?: string;
-  // Generic extensible
   [key: string]: string | undefined;
 }
 

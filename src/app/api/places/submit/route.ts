@@ -40,7 +40,7 @@ async function geocodeAddress(address: string, name: string): Promise<{ lat: num
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, category, address, reason } = body;
+    const { name, category, address, reason, eventDate, ticketUrl } = body;
 
     if (!name || typeof name !== "string" || name.trim().length === 0) {
       return NextResponse.json({ error: "Place name is required" }, { status: 400 });
@@ -78,13 +78,22 @@ export async function POST(req: NextRequest) {
     const placeId = `user_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const safeCategory = (VALID_CATEGORIES as readonly string[]).includes(category) ? category : "other";
 
+    // Build metadata for events
+    const metadata: Record<string, string> = {};
+    if (safeCategory === "event") {
+      if (eventDate && typeof eventDate === "string") metadata.event_date = eventDate;
+      if (ticketUrl && typeof ticketUrl === "string") metadata.ticket_url = ticketUrl;
+    }
+    const metadataJson = Object.keys(metadata).length > 0 ? JSON.stringify(metadata) : null;
+
     // Save to restaurants table
     const restaurantRows = await sql`
-      INSERT INTO restaurants (name, place_id, address, lat, lng, category)
-      VALUES (${name.trim()}, ${placeId}, ${displayAddress}, ${lat}, ${lng}, ${safeCategory})
+      INSERT INTO restaurants (name, place_id, address, lat, lng, category, metadata)
+      VALUES (${name.trim()}, ${placeId}, ${displayAddress}, ${lat}, ${lng}, ${safeCategory}, ${metadataJson}::jsonb)
       ON CONFLICT (place_id) DO UPDATE SET
         name = EXCLUDED.name,
-        address = EXCLUDED.address
+        address = EXCLUDED.address,
+        metadata = COALESCE(EXCLUDED.metadata, restaurants.metadata)
       RETURNING id, name, place_id, address, lat, lng, category
     `;
     const restaurant = restaurantRows[0];

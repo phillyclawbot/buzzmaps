@@ -141,6 +141,28 @@ function renderStars(rating: number | null): string {
   );
 }
 
+function InitialLocationHandler() {
+  const map = useMap();
+  const hasRun = useRef(false);
+  useEffect(() => {
+    if (hasRun.current) return;
+    hasRun.current = true;
+
+    // Force zoom to street level immediately
+    map.setZoom(16);
+
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        map.flyTo([pos.coords.latitude, pos.coords.longitude], 16, { duration: 1 });
+      },
+      () => { /* denied — stay on default */ },
+      { timeout: 5000 }
+    );
+  }, [map]);
+  return null;
+}
+
 function FlyToHandler({ target }: { target: [number, number] | null }) {
   const map = useMap();
   useEffect(() => {
@@ -340,8 +362,8 @@ export default function MapView({
       </button>
     </div>
     <MapContainer
-      center={[43.7000, -79.3900]}
-      zoom={11}
+      center={[43.6532, -79.3832]}
+      zoom={18}
       className="h-full w-full"
       zoomControl={false}
       ref={mapRef}
@@ -350,6 +372,7 @@ export default function MapView({
         attribution='&copy; <a href="https://carto.com/">CARTO</a>'
         url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
       />
+      <InitialLocationHandler />
       <FlyToHandler target={flyTo} />
       {/* Near Me radius circle */}
       {nearMeActive && userCoords && (

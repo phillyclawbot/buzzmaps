@@ -178,6 +178,32 @@ function PlaceCard({
             )}
           </button>
         </div>
+        {/* Name / stats pinned to bottom of image */}
+        <div className="absolute bottom-0 left-0 right-0 p-3">
+          <h3 className="font-black text-white text-sm leading-tight mb-0.5 drop-shadow">{r.name}</h3>
+          <p className="text-white/55 text-xs truncate mb-1.5">{r.address}</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            {r.category === "event" && r.metadata?.event_date ? (
+              <span className="text-xs font-semibold bg-white/20 text-white px-2 py-0.5 rounded-full backdrop-blur-sm">
+                📅 {new Date(r.metadata.event_date).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
+              </span>
+            ) : (
+              <span className="text-xs font-semibold bg-white/20 text-white px-2 py-0.5 rounded-full backdrop-blur-sm">
+                {r.mention_count} mention{Number(r.mention_count) !== 1 ? "s" : ""}
+              </span>
+            )}
+            {r.google_rating && (
+              <span className="text-xs text-amber-300 font-semibold">⭐ {r.google_rating.toFixed(1)}</span>
+            )}
+            {r.category === "event" && r.metadata?.venue_name && (
+              <span className="text-white/55 text-xs truncate">📍 {r.metadata.venue_name}</span>
+            )}
+            <span className="text-white/45 text-xs ml-auto">{formatTimeAgo(r.latest_mention)}</span>
+          </div>
+          {!expanded && posts[0] && (
+            <p className="text-white/40 text-xs italic mt-1 line-clamp-1">&ldquo;{posts[0].title}&rdquo;</p>
+          )}
+        </div>
       </div>
 
       {/* Expanded posts */}
@@ -214,8 +240,36 @@ function PlaceCard({
         </div>
       )}
 
-      {/* Check-in */}
-      <div className="px-3.5 pb-3" onClick={(e) => e.stopPropagation()}>
+      {/* Action buttons — normal flow, never overlaps */}
+      <div className="px-4 pb-3 pt-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
+        <button
+          onClick={() => onViewOnMap(r.lat, r.lng)}
+          className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-600 hover:bg-[#ff6b35] hover:text-white hover:border-[#ff6b35] transition-all"
+        >
+          Map →
+        </button>
+        {r.category === "event" && r.metadata?.ticket_url ? (
+          <a
+            href={r.metadata.ticket_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="flex-1 px-3 py-2 rounded-xl text-xs font-medium text-white text-center transition-all"
+            style={{ background: color }}
+          >
+            🎟️ Tickets
+          </a>
+        ) : (
+          <a
+            href={`/place/${encodeURIComponent(r.name)}`}
+            onClick={(e) => e.stopPropagation()}
+            className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-600 hover:bg-[#ff6b35] hover:text-white hover:border-[#ff6b35] transition-all text-center"
+          >
+            Profile →
+          </a>
+        )}
+      </div>
+      <div className="px-4 pb-4" onClick={(e) => e.stopPropagation()}>
         <CheckinButton placeId={r.id} />
       </div>
     </div>
@@ -235,7 +289,7 @@ export default function ListView({
   onViewOnMap: (lat: number, lng: number) => void;
   loading?: boolean;
 }) {
-  const [sort, setSort] = useState<SortMode>("mentions");
+  const [sort, setSort] = useState<SortMode>("buzz");
   const [category, setCategory] = useState("all");
   const [neighbourhood, setNeighbourhood] = useState("all");
 

@@ -54,29 +54,16 @@ export async function runMigrations() {
     )
   `;
 
-  // Migrate existing databases: add category column if missing
-  await sql`
-    ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'restaurant'
-  `;
-
-  // Migrate existing databases: rename photo_reference → photo_url (only if photo_url doesn't already exist)
+  // Migrate existing databases: rename photo_reference → photo_url
   await sql`
     DO $$ BEGIN
       IF EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_name = 'restaurants' AND column_name = 'photo_reference'
-      ) AND NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name = 'restaurants' AND column_name = 'photo_url'
       ) THEN
         ALTER TABLE restaurants RENAME COLUMN photo_reference TO photo_url;
       END IF;
     END $$
-  `;
-
-  // Add metadata column for entity-specific fields (events, landmarks, etc.)
-  await sql`
-    ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb
   `;
 
   await sql`
