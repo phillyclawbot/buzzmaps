@@ -9,6 +9,7 @@ export async function GET(req: Request) {
   const sql = getDb();
   const url = new URL(req.url);
   const limit = Math.min(Math.max(1, parseInt(url.searchParams.get("limit") || "15", 10) || 15), 50);
+  const offset = Math.max(0, parseInt(url.searchParams.get("offset") || "0", 10) || 0);
   const city = url.searchParams.get("city") || "toronto";
   const force = url.searchParams.get("force") === "true";
 
@@ -17,8 +18,8 @@ export async function GET(req: Request) {
     const places = force
       ? await sql`
           SELECT id, name, lat, lng, category, photo_url FROM restaurants
-          ORDER BY first_seen_at DESC
-          LIMIT ${limit}
+          ORDER BY id ASC
+          LIMIT ${limit} OFFSET ${offset}
         `
       : await sql`
           SELECT id, name, lat, lng, category, photo_url FROM restaurants
