@@ -9,6 +9,9 @@ export type PlaceCategory =
   | "venue"
   | "market"
   | "museum"
+  | "event"
+  | "landmark"
+  | "attraction"
   | "other";
 
 export const CATEGORY_EMOJI: Record<PlaceCategory, string> = {
@@ -22,8 +25,23 @@ export const CATEGORY_EMOJI: Record<PlaceCategory, string> = {
   venue: "🎭",
   market: "🥬",
   museum: "🏛️",
+  event: "🎪",
+  landmark: "🏗️",
+  attraction: "🎡",
   other: "📍",
 };
+
+/** Entity-specific metadata for different place types */
+export interface PlaceMetadata {
+  event_date?: string;
+  event_end_date?: string;
+  ticket_url?: string;
+  venue_name?: string;
+  hours?: string;
+  admission_fee?: string;
+  website?: string;
+  [key: string]: string | undefined;
+}
 
 export interface Restaurant {
   id: number;
@@ -40,6 +58,7 @@ export interface Restaurant {
   mention_count: number;
   latest_mention: number;
   photo_url: string | null;
+  metadata?: PlaceMetadata;
   posts: PostMention[];
 }
 

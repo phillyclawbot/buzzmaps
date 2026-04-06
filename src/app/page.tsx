@@ -30,6 +30,7 @@ function Home() {
   const [toast, setToast] = useState<string | null>(null);
   const [scraping, setScraping] = useState(false);
   const [scrapingPubs, setScrapingPubs] = useState(false);
+  const [scrapingEvents, setScrapingEvents] = useState(false);
   const [fetchingPhotos, setFetchingPhotos] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [view, setView] = useState<"map" | "list">("map");
@@ -51,7 +52,7 @@ function Home() {
   const [nearMeRadius, setNearMeRadius] = useState(2);
   const [searchOpen, setSearchOpen] = useState(false);
   const [submitOpen, setSubmitOpen] = useState(false);
-  const [submitForm, setSubmitForm] = useState({ name: "", category: "other", address: "", reason: "" });
+  const [submitForm, setSubmitForm] = useState({ name: "", category: "other", address: "", reason: "", eventDate: "", ticketUrl: "" });
   const [submitState, setSubmitState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [submitError, setSubmitError] = useState("");
   const mapSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -209,6 +210,21 @@ function Home() {
     }
   };
 
+  const handleScrapeEvents = async () => {
+    setScrapingEvents(true);
+    try {
+      const res = await fetch("/api/scrape/events");
+      if (res.ok) {
+        const data = await res.json();
+        setToast(`Found ${data.places_found || 0} events (${data.eventbrite || 0} Eventbrite, ${data.ticketmaster || 0} Ticketmaster)`);
+        setTimeout(() => setToast(null), 4000);
+      }
+      await fetchData();
+    } finally {
+      setScrapingEvents(false);
+    }
+  };
+
   const handleFetchPhotos = async () => {
     setFetchingPhotos(true);
     try {
@@ -348,6 +364,13 @@ function Home() {
             {scrapingPubs ? "Scraping..." : "📰 Scrape Publications"}
           </button>
           <button
+            onClick={handleScrapeEvents}
+            disabled={scrapingEvents}
+            className="px-3 py-2 min-h-[36px] bg-purple-50 hover:bg-purple-100 disabled:opacity-50 text-purple-600 text-xs font-medium rounded-lg transition-colors border border-purple-200"
+          >
+            {scrapingEvents ? "Scraping..." : "🎪 Scrape Events"}
+          </button>
+          <button
             onClick={handleScrape}
             disabled={scraping}
             className="px-3 py-2 min-h-[36px] bg-gradient-to-r from-[#ff6b35] to-[#ea580c] hover:bg-[#ea580c] disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
@@ -462,6 +485,16 @@ function Home() {
               className="px-3 py-2 min-h-[36px] bg-blue-50 border border-blue-200 hover:bg-blue-100 disabled:opacity-50 text-blue-600 text-xs font-medium rounded-lg transition-colors"
             >
               {scrapingPubs ? "Scraping..." : "📰 Scrape Publications"}
+            </button>
+            <button
+              onClick={() => {
+                handleScrapeEvents();
+                setMenuOpen(false);
+              }}
+              disabled={scrapingEvents}
+              className="px-3 py-2 min-h-[36px] bg-purple-50 border border-purple-200 hover:bg-purple-100 disabled:opacity-50 text-purple-600 text-xs font-medium rounded-lg transition-colors"
+            >
+              {scrapingEvents ? "Scraping..." : "🎪 Scrape Events"}
             </button>
             <button
               onClick={() => {
@@ -661,7 +694,7 @@ function Home() {
 
       {/* Submit a Place Button */}
       <button
-        onClick={() => { setSubmitOpen(true); setSubmitState("idle"); setSubmitError(""); setSubmitForm({ name: "", category: "other", address: "", reason: "" }); }}
+        onClick={() => { setSubmitOpen(true); setSubmitState("idle"); setSubmitError(""); setSubmitForm({ name: "", category: "other", address: "", reason: "", eventDate: "", ticketUrl: "" }); }}
         className="fixed z-50 bg-white border border-slate-200 shadow-lg rounded-full px-4 py-2 text-sm font-semibold text-slate-700 hover:border-[#ff6b35] hover:text-[#ff6b35] transition-all flex items-center gap-1.5"
         style={{ bottom: "44px", right: "12px" }}
       >
@@ -716,9 +749,33 @@ function Home() {
                       <option value="gym">🏋️ Gym</option>
                       <option value="venue">🎵 Venue</option>
                       <option value="museum">🏛️ Museum</option>
+                      <option value="event">🎪 Event</option>
                       <option value="other">📍 Other</option>
                     </select>
                   </div>
+                  {submitForm.category === "event" && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-600 mb-1">Event Date</label>
+                        <input
+                          type="datetime-local"
+                          value={submitForm.eventDate}
+                          onChange={(e) => setSubmitForm((f) => ({ ...f, eventDate: e.target.value }))}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 outline-none focus:border-[#ff6b35] bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-600 mb-1">Ticket URL <span className="text-slate-400">(optional)</span></label>
+                        <input
+                          type="url"
+                          value={submitForm.ticketUrl}
+                          onChange={(e) => setSubmitForm((f) => ({ ...f, ticketUrl: e.target.value }))}
+                          placeholder="https://..."
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35]"
+                        />
+                      </div>
+                    </>
+                  )}
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">Address <span className="text-[#ff6b35]">*</span></label>
                     <input

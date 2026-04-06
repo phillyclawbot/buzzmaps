@@ -54,7 +54,7 @@ export async function extractVenuesWithAI(text: string): Promise<ExtractedVenue[
       )
       .map((v: { name: string; category: string }) => ({
         name: v.name,
-        category: VALID_CATEGORIES_SET.has(v.category) ? (v.category as PlaceCategory) : "other",
+        category: VALID_CATEGORIES_SET.has(v.category as PlaceCategory) ? (v.category as PlaceCategory) : "other",
       }))
       .slice(0, 8);
   } catch {
@@ -147,17 +147,21 @@ export async function saveRestaurant(
   postId: number,
   context: string,
   sentiment: string,
-  category: PlaceCategory = "restaurant"
+  category: PlaceCategory = "restaurant",
+  metadata?: Record<string, string>
 ): Promise<void> {
   const sql = getDb();
 
+  const metadataJson = metadata ? JSON.stringify(metadata) : null;
+
   const rows = await sql`
-    INSERT INTO restaurants (name, place_id, address, lat, lng, google_rating, google_reviews_count, category)
-    VALUES (${place.name}, ${place.place_id}, ${place.address}, ${place.lat}, ${place.lng}, ${place.rating}, ${place.reviews_count}, ${category})
+    INSERT INTO restaurants (name, place_id, address, lat, lng, google_rating, google_reviews_count, category, metadata)
+    VALUES (${place.name}, ${place.place_id}, ${place.address}, ${place.lat}, ${place.lng}, ${place.rating}, ${place.reviews_count}, ${category}, ${metadataJson}::jsonb)
     ON CONFLICT (place_id) DO UPDATE SET
       name = EXCLUDED.name,
       address = EXCLUDED.address,
-      category = EXCLUDED.category
+      category = EXCLUDED.category,
+      metadata = COALESCE(EXCLUDED.metadata, restaurants.metadata)
     RETURNING id
   `;
 
