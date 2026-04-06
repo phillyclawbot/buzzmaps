@@ -7,7 +7,6 @@ import {
   saveRestaurant,
   countMentions,
 } from "@/lib/extract-places";
-import { delay } from "@/lib/utils";
 import type { PlaceCategory } from "@/lib/types";
 
 // Toronto publications + blogs with working RSS feeds
@@ -122,36 +121,7 @@ function slugify(text: string): string {
 }
 
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ").replace(/&#\d+;/g, " ").replace(/\s+/g, " ").trim();
-}
-
-/**
- * Fetch the full article text from a URL, stripping HTML tags.
- * Returns null on failure so callers can fall back to RSS description.
- */
-async function fetchArticleText(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; BuzzMaps/1.0; +https://buzzmaps.ca)",
-        "Accept": "text/html,application/xhtml+xml,*/*",
-      },
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!res.ok) return null;
-    const html = await res.text();
-    // Remove scripts, styles, nav, header, footer, ads — keep article body
-    const cleaned = html
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " ")
-      .replace(/<nav[\s\S]*?<\/nav>/gi, " ")
-      .replace(/<header[\s\S]*?<\/header>/gi, " ")
-      .replace(/<footer[\s\S]*?<\/footer>/gi, " ")
-      .replace(/<!--[\s\S]*?-->/g, " ");
-    return stripHtml(cleaned).slice(0, 8000);
-  } catch {
-    return null;
-  }
+  return html.replace(/<[^>]*>/g, " ").replace(/&amp;/g, "&").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
 }
 
 export interface PublicationsScrapeResult {
@@ -220,21 +190,10 @@ export async function scrapePublications(): Promise<PublicationsScrapeResult> {
       totalPosts++;
       feedResults[feed.name].posts++;
 
-      // Fetch full article text; fall back to RSS description if unavailable
-      let articleText = cleanDesc;
-      if (item.link && !item.link.includes("reddit.com")) {
-        const fullText = await fetchArticleText(item.link);
-        if (fullText && fullText.length > cleanDesc.length) {
-          articleText = fullText;
-        }
-        // Respect rate limits between article fetches
-        await delay(500);
-      }
-
-      const combinedText = `${item.title}\n${articleText}`;
+      const combinedText = `${item.title}\n${cleanDesc}`;
       let venues = await extractVenuesWithAI(combinedText);
       if (!venues.length) {
-        const names = extractRestaurantNames(item.title, articleText);
+        const names = extractRestaurantNames(item.title, cleanDesc);
         venues = names.map(name => ({ name, category: "restaurant" as PlaceCategory }));
       }
 
