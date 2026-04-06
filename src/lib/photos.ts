@@ -21,8 +21,45 @@ interface WikiImageInfo {
 }
 
 /**
- * Search Wikimedia Commons for geotagged photos near the given coordinates.
- * Returns a thumbnail URL or null.
+ * Fetch a thumbnail URL from a Wikimedia Commons page result.
+ */
+async function fetchThumbnail(title: string): Promise<string | null> {
+  const infoUrl =
+    `https://commons.wikimedia.org/w/api.php?action=query` +
+    `&titles=${encodeURIComponent(title)}` +
+    `&prop=imageinfo&iiprop=url&iiurlwidth=600&format=json`;
+
+  const infoRes = await fetch(infoUrl, {
+    headers: { "User-Agent": USER_AGENT },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!infoRes.ok) return null;
+  const infoData = await infoRes.json();
+
+  const pages = infoData?.query?.pages ?? {};
+  const page = Object.values(pages)[0] as { imageinfo?: WikiImageInfo[] } | undefined;
+  const imageInfo = page?.imageinfo?.[0];
+
+  return imageInfo?.thumburl ?? imageInfo?.url ?? null;
+}
+
+/**
+ * Pick the best candidate from a list, preferring titles that mention the place name.
+ */
+function pickBestCandidate(candidates: WikiGeoResult[], name: string): WikiGeoResult {
+  const nameWords = name.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+  return (
+    candidates.find((c) => {
+      const t = c.title.toLowerCase();
+      return nameWords.some((w) => t.includes(w));
+    }) ?? candidates[0]
+  );
+}
+
+/**
+ * Search Wikimedia Commons for photos of a place.
+ * Tries geosearch first (geotagged photos near coordinates), then falls back
+ * to a title/text search by name for landmarks and well-known places.
  */
 export async function fetchWikimediaPhoto(
   lat: number,
@@ -30,7 +67,7 @@ export async function fetchWikimediaPhoto(
   name: string
 ): Promise<string | null> {
   try {
-    // Step 1: geosearch for images near the coordinates
+    // Strategy 1: geosearch for images near the coordinates
     const geoUrl =
       `https://commons.wikimedia.org/w/api.php?action=query&list=geosearch` +
       `&gscoord=${lat}|${lng}&gsradius=500&gsnamespace=6&gslimit=10&format=json`;
@@ -39,47 +76,49 @@ export async function fetchWikimediaPhoto(
       headers: { "User-Agent": USER_AGENT },
       signal: AbortSignal.timeout(8000),
     });
-    if (!geoRes.ok) return null;
-    const geoData = await geoRes.json();
 
-    const results: WikiGeoResult[] = geoData?.query?.geosearch ?? [];
-    if (results.length === 0) return null;
+    if (geoRes.ok) {
+      const geoData = await geoRes.json();
+      const results: WikiGeoResult[] = geoData?.query?.geosearch ?? [];
+      const candidates = results.filter((r) => !SKIP_PATTERNS.test(r.title));
 
-    // Filter out non-photo files
-    const candidates = results.filter(
-      (r) => !SKIP_PATTERNS.test(r.title)
-    );
-    if (candidates.length === 0) return null;
-
-    // Prefer results whose title mentions the place name
-    const nameLower = name.toLowerCase();
-    const nameWords = nameLower.split(/\s+/).filter((w) => w.length > 3);
-    const best =
-      candidates.find((c) => {
-        const t = c.title.toLowerCase();
-        return nameWords.some((w) => t.includes(w));
-      }) ?? candidates[0];
+      if (candidates.length > 0) {
+        const best = pickBestCandidate(candidates, name);
+        await delay(1100);
+        const url = await fetchThumbnail(best.title);
+        if (url) return url;
+      }
+    }
 
     await delay(1100); // respect Wikimedia rate limits
 
-    // Step 2: get thumbnail URL
-    const infoUrl =
-      `https://commons.wikimedia.org/w/api.php?action=query` +
-      `&titles=${encodeURIComponent(best.title)}` +
-      `&prop=imageinfo&iiprop=url&iiurlwidth=600&format=json`;
+    // Strategy 2: search by name (catches landmarks, famous places, etc.)
+    const searchQuery = encodeURIComponent(`${name} Toronto`);
+    const searchUrl =
+      `https://commons.wikimedia.org/w/api.php?action=query&list=search` +
+      `&srnamespace=6&srsearch=${searchQuery}&srlimit=10&format=json`;
 
-    const infoRes = await fetch(infoUrl, {
+    const searchRes = await fetch(searchUrl, {
       headers: { "User-Agent": USER_AGENT },
       signal: AbortSignal.timeout(8000),
     });
-    if (!infoRes.ok) return null;
-    const infoData = await infoRes.json();
+    if (!searchRes.ok) return null;
+    const searchData = await searchRes.json();
 
-    const pages = infoData?.query?.pages ?? {};
-    const page = Object.values(pages)[0] as { imageinfo?: WikiImageInfo[] } | undefined;
-    const imageInfo = page?.imageinfo?.[0];
+    const searchResults: { title: string }[] = searchData?.query?.search ?? [];
+    const searchCandidates = searchResults.filter((r) => !SKIP_PATTERNS.test(r.title));
+    if (searchCandidates.length === 0) return null;
 
-    return imageInfo?.thumburl ?? imageInfo?.url ?? null;
+    // Pick the best match from search results
+    const nameWords = name.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+    const bestSearch =
+      searchCandidates.find((c) => {
+        const t = c.title.toLowerCase();
+        return nameWords.some((w) => t.includes(w));
+      }) ?? searchCandidates[0];
+
+    await delay(1100);
+    return await fetchThumbnail(bestSearch.title);
   } catch {
     return null;
   }
