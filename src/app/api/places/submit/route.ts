@@ -5,33 +5,35 @@ import { delay, isInToronto } from "@/lib/utils";
 
 async function geocodeAddress(address: string, name: string): Promise<{ lat: number; lng: number; displayName: string } | null> {
   try {
-    const q = encodeURIComponent(`${address} Toronto Ontario Canada`);
+    const q = encodeURIComponent(`${address} Toronto`);
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=ca`,
+      `https://photon.komoot.io/api/?q=${q}&lat=43.6532&lon=-79.3832&limit=1`,
       { headers: { "User-Agent": "BuzzMaps/1.0" } }
     );
     const data = await res.json();
-    if (!data?.length) {
+    if (!data?.features?.length) {
       // Try just the name if address failed
-      const q2 = encodeURIComponent(`${name} Toronto Ontario`);
+      const q2 = encodeURIComponent(`${name} Toronto`);
       await delay(1100);
       const res2 = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${q2}&format=json&limit=1&countrycodes=ca`,
+        `https://photon.komoot.io/api/?q=${q2}&lat=43.6532&lon=-79.3832&limit=1`,
         { headers: { "User-Agent": "BuzzMaps/1.0" } }
       );
       const data2 = await res2.json();
-      if (!data2?.length) return null;
-      const place = data2[0];
-      const lat = parseFloat(place.lat);
-      const lng = parseFloat(place.lon);
-      if (!isInToronto(lat, lng)) return null;
-      return { lat, lng, displayName: place.display_name || address };
+      if (!data2?.features?.length) return null;
+      const feature2 = data2.features[0];
+      const [lng2, lat2] = feature2.geometry.coordinates;
+      if (!isInToronto(lat2, lng2)) return null;
+      const p2 = feature2.properties;
+      const displayName2 = [p2.housenumber, p2.street, p2.city || "Toronto"].filter(Boolean).join(" ") || address;
+      return { lat: lat2, lng: lng2, displayName: displayName2 };
     }
-    const place = data[0];
-    const lat = parseFloat(place.lat);
-    const lng = parseFloat(place.lon);
+    const feature = data.features[0];
+    const [lng, lat] = feature.geometry.coordinates;
     if (!isInToronto(lat, lng)) return null;
-    return { lat, lng, displayName: place.display_name || address };
+    const p = feature.properties;
+    const displayName = [p.housenumber, p.street, p.city || "Toronto"].filter(Boolean).join(" ") || address;
+    return { lat, lng, displayName };
   } catch {
     return null;
   }

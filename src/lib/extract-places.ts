@@ -234,26 +234,27 @@ export async function geocodePlace(
   _category: PlaceCategory = "other"
 ): Promise<PlaceResult | null> {
   try {
-    const q = encodeURIComponent(`${name} Toronto Ontario`);
+    const q = encodeURIComponent(`${name} Toronto`);
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=ca`,
+      `https://photon.komoot.io/api/?q=${q}&lat=43.6532&lon=-79.3832&limit=1`,
       { headers: { "User-Agent": "BuzzMaps/1.0" } }
     );
     const data = await res.json();
-    if (!data?.length) return null;
+    if (!data?.features?.length) return null;
 
-    const place = data[0];
-    const lat = parseFloat(place.lat);
-    const lng = parseFloat(place.lon);
+    const feature = data.features[0];
+    const [lng, lat] = feature.geometry.coordinates;
     if (!isInToronto(lat, lng)) return null;
 
-    const displayName: string = place.display_name || name;
-    const shortName = displayName.split(",")[0].trim();
+    const props = feature.properties;
+    const shortName: string = props.name || name;
+    const addressParts = [props.housenumber, props.street, props.city || "Toronto"].filter(Boolean);
+    const displayName = addressParts.length > 1 ? addressParts.join(" ") : shortName;
     await delay(1100);
 
     return {
       name: shortName,
-      place_id: `osm_${place.osm_id}`,
+      place_id: `osm_${props.osm_id}`,
       address: displayName,
       lat,
       lng,
