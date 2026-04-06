@@ -31,6 +31,7 @@ function Home() {
   const [scraping, setScraping] = useState(false);
   const [scrapingPubs, setScrapingPubs] = useState(false);
   const [scrapingEvents, setScrapingEvents] = useState(false);
+  const [scrapingAll, setScrapingAll] = useState(false);
   const [fetchingPhotos, setFetchingPhotos] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [view, setView] = useState<"map" | "list">("map");
@@ -222,6 +223,44 @@ function Home() {
     } finally {
       setScrapingEvents(false);
     }
+  };
+
+  const handleScrapeAll = async () => {
+    setScrapingAll(true);
+    let totalPlaces = 0;
+    for (const ep of [
+      { name: "Reddit", url: "/api/scrape" },
+      { name: "Publications", url: "/api/scrape/publications" },
+      { name: "Popular lists", url: "/api/scrape/popular" },
+      { name: "Events", url: "/api/scrape/events" },
+    ]) {
+      try {
+        setToast(`Scraping ${ep.name}...`);
+        const res = await fetch(ep.url, { signal: AbortSignal.timeout(90000) });
+        if (res.ok) {
+          const data = await res.json().catch(() => ({}));
+          totalPlaces += data.places_found || 0;
+        }
+      } catch { /* continue */ }
+    }
+    let offset = 0;
+    let batch = 1;
+    while (true) {
+      try {
+        setToast(`Backfill batch ${batch}...`);
+        const res = await fetch(`/api/scrape/backfill?queries=15&offset=${offset}`, { signal: AbortSignal.timeout(90000) });
+        if (!res.ok) break;
+        const data = await res.json();
+        totalPlaces += data.places_found || 0;
+        if (!data.next_offset) break;
+        offset = data.next_offset;
+        batch++;
+      } catch { break; }
+    }
+    try { await fetchData(true); } catch {}
+    setToast(`Scrape complete: ${totalPlaces} places found`);
+    setTimeout(() => setToast(null), 4000);
+    setScrapingAll(false);
   };
 
   const handleFetchPhotos = async () => {
