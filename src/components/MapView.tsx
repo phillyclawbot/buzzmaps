@@ -71,31 +71,35 @@ function createPinIcon(category: PlaceCategory, mentionCount: number, isRecent: 
   const color = PIN_COLORS[category] || PIN_COLORS.other;
   const showPulse = isRecent && mentionCount >= 2;
 
-  // 28x36 teardrop with 14px icon area, consistent sizing
-  const W = 28;
-  const H = 36;
+  // Render at 2x for crisp display, CSS size stays 32x42
+  const CSS_W = 32;
+  const CSS_H = 42;
+  const SVG_W = 64;
+  const SVG_H = 84;
   const iconPath = CATEGORY_ICON_PATH[category] || CATEGORY_ICON_PATH.other;
 
   const pulseRing = showPulse ? `
-    <div style="position:absolute;top:0;left:-6px;width:${W + 12}px;height:${W + 12}px;border-radius:50%;border:2px solid ${color};opacity:0;animation:pinPulse 2s ease-out infinite;pointer-events:none;"></div>
-    <div style="position:absolute;top:0;left:-6px;width:${W + 12}px;height:${W + 12}px;border-radius:50%;border:2px solid ${color};opacity:0;animation:pinPulse 2s ease-out 1s infinite;pointer-events:none;"></div>
+    <div style="position:absolute;top:-4px;left:-4px;width:${CSS_W + 8}px;height:${CSS_W + 8}px;border-radius:50%;border:2px solid ${color};opacity:0;animation:pinPulse 2s ease-out infinite;pointer-events:none;"></div>
+    <div style="position:absolute;top:-4px;left:-4px;width:${CSS_W + 8}px;height:${CSS_W + 8}px;border-radius:50%;border:2px solid ${color};opacity:0;animation:pinPulse 2s ease-out 1s infinite;pointer-events:none;"></div>
   ` : '';
 
+  // 2x resolution SVG for crisp rendering on retina/zoomed views
   const svgPin = `
-    <svg width="${W}" height="${H}" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 3px rgba(0,0,0,0.2));">
-      <path d="M14 34C14 34 25 22 25 14C25 7.37 19.63 2 14 2C8.37 2 3 7.37 3 14C3 22 14 34 14 34Z" fill="${color}"/>
-      <circle cx="14" cy="14" r="7" fill="white" fill-opacity="0.95"/>
-      <g transform="translate(7,7) scale(0.583)" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <svg width="${CSS_W}" height="${CSS_H}" viewBox="0 0 ${SVG_W} ${SVG_H}" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 3px 5px rgba(0,0,0,0.22)) drop-shadow(0 1px 2px rgba(0,0,0,0.12));">
+      <path d="M32 78C32 78 56 50 56 32C56 18.75 45.25 8 32 8C18.75 8 8 18.75 8 32C8 50 32 78 32 78Z" fill="${color}"/>
+      <circle cx="32" cy="30" r="15" fill="white" fill-opacity="0.95"/>
+      <circle cx="32" cy="30" r="15" stroke="${color}" stroke-opacity="0.15" stroke-width="1"/>
+      <g transform="translate(20,18) scale(1)" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
         <path d="${iconPath}"/>
       </g>
     </svg>`;
 
   return L.divIcon({
-    html: `<div style="position:relative;width:${W}px;height:${H}px;">${pulseRing}${svgPin}</div>`,
+    html: `<div style="position:relative;width:${CSS_W}px;height:${CSS_H}px;">${pulseRing}${svgPin}</div>`,
     className: '',
-    iconSize: [W, H],
-    iconAnchor: [W / 2, H],
-    popupAnchor: [0, -H + 4],
+    iconSize: [CSS_W, CSS_H],
+    iconAnchor: [CSS_W / 2, CSS_H],
+    popupAnchor: [0, -CSS_H + 6],
   });
 }
 
@@ -520,53 +524,80 @@ export default function MapView({
               position={[r.lat, r.lng]}
               icon={createPinIcon(category, mentionCount, isRecent)}
             >
-              <Popup maxWidth={320} minWidth={240}>
-                <div style={{ fontFamily: "inherit" }}>
-                  {/* Compact header */}
+              <Popup maxWidth={320} minWidth={250}>
+                <div style={{ fontFamily: "inherit", lineHeight: 1.4 }}>
+                  {/* Header with photo */}
                   <div style={{
-                    background: `linear-gradient(135deg, ${color}18 0%, ${color}08 100%)`,
-                    borderRadius: "8px 8px 0 0",
-                    padding: "10px 10px 8px",
-                    margin: "-4px -4px 8px",
-                    borderBottom: `2px solid ${color}20`,
+                    borderRadius: "10px 10px 0 0",
+                    margin: "-4px -4px 0",
+                    overflow: "hidden",
                   }}>
                     {r.photo_url && (
-                      <a href={`/place/${encodeURIComponent(r.name)}`}>
+                      <a href={`/place/${encodeURIComponent(r.name)}`} style={{ display: "block" }}>
                         <img
                           src={r.photo_url}
                           alt={r.name}
-                          style={{ width: "100%", maxHeight: "90px", objectFit: "cover", borderRadius: "6px", marginBottom: "8px", display: "block", cursor: "pointer" }}
+                          style={{ width: "100%", height: "100px", objectFit: "cover", display: "block" }}
                         />
                       </a>
                     )}
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <div style={{ fontSize: "15px", fontWeight: 800, color, lineHeight: 1.2, flex: 1 }}>
-                        {CATEGORY_EMOJI[category]} {r.name}
+                  </div>
+
+                  {/* Title + stats */}
+                  <div style={{ padding: "10px 10px 0" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "8px", marginBottom: "6px" }}>
+                      <div style={{
+                        width: "28px", height: "28px", borderRadius: "8px", flexShrink: 0,
+                        background: `${color}12`, border: `1.5px solid ${color}30`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${color}" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="${CATEGORY_ICON_PATH[category] || CATEGORY_ICON_PATH.other}" />
+                        </svg>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: "14px", fontWeight: 700, color: "#1e293b", lineHeight: 1.2 }}>
+                          {r.name}
+                        </div>
+                        {r.cuisine_type && (
+                          <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}>{r.cuisine_type}</div>
+                        )}
                       </div>
                       {isRecent && mentionCount >= 2 && (
-                        <span style={{ fontSize: "9px", fontWeight: 700, background: "#ff6b35", color: "white", padding: "2px 6px", borderRadius: "999px" }}>🔥 Trending</span>
+                        <span style={{
+                          fontSize: "9px", fontWeight: 700, background: color, color: "white",
+                          padding: "2px 7px", borderRadius: "999px", whiteSpace: "nowrap", flexShrink: 0,
+                        }}>Trending</span>
                       )}
+                    </div>
+
+                    {/* Stats chips */}
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
+                      {r.google_rating && (
+                        <span style={{
+                          display: "inline-flex", alignItems: "center", gap: "3px",
+                          fontSize: "11px", fontWeight: 600, color: "#374151",
+                          background: "#fef9c3", padding: "2px 8px", borderRadius: "6px",
+                        }}>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                          {r.google_rating.toFixed(1)}
+                        </span>
+                      )}
+                      <span style={{
+                        display: "inline-flex", alignItems: "center", gap: "3px",
+                        background: `${color}10`, color, fontWeight: 600, fontSize: "11px",
+                        padding: "2px 8px", borderRadius: "6px",
+                      }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="${color}" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                        {r.mention_count} mention{Number(r.mention_count) !== 1 ? "s" : ""}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Quick stats row */}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px", alignItems: "center" }}>
-                    {r.google_rating && (
-                      <span style={{ fontSize: "12px", fontWeight: 700, color: "#374151" }}>⭐ {r.google_rating.toFixed(1)}</span>
-                    )}
-                    <span style={{
-                      display: "inline-flex", alignItems: "center", gap: "3px",
-                      background: "#ff6b3520", color: "#ff6b35", fontWeight: 700, fontSize: "11px",
-                      padding: "3px 10px", borderRadius: "999px", border: "1px solid #ff6b3540",
-                    }}>
-                      💬 {r.mention_count} mention{Number(r.mention_count) !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-
-                  {/* Scrollable mentions list */}
+                  {/* Mentions list */}
                   {r.posts?.length ? (
-                    <div style={{ maxHeight: "140px", overflowY: "auto", marginBottom: "8px", borderTop: "1px solid #f1f5f9", paddingTop: "6px" }}>
-                      <div style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "4px" }}>
+                    <div style={{ maxHeight: "130px", overflowY: "auto", padding: "0 10px", marginBottom: "8px" }}>
+                      <div style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "5px", borderTop: "1px solid #f1f5f9", paddingTop: "8px" }}>
                         Mentions
                       </div>
                       {r.posts.map((p: { id: number; title: string; subreddit: string; score: number; sentiment: string; created_utc: number; permalink: string; mentions_in_thread?: number }) => (
@@ -575,19 +606,19 @@ export default function MapView({
                           href={isPublication(p.subreddit) ? p.permalink : `https://reddit.com${p.permalink}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ display: "flex", alignItems: "flex-start", gap: "6px", padding: "4px 2px", textDecoration: "none", borderRadius: "4px" }}
+                          style={{ display: "flex", alignItems: "flex-start", gap: "6px", padding: "5px 4px", textDecoration: "none", borderRadius: "6px", marginBottom: "2px" }}
                         >
                           <span style={{
-                            display: "inline-block", width: "6px", height: "6px", borderRadius: "50%",
-                            marginTop: "5px", flexShrink: 0,
+                            display: "inline-block", width: "7px", height: "7px", borderRadius: "50%",
+                            marginTop: "4px", flexShrink: 0,
                             background: SENTIMENT_COLORS[p.sentiment] || SENTIMENT_COLORS.neutral,
                           }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: "11px", color: "#334155", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <div style={{ fontSize: "11px", color: "#334155", lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }}>
                               {p.title}
                             </div>
-                            <div style={{ fontSize: "10px", color: "#94a3b8", marginTop: "1px" }}>
-                              {isPublication(p.subreddit) ? `📰 ${p.subreddit}` : `r/${p.subreddit}`} · {p.score} pts · {formatTimeAgo(p.created_utc)}
+                            <div style={{ fontSize: "10px", color: "#94a3b8", marginTop: "2px" }}>
+                              {isPublication(p.subreddit) ? p.subreddit : `r/${p.subreddit}`} · {p.score} pts · {formatTimeAgo(p.created_utc)}
                               {(p.mentions_in_thread ?? 1) > 1 ? ` · ${p.mentions_in_thread}x` : ""}
                             </div>
                           </div>
@@ -595,34 +626,38 @@ export default function MapView({
                       ))}
                     </div>
                   ) : (
-                    <div style={{ fontSize: "11px", color: "#94a3b8", textAlign: "center", padding: "8px 0", borderTop: "1px solid #f1f5f9", marginBottom: "8px" }}>
+                    <div style={{ fontSize: "11px", color: "#94a3b8", textAlign: "center", padding: "10px", borderTop: "1px solid #f1f5f9", margin: "0 10px 8px" }}>
                       No mentions yet
                     </div>
                   )}
 
-                  {/* Action buttons row */}
-                  <div style={{ display: "flex", gap: "6px", borderTop: "1px solid #f1f5f9", paddingTop: "8px" }}>
+                  {/* Action buttons */}
+                  <div style={{ display: "flex", gap: "6px", padding: "0 10px 10px", borderTop: "1px solid #f1f5f9", paddingTop: "10px" }}>
                     <a
                       href={`https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
-                        flex: 1, textAlign: "center", padding: "6px 8px",
-                        background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: "8px",
-                        color: "#0369a1", fontWeight: 600, fontSize: "11px", textDecoration: "none",
+                        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px",
+                        padding: "7px 8px",
+                        background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px",
+                        color: "#475569", fontWeight: 600, fontSize: "11px", textDecoration: "none",
                       }}
                     >
-                      🧭 Directions
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                      Directions
                     </a>
                     <a
                       href={`/place/${encodeURIComponent(r.name)}`}
                       style={{
-                        flex: 1, textAlign: "center", padding: "6px 8px",
-                        background: "#fff7f4", border: "1px solid #ff6b3540", borderRadius: "8px",
-                        color: "#ff6b35", fontWeight: 700, fontSize: "11px", textDecoration: "none",
+                        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px",
+                        padding: "7px 8px",
+                        background: `${color}10`, border: `1px solid ${color}30`, borderRadius: "8px",
+                        color, fontWeight: 700, fontSize: "11px", textDecoration: "none",
                       }}
                     >
-                      Details →
+                      Details
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
                     </a>
                   </div>
                 </div>
