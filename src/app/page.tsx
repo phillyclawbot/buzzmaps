@@ -590,7 +590,7 @@ function Home() {
       )}
 
       {/* Map view — always mounted; hidden when list is active */}
-      <div style={view === "map" ? {} : { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", pointerEvents: "none", opacity: 0, zIndex: -1 }}>
+      <div className="h-full w-full" style={view === "map" ? {} : { position: "absolute", left: 0, top: 0, pointerEvents: "none", opacity: 0, zIndex: -1 }}>
           {/* Sidebar — only when map is active */}
           {view === "map" && (
             <Sidebar
