@@ -121,5 +121,5 @@ export const SENTIMENT_LABELS: Record<string, string> = {
 
 // API pagination defaults
 export const DEFAULT_PAGE_SIZE = 100;
-export const MAX_PAGE_SIZE = 500;
+export const MAX_PAGE_SIZE = 2000;
 export const MAX_SEARCH_QUERY_LENGTH = 200;

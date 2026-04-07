@@ -142,7 +142,7 @@ function Home() {
       if (searchQuery) params.set("q", searchQuery);
 
       const [rRes, pRes, sRes] = await Promise.all([
-        fetch(`/api/places??${params}`),
+        fetch(`/api/places??${params}&limit=2000`),
         fetch("/api/posts"),
         fetch("/api/stats"),
       ]);
