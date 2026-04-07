@@ -146,13 +146,14 @@ export default async function CollectionsPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {collectionsWithData.map((col) => (
+          {collectionsWithData.map((col, i) => (
             <CollectionCard
               key={col.id}
               id={col.id}
               title={col.title}
               description={col.description}
               places={col.places}
+              index={i}
             />
           ))}
         </div>

@@ -10,6 +10,7 @@ interface CollectionCardProps {
   title: string;
   description: string;
   places: CollectionPlaceRow[];
+  index?: number;
 }
 
 export default function CollectionCard({
@@ -17,6 +18,7 @@ export default function CollectionCard({
   title,
   description,
   places,
+  index = 0,
 }: CollectionCardProps) {
   const [expanded, setExpanded] = useState(false);
   const previewCount = 5;
@@ -24,7 +26,10 @@ export default function CollectionCard({
   const visiblePlaces = expanded ? places : places.slice(0, previewCount);
 
   return (
-    <div className="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#ff6b35]/40 transition-all overflow-hidden">
+    <div
+      className="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#ff6b35]/40 transition-all overflow-hidden animate-fade-in-up"
+      style={{ "--stagger": index } as React.CSSProperties}
+    >
       {/* Clickable header links to detail page */}
       <Link
         href={`/collections/${id}`}

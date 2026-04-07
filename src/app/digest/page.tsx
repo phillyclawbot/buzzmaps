@@ -78,7 +78,7 @@ export default async function DigestPage() {
         <span className="text-sm font-semibold text-slate-700">📧 Weekly Digest</span>
       </div>
 
-      <div className="pt-16 pb-16 flex justify-center px-4">
+      <div className="pt-16 pb-20 flex justify-center px-4">
         {/* Email wrapper — max 600px centered white card */}
         <div className="w-full max-w-[600px] bg-white rounded-2xl shadow-md overflow-hidden mt-4">
           {/* Email header */}

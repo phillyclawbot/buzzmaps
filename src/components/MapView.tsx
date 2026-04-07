@@ -533,12 +533,13 @@ export default function MapView({
                     overflow: "hidden",
                   }}>
                     {r.photo_url && (
-                      <a href={`/place/${encodeURIComponent(r.name)}`} style={{ display: "block" }}>
+                      <a href={`/place/${encodeURIComponent(r.name)}`} style={{ display: "block", position: "relative" }}>
                         <img
                           src={r.photo_url}
                           alt={r.name}
-                          style={{ width: "100%", height: "100px", objectFit: "cover", display: "block" }}
+                          style={{ width: "100%", height: "110px", objectFit: "cover", display: "block" }}
                         />
+                        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "32px", background: "linear-gradient(to top, rgba(255,255,255,0.9), transparent)" }} />
                       </a>
                     )}
                   </div>
@@ -551,8 +552,8 @@ export default function MapView({
                         background: `${color}12`, border: `1.5px solid ${color}30`,
                         display: "flex", alignItems: "center", justifyContent: "center",
                       }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${color}" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="${CATEGORY_ICON_PATH[category] || CATEGORY_ICON_PATH.other}" />
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d={CATEGORY_ICON_PATH[category] || CATEGORY_ICON_PATH.other} />
                         </svg>
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -588,7 +589,7 @@ export default function MapView({
                         background: `${color}10`, color, fontWeight: 600, fontSize: "11px",
                         padding: "2px 8px", borderRadius: "6px",
                       }}>
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="${color}" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                         {r.mention_count} mention{Number(r.mention_count) !== 1 ? "s" : ""}
                       </span>
                     </div>

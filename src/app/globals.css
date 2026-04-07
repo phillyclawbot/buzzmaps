@@ -113,3 +113,67 @@ body {
   border-radius: 0 1px 1px 0;
   transition: width 0.3s ease;
 }
+
+/* ── Staggered fade-in-up for cards and sections ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out both;
+  animation-delay: calc(var(--stagger, 0) * 60ms);
+}
+
+/* ── Popup entrance ── */
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+.leaflet-popup {
+  animation: popIn 0.2s ease-out;
+}
+
+/* ── Expand / collapse with grid-rows ── */
+.expand-grid {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease-out;
+}
+.expand-grid.open {
+  grid-template-rows: 1fr;
+}
+.expand-grid > div {
+  overflow: hidden;
+}
+
+/* ── Button press micro-interaction ── */
+.press-down {
+  transition: transform 80ms ease;
+}
+.press-down:active {
+  transform: scale(0.96);
+}
+
+/* ── Bottom nav active indicator dot ── */
+@keyframes navDotIn {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
+.nav-dot {
+  animation: navDotIn 0.2s ease-out;
+}
+
+/* ── Respect reduced motion preference ── */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up,
+  .leaflet-popup,
+  .page-enter {
+    animation: none !important;
+  }
+  .expand-grid {
+    transition: none !important;
+  }
+  .press-down:active {
+    transform: none !important;
+  }
+}

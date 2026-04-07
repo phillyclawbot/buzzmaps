@@ -98,7 +98,7 @@ export default function SubmitPage() {
         </Link>
       </div>
 
-      <div className="pt-20 pb-12 px-4 flex justify-center">
+      <div className="pt-20 pb-20 px-4 flex justify-center">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 max-w-lg w-full">
           <div className="mb-6">
             <h1 className="text-xl font-bold text-slate-900 mb-1">Add a Place to BuzzMaps</h1>

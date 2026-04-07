@@ -97,7 +97,7 @@ export default async function StatsPage() {
         <span className="text-sm font-semibold text-slate-700">📊 Stats</span>
       </div>
 
-      <div className="pt-16 pb-12 max-w-4xl mx-auto px-4 page-enter">
+      <div className="pt-16 pb-20 max-w-4xl mx-auto px-4 page-enter">
         <h1 className="text-2xl font-bold text-slate-900 mb-1">📊 BuzzMaps Stats</h1>
         <p className="text-sm text-slate-500 mb-6">Toronto places as tracked by BuzzMaps</p>
 

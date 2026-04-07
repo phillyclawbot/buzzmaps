@@ -50,9 +50,11 @@ function SkeletonCard() {
 function PlaceCard({
   r,
   onViewOnMap,
+  index = 0,
 }: {
   r: Place;
   onViewOnMap: (lat: number, lng: number) => void;
+  index?: number;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -75,18 +77,24 @@ function PlaceCard({
 
   return (
     <div
-      className="group rounded-xl overflow-hidden bg-white border border-slate-200/60 hover:border-slate-300 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-[1.01]"
-      style={isEvent ? { borderLeft: `3px solid ${color}` } : undefined}
+      className="group rounded-xl overflow-hidden bg-white border border-slate-200/60 hover:border-slate-300 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-[1.01] animate-fade-in-up"
+      style={{
+        ...(isEvent ? { borderLeft: `3px solid ${color}` } : { borderTop: `2px solid ${color}` }),
+        ...({ "--stagger": index } as Record<string, number>),
+      }}
       onClick={() => setExpanded(!expanded)}
     >
-      {/* Image — clean, no overlay */}
+      {/* Image with gradient overlay */}
       <div className="relative h-36 overflow-hidden bg-slate-50">
         {r.photo_url ? (
-          <img
-            src={r.photo_url}
-            alt={r.name}
-            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
-          />
+          <>
+            <img
+              src={r.photo_url}
+              alt={r.name}
+              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+            />
+            <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/15 to-transparent" />
+          </>
         ) : (
           <div
             className="w-full h-full flex items-center justify-center"
@@ -166,7 +174,7 @@ function PlaceCard({
         <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => onViewOnMap(r.lat, r.lng)}
-            className="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors"
+            className="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors press-down"
           >
             Map
           </button>
@@ -185,7 +193,7 @@ function PlaceCard({
             <a
               href={`/place/${encodeURIComponent(r.name)}`}
               onClick={(e) => e.stopPropagation()}
-              className="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#ff6b35] bg-[#ff6b35]/10 hover:bg-[#ff6b35]/20 transition-colors text-center"
+              className="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#ff6b35] bg-[#ff6b35]/10 hover:bg-[#ff6b35]/20 transition-colors text-center press-down"
             >
               Details
             </a>
@@ -210,7 +218,8 @@ function PlaceCard({
       </div>
 
       {/* Expanded posts */}
-      {expanded && (
+      <div className={`expand-grid ${expanded ? "open" : ""}`}>
+        <div>
         <div className="px-3.5 pb-3 border-t border-slate-100">
           {hasPosts ? (
             <div className="space-y-1 pt-2.5">
@@ -252,12 +261,13 @@ function PlaceCard({
           <a
             href={`/place/${encodeURIComponent(r.name)}`}
             onClick={(e) => e.stopPropagation()}
-            className="mt-2 flex items-center justify-center gap-1.5 w-full py-2 rounded-lg text-xs font-semibold text-[#ff6b35] bg-[#ff6b35]/5 hover:bg-[#ff6b35]/10 transition-colors border border-[#ff6b35]/20"
+            className="mt-2 flex items-center justify-center gap-1.5 w-full py-2 rounded-lg text-xs font-semibold text-[#ff6b35] bg-[#ff6b35]/5 hover:bg-[#ff6b35]/10 transition-colors border border-[#ff6b35]/20 press-down"
           >
             View full details →
           </a>
         </div>
-      )}
+        </div>
+      </div>
 
       {/* Check-in */}
       <div className="px-3.5 pb-3" onClick={(e) => e.stopPropagation()}>
@@ -443,8 +453,8 @@ export default function ListView({
                   </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {places.map((r) => (
-                    <PlaceCard key={r.id} r={r} onViewOnMap={onViewOnMap} />
+                  {places.map((r, pi) => (
+                    <PlaceCard key={r.id} r={r} onViewOnMap={onViewOnMap} index={pi} />
                   ))}
                 </div>
               </div>
@@ -452,8 +462,8 @@ export default function ListView({
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filtered.map((r) => (
-              <PlaceCard key={r.id} r={r} onViewOnMap={onViewOnMap} />
+            {filtered.map((r, i) => (
+              <PlaceCard key={r.id} r={r} onViewOnMap={onViewOnMap} index={i} />
             ))}
           </div>
         )}

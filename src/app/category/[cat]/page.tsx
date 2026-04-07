@@ -54,7 +54,7 @@ export default async function CategoryPage({
         <span className="text-sm font-semibold text-slate-700">{emoji} {label}</span>
       </div>
 
-      <div className="pt-16 pb-12 max-w-4xl mx-auto px-4">
+      <div className="pt-16 pb-20 max-w-4xl mx-auto px-4">
         {/* Header */}
         <div className="mb-6">
           <Link

@@ -172,7 +172,7 @@ export default async function PlacePage({
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-6 pb-16 page-enter">
+      <div className="max-w-2xl mx-auto px-4 py-6 pb-20 page-enter">
         {/* Check-in button */}
         <div className="mb-4">
           <CheckinButton placeId={place.id} />
