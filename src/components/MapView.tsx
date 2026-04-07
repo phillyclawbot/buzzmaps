@@ -29,50 +29,80 @@ function getHoodColor(index: number): string {
 }
 
 
+// SVG path icons per category — clean, minimal line icons (24x24 viewBox)
+const CATEGORY_ICON_PATH: Record<PlaceCategory, string> = {
+  restaurant: 'M7 2v9a3 3 0 003 3h1v8h2v-8h1a3 3 0 003-3V2m-8 0v5m4-5v5M3 2v4a2 2 0 002 2h0V22h2V8h0a2 2 0 002-2V2',
+  bar:        'M8 2h8l-2 7h0a4 4 0 01-4 0h0L8 2zm4 7v13m-3 0h6',
+  cafe:       'M3 10h10a1 1 0 011 1v2a4 4 0 01-4 4H6a4 4 0 01-4-4v-2a1 1 0 011-1zm11 1h1a3 3 0 010 6h-1M6 17v2m4-2v2M9 6a3 3 0 00-1-2m3 2a3 3 0 00-1-2',
+  club:       'M9 18V5l12-2v13M9 13a3 3 0 11-6 0 3 3 0 016 0zm12-2a3 3 0 11-6 0 3 3 0 016 0z',
+  shop:       'M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.5.5-.2 1.4.5 1.4H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z',
+  park:       'M12 22V8m-4 4l4-8 4 8m-8 0h8m-10 4l2-4m8 4l2-4',
+  gym:        'M6 5v14M18 5v14M3 8h3m12 0h3M3 16h3m12 0h3M6 8h12v8H6z',
+  venue:      'M12 2L2 7l10 5 10-5-10-5zm0 15l-7-3.5V11l7 3.5 7-3.5v2.5L12 17z',
+  market:     'M3 3h18v4H3zm1 4v12h16V7M10 11h4',
+  museum:     'M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6',
+  event:      'M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2zm4 10h2v2H9z',
+  landmark:   'M4 21h16M4 21V10l3-4h10l3 4v11M9 21v-4h6v4M12 3v3',
+  attraction: 'M12 2a10 10 0 110 20 10 10 0 010-20zm0 4a6 6 0 110 12 6 6 0 010-12zm0 4a2 2 0 110 4 2 2 0 010-4z',
+  other:      'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z',
+};
+
 function createPinIcon(category: PlaceCategory, mentionCount: number, isRecent: boolean) {
   const color = CATEGORY_COLORS[category] || CATEGORY_COLORS.other;
-  const emoji = CATEGORY_EMOJI[category] || '\u{1F4CD}';
-  const size = 28;
-  const triH = 8;
-  const totalH = size + triH;
   const showPulse = isRecent && mentionCount >= 2;
 
+  // Scale pin by mention count — subtle size variation
+  const baseSize = mentionCount >= 10 ? 34 : mentionCount >= 3 ? 30 : 26;
+  const iconPath = CATEGORY_ICON_PATH[category] || CATEGORY_ICON_PATH.other;
+
   const pulseRing = showPulse ? `
-    <div style="position:absolute;top:-5px;left:-5px;width:${size + 10}px;height:${size + 10}px;border-radius:50%;border:2.5px solid #ff6b35;opacity:0;animation:pinPulse 1.8s ease-out infinite;"></div>
-    <div style="position:absolute;top:-5px;left:-5px;width:${size + 10}px;height:${size + 10}px;border-radius:50%;border:2.5px solid #ff6b35;opacity:0;animation:pinPulse 1.8s ease-out 0.9s infinite;"></div>
+    <div style="position:absolute;top:50%;left:50%;width:${baseSize + 16}px;height:${baseSize + 16}px;margin-left:-${(baseSize + 16) / 2}px;margin-top:-${(baseSize + 16) / 2}px;border-radius:50%;border:2px solid ${color};opacity:0;animation:pinPulse 2s ease-out infinite;"></div>
+    <div style="position:absolute;top:50%;left:50%;width:${baseSize + 16}px;height:${baseSize + 16}px;margin-left:-${(baseSize + 16) / 2}px;margin-top:-${(baseSize + 16) / 2}px;border-radius:50%;border:2px solid ${color};opacity:0;animation:pinPulse 2s ease-out 1s infinite;"></div>
   ` : '';
 
+  // Modern teardrop pin via SVG
+  const svgPin = `
+    <svg width="${baseSize}" height="${Math.round(baseSize * 1.4)}" viewBox="0 0 40 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="s${category}" x="-2" y="0" width="44" height="60" filterUnits="userSpaceOnUse">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.22"/>
+        </filter>
+      </defs>
+      <g filter="url(#s${category})">
+        <path d="M20 52C20 52 36 32 36 20C36 11.16 28.84 4 20 4C11.16 4 4 11.16 4 20C4 32 20 52 20 52Z" fill="${color}"/>
+        <circle cx="20" cy="20" r="11" fill="white" fill-opacity="0.95"/>
+        <g transform="translate(8,8) scale(0.5)" stroke="${color}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none">
+          <path d="${iconPath}"/>
+        </g>
+      </g>
+    </svg>`;
+
+  const totalW = baseSize;
+  const totalH = Math.round(baseSize * 1.4);
+
   return L.divIcon({
-    html: `<div style="position:relative;width:${size}px;height:${totalH}px;">
-      ${pulseRing}
-      <div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};box-shadow:0 2px 8px rgba(0,0,0,0.28),0 0 0 2px rgba(255,255,255,0.7);display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;">${emoji}</div>
-      <div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:${triH}px solid ${color};margin:0 auto;"></div>
-    </div>`,
+    html: `<div style="position:relative;width:${totalW}px;height:${totalH}px;">${pulseRing}${svgPin}</div>`,
     className: '',
-    iconSize: [size, totalH],
-    iconAnchor: [size / 2, totalH],
-    popupAnchor: [0, -totalH],
+    iconSize: [totalW, totalH],
+    iconAnchor: [totalW / 2, totalH],
+    popupAnchor: [0, -totalH + 4],
   });
 }
 
 function createClusterIcon(cluster: { getChildCount: () => number; getAllChildMarkers: () => L.Marker[] }) {
   const count = cluster.getChildCount();
-  let size = 36;
-  let bg = "#ff6b35";
-  let ring = "rgba(255,107,53,0.25)";
+  let size = 38;
+  let opacity = 0.85;
 
   if (count >= 50) {
-    size = 48;
-    bg = "#dc2626";
-    ring = "rgba(220,38,38,0.2)";
+    size = 50;
+    opacity = 1;
   } else if (count >= 20) {
-    size = 44;
-    bg = "#ea580c";
-    ring = "rgba(234,88,12,0.22)";
+    size = 46;
+    opacity = 0.95;
   } else if (count >= 10) {
-    size = 40;
-    bg = "#f97316";
-    ring = "rgba(249,115,22,0.22)";
+    size = 42;
+    opacity = 0.9;
   }
 
   // Determine neighbourhood from average marker position
@@ -90,32 +120,29 @@ function createClusterIcon(cluster: { getChildCount: () => number; getAllChildMa
 
   const labelHtml = hood
     ? `<div style="
-        position:absolute;top:${size + 2}px;left:50%;transform:translateX(-50%);
-        white-space:nowrap;font-size:10px;font-weight:700;color:#334155;
-        background:rgba(255,255,255,0.92);backdrop-filter:blur(4px);
-        padding:1px 6px;border-radius:6px;
-        box-shadow:0 1px 4px rgba(0,0,0,0.12);
-        pointer-events:none;line-height:1.3;
+        position:absolute;top:${size + 3}px;left:50%;transform:translateX(-50%);
+        white-space:nowrap;font-size:9px;font-weight:600;color:#475569;
+        background:rgba(255,255,255,0.95);backdrop-filter:blur(8px);
+        padding:2px 8px;border-radius:8px;
+        box-shadow:0 1px 6px rgba(0,0,0,0.08);
+        pointer-events:none;line-height:1.2;letter-spacing:0.2px;
       ">${hood}</div>`
     : "";
 
-  const totalH = hood ? size + 18 : size;
+  const totalH = hood ? size + 20 : size;
+  const innerR = size / 2;
+  const strokeW = count >= 50 ? 3 : 2.5;
+
+  // Modern frosted cluster: white bg with brand accent ring + count
+  const svg = `
+    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="${innerR}" cy="${innerR}" r="${innerR - 1}" fill="white" fill-opacity="${opacity}" stroke="#ff6b35" stroke-width="${strokeW}" stroke-opacity="0.6"/>
+      <circle cx="${innerR}" cy="${innerR}" r="${innerR - 5}" fill="#ff6b35" fill-opacity="0.08"/>
+      <text x="${innerR}" y="${innerR}" text-anchor="middle" dominant-baseline="central" font-size="${count >= 100 ? 12 : 13}" font-weight="700" fill="#334155" font-family="system-ui,-apple-system,sans-serif">${count}</text>
+    </svg>`;
 
   return L.divIcon({
-    html: `<div style="position:relative;width:${size}px;height:${totalH}px;">
-      <div style="
-        width:${size}px;height:${size}px;
-        border-radius:50%;
-        background:${bg};
-        color:white;
-        font-weight:800;
-        font-size:${count >= 100 ? 12 : 13}px;
-        display:flex;align-items:center;justify-content:center;
-        box-shadow:0 2px 10px rgba(0,0,0,0.3), 0 0 0 4px ${ring};
-        border:2px solid rgba(255,255,255,0.8);
-      ">${count}</div>
-      ${labelHtml}
-    </div>`,
+    html: `<div style="position:relative;width:${size}px;height:${totalH}px;">${svg}${labelHtml}</div>`,
     className: "",
     iconSize: [size, totalH],
     iconAnchor: [size / 2, size / 2],
