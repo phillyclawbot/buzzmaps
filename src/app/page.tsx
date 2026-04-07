@@ -589,17 +589,19 @@ function Home() {
         </div>
       )}
 
-      {/* Map view — always mounted; hidden view uses offscreen positioning */}
-      <div style={view === "map" ? {} : { position: "fixed", left: "-200vw", visibility: "hidden" as const }}>
-          {/* Sidebar */}
-          <Sidebar
-            posts={posts}
-            isOpen={sidebarOpen}
-            onToggle={() => setSidebarOpen(!sidebarOpen)}
-            onFlyTo={handleFlyTo}
-            totalRestaurants={stats.places}
-            totalPosts={stats.posts}
-          />
+      {/* Map view — always mounted; hidden when list is active */}
+      <div style={view === "map" ? {} : { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", pointerEvents: "none", opacity: 0, zIndex: -1 }}>
+          {/* Sidebar — only when map is active */}
+          {view === "map" && (
+            <Sidebar
+              posts={posts}
+              isOpen={sidebarOpen}
+              onToggle={() => setSidebarOpen(!sidebarOpen)}
+              onFlyTo={handleFlyTo}
+              totalRestaurants={stats.places}
+              totalPosts={stats.posts}
+            />
+          )}
 
           {/* Map */}
           <div className="h-full w-full pt-[92px] pb-14 md:pb-8 relative">
@@ -729,9 +731,8 @@ function Home() {
           </div>
       </div>
 
-      {/* List view — kept mounted, hidden via CSS when not active */}
-      {/* List view — always mounted; hidden view uses offscreen positioning */}
-      <div style={view === "list" ? {} : { position: "fixed", left: "-200vw", visibility: "hidden" as const }}>
+      {/* List view — conditionally rendered (lightweight to remount) */}
+      {view === "list" && (
         <ListView
           places={places}
           searchQuery={searchQuery}
@@ -740,7 +741,7 @@ function Home() {
           activeCategory={filter.category}
           onViewOnMap={handleViewOnMap}
         />
-      </div>
+      )}
 
       {/* Submit a Place Button — hidden on mobile (bottom nav has Submit) */}
       <button
