@@ -105,18 +105,9 @@ function createClusterIcon(cluster: { getChildCount: () => number; getAllChildMa
   // Determine dominant category color from child markers
   const markers = cluster.getAllChildMarkers();
   const catCounts: Record<string, number> = {};
-  let hood = "";
-  if (markers.length > 0) {
-    let totalLat = 0, totalLng = 0;
-    for (const m of markers) {
-      const ll = m.getLatLng();
-      totalLat += ll.lat;
-      totalLng += ll.lng;
-      // Extract category from marker options (stored via icon)
-      const cat = (m.options as { category?: string }).category;
-      if (cat) catCounts[cat] = (catCounts[cat] || 0) + 1;
-    }
-    hood = getNeighbourhood(totalLat / markers.length, totalLng / markers.length) || "";
+  for (const m of markers) {
+    const cat = (m.options as { category?: string }).category;
+    if (cat) catCounts[cat] = (catCounts[cat] || 0) + 1;
   }
   // Find dominant category, fallback to brand orange
   let dominantColor = "#E05D36";
@@ -125,34 +116,18 @@ function createClusterIcon(cluster: { getChildCount: () => number; getAllChildMa
     if (c > maxCount) { maxCount = c; dominantColor = PIN_COLORS[cat as PlaceCategory] || "#E05D36"; }
   }
 
-  const labelHtml = hood
-    ? `<div style="
-        position:absolute;top:${size + 3}px;left:50%;transform:translateX(-50%);
-        white-space:nowrap;font-size:9px;font-weight:600;color:#475569;
-        background:rgba(255,255,255,0.95);backdrop-filter:blur(8px);
-        padding:2px 8px;border-radius:8px;
-        box-shadow:0 1px 4px rgba(0,0,0,0.06);
-        pointer-events:none;line-height:1.2;letter-spacing:0.2px;
-      ">${hood}</div>`
-    : "";
-
-  const totalH = hood ? size + 20 : size;
-
   return L.divIcon({
-    html: `<div style="position:relative;width:${size}px;height:${totalH}px;">
-      <div style="
+    html: `<div style="
         width:${size}px;height:${size}px;min-width:32px;
         border-radius:50%;background:white;
-        border:2px solid ${dominantColor};
+        border:2.5px solid ${dominantColor};
         box-shadow:0 2px 8px rgba(0,0,0,0.15);
         display:flex;align-items:center;justify-content:center;
-        font-size:${count >= 100 ? 11 : 13}px;font-weight:600;
-        color:#1e293b;font-family:system-ui,-apple-system,sans-serif;
-      ">${count}</div>
-      ${labelHtml}
-    </div>`,
+        font-size:${count >= 100 ? 11 : 13}px;font-weight:700;
+        color:${dominantColor};font-family:system-ui,-apple-system,sans-serif;
+      ">${count}</div>`,
     className: "",
-    iconSize: [size, totalH],
+    iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   });
 }
@@ -355,13 +330,14 @@ export default function MapView({
     });
   }, [allHoods, hoodCentroids, zoom]);
 
-  // Deduplicate places with the same name — keep highest mention count, merge posts
+  // Deduplicate places with the same name — keep highest mention count
   const dedupedPlaces = useMemo(() => {
     const byName = new Map<string, typeof places[0]>();
     for (const p of places) {
-      const existing = byName.get(p.name);
+      const key = p.name.trim().toLowerCase();
+      const existing = byName.get(key);
       if (!existing || Number(p.mention_count) > Number(existing.mention_count)) {
-        byName.set(p.name, p);
+        byName.set(key, p);
       }
     }
     return Array.from(byName.values());
