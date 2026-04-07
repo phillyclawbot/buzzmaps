@@ -565,8 +565,8 @@ function Home() {
         </div>
       )}
 
-      {view === "map" ? (
-        <>
+      {/* Map view — kept mounted, hidden via CSS when not active */}
+      <div style={{ display: view === "map" ? "contents" : "none" }}>
           {/* Sidebar */}
           <Sidebar
             posts={posts}
@@ -703,8 +703,10 @@ function Home() {
 
 <MapView places={filteredPlaces} flyTo={flyTo} nearMeActive={nearMeActive} nearMeRadius={nearMeRadius} onNearMeToggle={(coords) => { setNearMeCoords(coords); setNearMeActive(coords !== null); }} onRadiusChange={setNearMeRadius} nearMeCount={filteredPlaces.length} />
           </div>
-        </>
-      ) : (
+      </div>
+
+      {/* List view — kept mounted, hidden via CSS when not active */}
+      <div style={{ display: view === "list" ? "contents" : "none" }}>
         <ListView
           places={places}
           searchQuery={searchQuery}
@@ -716,7 +718,7 @@ function Home() {
             setView("map");
           }}
         />
-      )}
+      </div>
 
       {/* Submit a Place Button — hidden on mobile (bottom nav has Submit) */}
       <button
