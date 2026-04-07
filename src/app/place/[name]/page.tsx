@@ -96,12 +96,15 @@ export default async function PlacePage({
 
   // Related places nearby
   const nearby = await sql`
-    SELECT r.name, r.category, r.mention_count, r.google_rating, r.lat, r.lng, r.photo_url
+    SELECT r.name, r.category, COUNT(DISTINCT pr.post_id)::int as mention_count,
+           r.google_rating, r.lat, r.lng, r.photo_url
     FROM restaurants r
+    LEFT JOIN post_restaurants pr ON pr.restaurant_id = r.id
     WHERE ABS(r.lat - ${place.lat}) < 0.01
       AND ABS(r.lng - ${place.lng}) < 0.01
       AND r.name != ${place.name}
-    ORDER BY r.mention_count DESC
+    GROUP BY r.id
+    ORDER BY mention_count DESC
     LIMIT 5
   `;
 
