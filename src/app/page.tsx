@@ -52,6 +52,7 @@ function Home() {
   const [nearMeCoords, setNearMeCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [nearMeRadius, setNearMeRadius] = useState(2);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [trendingCollapsed, setTrendingCollapsed] = useState(false);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [submitForm, setSubmitForm] = useState({ name: "", category: "other", address: "", reason: "", eventDate: "", ticketUrl: "" });
   const [submitState, setSubmitState] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -296,13 +297,20 @@ function Home() {
   const thisWeekChip = (
     <button
       onClick={() => setThisWeekOnly((v) => !v)}
-      className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-medium transition-all border ${
-        thisWeekOnly
-          ? "bg-slate-900 text-white border-slate-900"
-          : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
-      }`}
+      className="shrink-0 transition-all"
+      style={{
+        padding: "6px 16px",
+        height: "36px",
+        borderRadius: "20px",
+        fontSize: "12px",
+        fontWeight: thisWeekOnly ? 600 : 500,
+        border: thisWeekOnly ? "none" : "1px solid #e2e8f0",
+        background: thisWeekOnly ? "#1e293b" : "white",
+        color: thisWeekOnly ? "white" : "#64748b",
+        cursor: "pointer",
+      }}
     >
-      🆕 This Week
+      This Week
     </button>
   );
 
@@ -393,20 +401,25 @@ function Home() {
       </div>
 
       {/* Category filter bar — always visible */}
-      <div className="fixed top-12 left-0 right-0 h-10 bg-white/95 backdrop-blur-sm border-b border-slate-100 z-[999] flex items-center px-3 gap-1.5 overflow-x-auto no-scrollbar">
+      <div className="fixed top-12 left-0 right-0 h-11 bg-white/95 backdrop-blur-sm border-b border-slate-100 z-[999] flex items-center px-3 gap-1.5 overflow-x-auto no-scrollbar">
         {CATEGORY_FILTERS.map((c) => {
           const isActive = filter.category === c.value;
-          const catColor = c.value !== "all" ? CATEGORY_COLORS[c.value as PlaceCategory] : undefined;
           return (
             <button
               key={c.value}
               onClick={() => setFilter((prev) => ({ ...prev, category: c.value }))}
-              className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-medium transition-all border ${
-                isActive
-                  ? "text-white border-transparent shadow-sm"
-                  : "bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700"
-              }`}
-              style={isActive && catColor ? { background: catColor, borderColor: catColor } : isActive ? { background: "#0f172a", borderColor: "#0f172a" } : undefined}
+              className="shrink-0 transition-all"
+              style={{
+                padding: "6px 16px",
+                height: "36px",
+                borderRadius: "20px",
+                fontSize: "12px",
+                fontWeight: isActive ? 600 : 500,
+                border: isActive ? "none" : "1px solid #e2e8f0",
+                background: isActive ? "#1e293b" : "white",
+                color: isActive ? "white" : "#64748b",
+                cursor: "pointer",
+              }}
             >
               {c.label}
             </button>
@@ -417,7 +430,7 @@ function Home() {
 
       {/* Mobile search panel */}
       {searchOpen && (
-        <div className="fixed top-[88px] left-0 right-0 z-[998] bg-white/95 backdrop-blur-sm border-b border-slate-200 p-3 md:hidden">
+        <div className="fixed top-[92px] left-0 right-0 z-[998] bg-white/95 backdrop-blur-sm border-b border-slate-200 p-3 md:hidden">
           <input
             ref={searchInputRef}
             type="text"
@@ -431,7 +444,7 @@ function Home() {
 
       {/* Mobile "More" dropdown panel */}
       {menuOpen && (
-        <div className="fixed top-[88px] left-0 right-0 z-[998] bg-white/95 backdrop-blur-sm border-b border-slate-200 p-3 flex flex-col gap-3 md:hidden">
+        <div className="fixed top-[92px] left-0 right-0 z-[998] bg-white/95 backdrop-blur-sm border-b border-slate-200 p-3 flex flex-col gap-3 md:hidden">
           <div className="flex gap-1 flex-wrap">
             {filterButtons.map((f) => (
               <button
@@ -466,7 +479,7 @@ function Home() {
 
       {/* Active filter chips */}
       {(filter.category !== "all" || filter.since !== "all" || filter.sentiment !== "all" || searchQuery) && (
-        <div className="fixed top-[88px] left-0 right-0 z-[597] px-3 py-1.5 flex items-center gap-2 overflow-x-auto no-scrollbar bg-white/80 backdrop-blur-sm border-b border-slate-100" style={{ top: view === "map" && trendingNow.length > 0 ? "118px" : "88px" }}>
+        <div className="fixed top-[92px] left-0 right-0 z-[597] px-3 py-1.5 flex items-center gap-2 overflow-x-auto no-scrollbar bg-white/80 backdrop-blur-sm border-b border-slate-100" style={{ top: "92px" }}>
           <span className="text-[10px] text-slate-400 shrink-0">Showing {filteredPlaces.length} of {places.length} places</span>
           <div className="flex gap-1.5 ml-auto">
             {filter.category !== "all" && (
@@ -500,15 +513,35 @@ function Home() {
         </div>
       )}
 
-      {view === "map" && trendingNow.length > 0 && (
-        <div className="fixed top-[88px] left-0 right-0 z-[600] px-3 py-1.5 overflow-x-auto no-scrollbar flex gap-2 pointer-events-none">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide shrink-0 self-center pointer-events-none">🔥 Trending this week</span>
-          {trendingNow.map(r => (
-            <button key={r.id} onClick={() => { handleFlyTo(r.lat, r.lng); }}
-              className="shrink-0 px-3 py-1 bg-white/90 backdrop-blur-sm border border-[#ff6b35]/30 rounded-full text-xs font-medium text-slate-700 hover:border-[#ff6b35] hover:text-[#ff6b35] shadow-sm transition-all pointer-events-auto whitespace-nowrap">
-              {CATEGORY_EMOJI[r.category as PlaceCategory] || "📍"} {r.name}
-            </button>
-          ))}
+      {view === "map" && trendingNow.length > 0 && !trendingCollapsed && (
+        <div
+          className="fixed z-[600] pointer-events-auto"
+          style={{ bottom: "80px", left: "50%", transform: "translateX(-50%)", maxWidth: "90vw", width: "340px" }}
+        >
+          <div style={{
+            background: "white",
+            borderRadius: "16px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            padding: "12px 16px",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Trending this week</span>
+              <button onClick={() => setTrendingCollapsed(true)} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px", color: "#94a3b8", fontSize: "16px", lineHeight: 1 }}>&times;</button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              {trendingNow.map(r => (
+                <button key={r.id} onClick={() => handleFlyTo(r.lat, r.lng)}
+                  style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 8px", borderRadius: "10px", border: "none", background: "transparent", cursor: "pointer", textAlign: "left", transition: "background 0.15s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#f8fafc"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                >
+                  <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: CATEGORY_COLORS[r.category as PlaceCategory] || "#ff6b35", flexShrink: 0 }} />
+                  <span style={{ fontSize: "13px", fontWeight: 600, color: "#1e293b", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
+                  <span style={{ fontSize: "11px", color: "#94a3b8", flexShrink: 0 }}>{r.mention_count} mentions</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -525,7 +558,9 @@ function Home() {
           />
 
           {/* Map */}
-          <div className="h-full w-full pt-[88px] pb-14 md:pb-8 relative">
+          <div className="h-full w-full pt-[92px] pb-14 md:pb-8 relative">
+            {/* Top edge fade */}
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "40px", background: "linear-gradient(to bottom, rgba(255,255,255,0.6) 0%, transparent 100%)", pointerEvents: "none", zIndex: 500 }} />
             {/* Floating search */}
             <div ref={searchContainerRef} style={{ position: "absolute", top: "8px", left: "50%", transform: "translateX(-50%)", zIndex: 600, width: "280px" }}>
               <input
@@ -816,7 +851,7 @@ function Home() {
 
       {/* Inline error retry banner */}
       {fetchError && (
-        <div className="fixed top-[88px] left-1/2 -translate-x-1/2 z-[2000] bg-red-50 border border-red-200 text-red-700 text-xs font-medium px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 mt-2">
+        <div className="fixed top-[92px] left-1/2 -translate-x-1/2 z-[2000] bg-red-50 border border-red-200 text-red-700 text-xs font-medium px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 mt-2">
           <span>Something went wrong loading data.</span>
           <button
             onClick={() => { setFetchError(false); fetchData(); }}
@@ -841,41 +876,46 @@ function Home() {
       </div>
 
       {/* Mobile bottom navigation bar */}
-      <div className="fixed bottom-0 left-0 right-0 h-14 bg-white/95 backdrop-blur-sm border-t border-slate-200 z-[1000] md:hidden flex items-stretch">
+      <div className="fixed bottom-0 left-0 right-0 bg-white z-[1000] md:hidden flex items-stretch" style={{ height: "56px", borderTop: "1px solid #f1f5f9", paddingTop: "12px" }}>
         <button
           onClick={() => setView("map")}
-          className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${view === "map" ? "text-[#ff6b35]" : "text-slate-400"}`}
+          className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors"
+          style={{ color: view === "map" ? "#E05D36" : "#94a3b8" }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-          <span className="text-[10px] font-semibold">Explore</span>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+          <span style={{ fontSize: "10px", fontWeight: 600 }}>Explore</span>
         </button>
         <button
           onClick={() => setView("list")}
-          className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${view === "list" ? "text-[#ff6b35]" : "text-slate-400"}`}
+          className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors"
+          style={{ color: view === "list" ? "#E05D36" : "#94a3b8" }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-          <span className="text-[10px] font-semibold">List</span>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          <span style={{ fontSize: "10px", fontWeight: 600 }}>List</span>
         </button>
         <button
           onClick={() => router.push("/collections")}
-          className="flex-1 flex flex-col items-center justify-center gap-0.5 text-slate-400 transition-colors"
+          className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors"
+          style={{ color: "#94a3b8" }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
-          <span className="text-[10px] font-semibold">Collections</span>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+          <span style={{ fontSize: "10px", fontWeight: 600 }}>Collections</span>
         </button>
         <button
           onClick={() => { setSubmitOpen(true); setSubmitState("idle"); setSubmitError(""); setSubmitForm({ name: "", category: "other", address: "", reason: "", eventDate: "", ticketUrl: "" }); }}
-          className="flex-1 flex flex-col items-center justify-center gap-0.5 text-slate-400 transition-colors"
+          className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors"
+          style={{ color: "#94a3b8" }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <span className="text-[10px] font-semibold">Submit</span>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span style={{ fontSize: "10px", fontWeight: 600 }}>Submit</span>
         </button>
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${menuOpen ? "text-[#ff6b35]" : "text-slate-400"}`}
+          className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors"
+          style={{ color: menuOpen ? "#E05D36" : "#94a3b8" }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-          <span className="text-[10px] font-semibold">More</span>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+          <span style={{ fontSize: "10px", fontWeight: 600 }}>More</span>
         </button>
       </div>
     </div>

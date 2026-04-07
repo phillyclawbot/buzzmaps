@@ -314,7 +314,7 @@ export default function ListView({
   }, [filtered, sort]);
 
   return (
-    <div className="h-full pt-[88px] pb-16 md:pb-8 overflow-y-auto bg-slate-50/50 page-enter">
+    <div className="h-full pt-[92px] pb-16 md:pb-8 overflow-y-auto bg-slate-50/50 page-enter">
       <div className="max-w-5xl mx-auto px-4 py-4">
         {/* Search + sort controls */}
         <div className="flex flex-col sm:flex-row gap-2 mb-4">

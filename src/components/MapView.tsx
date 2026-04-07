@@ -29,6 +29,24 @@ function getHoodColor(index: number): string {
 }
 
 
+// Pin colors per category — distinct, vibrant palette
+const PIN_COLORS: Record<PlaceCategory, string> = {
+  restaurant: "#E05D36",
+  bar: "#8B5CF6",
+  cafe: "#D97706",
+  club: "#EC4899",
+  shop: "#06b6d4",
+  park: "#22c55e",
+  gym: "#ef4444",
+  venue: "#3B82F6",
+  market: "#10b981",
+  museum: "#6366f1",
+  event: "#d946ef",
+  landmark: "#78716c",
+  attraction: "#f97316",
+  other: "#64748b",
+};
+
 // SVG path icons per category — clean, minimal line icons (24x24 viewBox)
 const CATEGORY_ICON_PATH: Record<PlaceCategory, string> = {
   restaurant: 'M7 2v9a3 3 0 003 3h1v8h2v-8h1a3 3 0 003-3V2m-8 0v5m4-5v5M3 2v4a2 2 0 002 2h0V22h2V8h0a2 2 0 002-2V2',
@@ -48,65 +66,44 @@ const CATEGORY_ICON_PATH: Record<PlaceCategory, string> = {
 };
 
 function createPinIcon(category: PlaceCategory, mentionCount: number, isRecent: boolean) {
-  const color = CATEGORY_COLORS[category] || CATEGORY_COLORS.other;
+  const color = PIN_COLORS[category] || PIN_COLORS.other;
   const showPulse = isRecent && mentionCount >= 2;
 
-  // Scale pin by mention count — subtle size variation
-  const baseSize = mentionCount >= 10 ? 34 : mentionCount >= 3 ? 30 : 26;
+  // 28x36 teardrop with 14px icon area, consistent sizing
+  const W = 28;
+  const H = 36;
   const iconPath = CATEGORY_ICON_PATH[category] || CATEGORY_ICON_PATH.other;
 
   const pulseRing = showPulse ? `
-    <div style="position:absolute;top:50%;left:50%;width:${baseSize + 16}px;height:${baseSize + 16}px;margin-left:-${(baseSize + 16) / 2}px;margin-top:-${(baseSize + 16) / 2}px;border-radius:50%;border:2px solid ${color};opacity:0;animation:pinPulse 2s ease-out infinite;"></div>
-    <div style="position:absolute;top:50%;left:50%;width:${baseSize + 16}px;height:${baseSize + 16}px;margin-left:-${(baseSize + 16) / 2}px;margin-top:-${(baseSize + 16) / 2}px;border-radius:50%;border:2px solid ${color};opacity:0;animation:pinPulse 2s ease-out 1s infinite;"></div>
+    <div style="position:absolute;top:0;left:-6px;width:${W + 12}px;height:${W + 12}px;border-radius:50%;border:2px solid ${color};opacity:0;animation:pinPulse 2s ease-out infinite;pointer-events:none;"></div>
+    <div style="position:absolute;top:0;left:-6px;width:${W + 12}px;height:${W + 12}px;border-radius:50%;border:2px solid ${color};opacity:0;animation:pinPulse 2s ease-out 1s infinite;pointer-events:none;"></div>
   ` : '';
 
-  // Modern teardrop pin via SVG
   const svgPin = `
-    <svg width="${baseSize}" height="${Math.round(baseSize * 1.4)}" viewBox="0 0 40 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <filter id="s${category}" x="-2" y="0" width="44" height="60" filterUnits="userSpaceOnUse">
-          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.22"/>
-        </filter>
-      </defs>
-      <g filter="url(#s${category})">
-        <path d="M20 52C20 52 36 32 36 20C36 11.16 28.84 4 20 4C11.16 4 4 11.16 4 20C4 32 20 52 20 52Z" fill="${color}"/>
-        <circle cx="20" cy="20" r="11" fill="white" fill-opacity="0.95"/>
-        <g transform="translate(8,8) scale(0.5)" stroke="${color}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none">
-          <path d="${iconPath}"/>
-        </g>
+    <svg width="${W}" height="${H}" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 3px rgba(0,0,0,0.2));">
+      <path d="M14 34C14 34 25 22 25 14C25 7.37 19.63 2 14 2C8.37 2 3 7.37 3 14C3 22 14 34 14 34Z" fill="${color}"/>
+      <circle cx="14" cy="14" r="7" fill="white" fill-opacity="0.95"/>
+      <g transform="translate(7,7) scale(0.583)" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <path d="${iconPath}"/>
       </g>
     </svg>`;
 
-  const totalW = baseSize;
-  const totalH = Math.round(baseSize * 1.4);
-
   return L.divIcon({
-    html: `<div style="position:relative;width:${totalW}px;height:${totalH}px;">${pulseRing}${svgPin}</div>`,
+    html: `<div style="position:relative;width:${W}px;height:${H}px;">${pulseRing}${svgPin}</div>`,
     className: '',
-    iconSize: [totalW, totalH],
-    iconAnchor: [totalW / 2, totalH],
-    popupAnchor: [0, -totalH + 4],
+    iconSize: [W, H],
+    iconAnchor: [W / 2, H],
+    popupAnchor: [0, -H + 4],
   });
 }
 
 function createClusterIcon(cluster: { getChildCount: () => number; getAllChildMarkers: () => L.Marker[] }) {
   const count = cluster.getChildCount();
-  let size = 38;
-  let opacity = 0.85;
+  const size = Math.max(32, Math.min(50, 32 + Math.floor(count / 10) * 2));
 
-  if (count >= 50) {
-    size = 50;
-    opacity = 1;
-  } else if (count >= 20) {
-    size = 46;
-    opacity = 0.95;
-  } else if (count >= 10) {
-    size = 42;
-    opacity = 0.9;
-  }
-
-  // Determine neighbourhood from average marker position
+  // Determine dominant category color from child markers
   const markers = cluster.getAllChildMarkers();
+  const catCounts: Record<string, number> = {};
   let hood = "";
   if (markers.length > 0) {
     let totalLat = 0, totalLng = 0;
@@ -114,8 +111,17 @@ function createClusterIcon(cluster: { getChildCount: () => number; getAllChildMa
       const ll = m.getLatLng();
       totalLat += ll.lat;
       totalLng += ll.lng;
+      // Extract category from marker options (stored via icon)
+      const cat = (m.options as { category?: string }).category;
+      if (cat) catCounts[cat] = (catCounts[cat] || 0) + 1;
     }
     hood = getNeighbourhood(totalLat / markers.length, totalLng / markers.length) || "";
+  }
+  // Find dominant category, fallback to brand orange
+  let dominantColor = "#E05D36";
+  let maxCount = 0;
+  for (const [cat, c] of Object.entries(catCounts)) {
+    if (c > maxCount) { maxCount = c; dominantColor = PIN_COLORS[cat as PlaceCategory] || "#E05D36"; }
   }
 
   const labelHtml = hood
@@ -124,25 +130,26 @@ function createClusterIcon(cluster: { getChildCount: () => number; getAllChildMa
         white-space:nowrap;font-size:9px;font-weight:600;color:#475569;
         background:rgba(255,255,255,0.95);backdrop-filter:blur(8px);
         padding:2px 8px;border-radius:8px;
-        box-shadow:0 1px 6px rgba(0,0,0,0.08);
+        box-shadow:0 1px 4px rgba(0,0,0,0.06);
         pointer-events:none;line-height:1.2;letter-spacing:0.2px;
       ">${hood}</div>`
     : "";
 
   const totalH = hood ? size + 20 : size;
-  const innerR = size / 2;
-  const strokeW = count >= 50 ? 3 : 2.5;
-
-  // Modern frosted cluster: white bg with brand accent ring + count
-  const svg = `
-    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${innerR}" cy="${innerR}" r="${innerR - 1}" fill="white" fill-opacity="${opacity}" stroke="#ff6b35" stroke-width="${strokeW}" stroke-opacity="0.6"/>
-      <circle cx="${innerR}" cy="${innerR}" r="${innerR - 5}" fill="#ff6b35" fill-opacity="0.08"/>
-      <text x="${innerR}" y="${innerR}" text-anchor="middle" dominant-baseline="central" font-size="${count >= 100 ? 12 : 13}" font-weight="700" fill="#334155" font-family="system-ui,-apple-system,sans-serif">${count}</text>
-    </svg>`;
 
   return L.divIcon({
-    html: `<div style="position:relative;width:${size}px;height:${totalH}px;">${svg}${labelHtml}</div>`,
+    html: `<div style="position:relative;width:${size}px;height:${totalH}px;">
+      <div style="
+        width:${size}px;height:${size}px;min-width:32px;
+        border-radius:50%;background:white;
+        border:2px solid ${dominantColor};
+        box-shadow:0 2px 8px rgba(0,0,0,0.15);
+        display:flex;align-items:center;justify-content:center;
+        font-size:${count >= 100 ? 11 : 13}px;font-weight:600;
+        color:#1e293b;font-family:system-ui,-apple-system,sans-serif;
+      ">${count}</div>
+      ${labelHtml}
+    </div>`,
     className: "",
     iconSize: [size, totalH],
     iconAnchor: [size / 2, size / 2],
@@ -324,20 +331,19 @@ export default function MapView({
 
   return (
     <div style={{ position: "relative", height: "100%", width: "100%" }}>
-    {/* Near Me floating button */}
-    <div style={{ position: "absolute", bottom: "112px", right: "12px", zIndex: 500, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px" }}>
-      {/* Radius panel — only when active */}
+    {/* Near Me FAB + radius panel */}
+    <div style={{ position: "absolute", bottom: "120px", right: "16px", zIndex: 500, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px" }}>
       {nearMeActive && (
         <div style={{
           background: "white",
           border: "1px solid #e2e8f0",
-          borderRadius: "12px",
+          borderRadius: "14px",
           padding: "10px 12px",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.1)",
           minWidth: "180px",
         }}>
-          <div style={{ fontSize: "11px", fontWeight: 700, color: "#3b82f6", marginBottom: "6px" }}>
-            📍 {nearMeCount ?? 0} place{nearMeCount !== 1 ? "s" : ""} within {nearMeRadius < 1 ? Math.round(nearMeRadius * 1000) + "m" : nearMeRadius + "km"}
+          <div style={{ fontSize: "11px", fontWeight: 600, color: "#334155", marginBottom: "6px" }}>
+            {nearMeCount ?? 0} place{nearMeCount !== 1 ? "s" : ""} within {nearMeRadius < 1 ? Math.round(nearMeRadius * 1000) + "m" : nearMeRadius + "km"}
           </div>
           <input
             type="range"
@@ -356,18 +362,22 @@ export default function MapView({
       <button
         onClick={handleNearMe}
         style={{
-          background: nearMeActive ? "linear-gradient(to right, #3b82f6, #2563eb)" : "white",
-          border: nearMeActive ? "none" : "1px solid #e2e8f0",
-          borderRadius: "8px",
-          padding: "6px 10px",
-          fontSize: "12px",
-          fontWeight: 600,
+          width: "48px",
+          height: "48px",
+          borderRadius: "50%",
+          background: nearMeActive ? "#3b82f6" : "white",
+          border: "none",
           cursor: "pointer",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-          color: nearMeActive ? "white" : "#334155",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
+        aria-label="Near Me"
       >
-        📍 Near Me
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={nearMeActive ? "white" : "#334155"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+        </svg>
       </button>
     </div>
     <MapContainer
@@ -400,9 +410,9 @@ export default function MapView({
             const name = feature?.properties?.AREA_NAME as string;
             const color = areaColorMap[name];
             if (color) {
-              return { color, fillColor: color, fillOpacity: 0.07, weight: 1.5, opacity: 0.4 };
+              return { color, fillColor: color, fillOpacity: 0.03, weight: 1, opacity: 0.3 };
             }
-            return { color: "#94a3b8", fillColor: "#e2e8f0", fillOpacity: 0.05, weight: 1.2, opacity: 0.45 };
+            return { color: "#94a3b8", fillColor: "#e2e8f0", fillOpacity: 0.02, weight: 0.8, opacity: 0.2 };
           }}
           interactive={false}
         />
@@ -421,13 +431,14 @@ export default function MapView({
             icon={L.divIcon({
               html: `<div style="
                 white-space:nowrap;font-size:${isActive ? 11 : 10}px;font-weight:${isActive ? 700 : 600};
-                color:${isActive ? n.color : "#94a3b8"};text-shadow:0 0 3px white, 0 0 6px white, 0 0 9px white;
+                color:${isActive ? "#1e293b" : "#94a3b8"};
+                text-shadow:0 0 4px white, 0 0 4px white, 0 0 8px white, 0 0 8px white;
                 pointer-events:none;text-align:center;
-                opacity:${isActive ? 0.8 : 0.5};letter-spacing:0.3px;
-              ">${n.name}${isActive ? `<span style="display:block;font-size:9px;font-weight:600;opacity:0.6;">${n.count} place${n.count !== 1 ? "s" : ""}</span>` : ""}</div>`,
+                opacity:${isActive ? 0.85 : 0.45};letter-spacing:0.3px;
+              ">${n.name}</div>`,
               className: "",
-              iconSize: [120, 30],
-              iconAnchor: [60, 15],
+              iconSize: [120, 20],
+              iconAnchor: [60, 10],
             })}
           />
         );
