@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
           r.google_rating, r.google_reviews_count, r.cuisine_type, r.price_level,
           r.category, r.photo_url, r.metadata,
           COUNT(DISTINCT pr.post_id) as mention_count,
-          MAX(rp.created_utc) as latest_mention,
-          json_agg(json_build_object(
+          COALESCE(MAX(rp.created_utc), 0) as latest_mention,
+          COALESCE(json_agg(json_build_object(
             'id', rp.id,
             'title', rp.title,
             'subreddit', rp.subreddit,
@@ -52,10 +52,10 @@ export async function GET(request: NextRequest) {
             'sentiment', pr.sentiment,
             'created_utc', rp.created_utc,
             'mentions_in_thread', COALESCE(pr.mentions_in_thread, 1)
-          ) ORDER BY rp.created_utc DESC) as posts
+          ) ORDER BY rp.created_utc DESC) FILTER (WHERE rp.id IS NOT NULL), '[]'::json) as posts
         FROM restaurants r
-        JOIN post_restaurants pr ON pr.restaurant_id = r.id
-        JOIN reddit_posts rp ON rp.id = pr.post_id
+        LEFT JOIN post_restaurants pr ON pr.restaurant_id = r.id
+        LEFT JOIN reddit_posts rp ON rp.id = pr.post_id
         WHERE 1=1
           ${q ? sql`AND r.name ILIKE ${"%" + q + "%"}` : sql``}
           ${sentiment !== "all" ? sql`AND pr.sentiment = ${sentiment}` : sql``}
@@ -77,8 +77,8 @@ export async function GET(request: NextRequest) {
           r.google_rating, r.google_reviews_count, r.cuisine_type, r.price_level,
           r.category, r.photo_url, r.metadata,
           COUNT(DISTINCT pr.post_id) as mention_count,
-          MAX(rp.created_utc) as latest_mention,
-          json_agg(json_build_object(
+          COALESCE(MAX(rp.created_utc), 0) as latest_mention,
+          COALESCE(json_agg(json_build_object(
             'id', rp.id,
             'title', rp.title,
             'subreddit', rp.subreddit,
@@ -87,10 +87,10 @@ export async function GET(request: NextRequest) {
             'permalink', rp.permalink,
             'sentiment', pr.sentiment,
             'created_utc', rp.created_utc
-          ) ORDER BY rp.created_utc DESC) as posts
+          ) ORDER BY rp.created_utc DESC) FILTER (WHERE rp.id IS NOT NULL), '[]'::json) as posts
         FROM restaurants r
-        JOIN post_restaurants pr ON pr.restaurant_id = r.id
-        JOIN reddit_posts rp ON rp.id = pr.post_id
+        LEFT JOIN post_restaurants pr ON pr.restaurant_id = r.id
+        LEFT JOIN reddit_posts rp ON rp.id = pr.post_id
         WHERE 1=1
           ${q ? sql`AND r.name ILIKE ${"%" + q + "%"}` : sql``}
           ${sentiment !== "all" ? sql`AND pr.sentiment = ${sentiment}` : sql``}

@@ -11,6 +11,7 @@ import {
   Circle,
   GeoJSON,
   useMap,
+  useMapEvents,
 } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import type { Place, PlaceCategory } from "@/lib/types";
@@ -189,6 +190,13 @@ function FlyToHandler({ target }: { target: [number, number] | null }) {
   return null;
 }
 
+function ZoomTracker({ onZoom }: { onZoom: (z: number) => void }) {
+  const map = useMapEvents({
+    zoomend: () => onZoom(map.getZoom()),
+  });
+  return null;
+}
+
 
 
 export default function MapView({
@@ -211,6 +219,7 @@ export default function MapView({
   const mapRef = useRef<L.Map | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [zoom, setZoom] = useState(13);
 
   // Determine which neighbourhoods have places and assign colours
   const activeHoods = useMemo(() => {
@@ -294,6 +303,34 @@ export default function MapView({
     }
     return centroids;
   }, [geoData]);
+
+  // Merge overlapping labels (hoods sharing same centroid) and filter by zoom
+  const labelData = useMemo(() => {
+    const groups: Record<string, { names: string[]; position: [number, number]; counts: number[] }> = {};
+    for (const n of allHoods) {
+      const centroid = hoodCentroids[n.name];
+      if (!centroid) continue;
+      // Round to 3 decimals (~100m) to catch overlapping centroids
+      const key = `${centroid[0].toFixed(3)},${centroid[1].toFixed(3)}`;
+      if (!groups[key]) groups[key] = { names: [], position: centroid, counts: [] };
+      groups[key].names.push(n.name);
+      groups[key].counts.push(n.count);
+    }
+    const labels: { text: string; position: [number, number]; isActive: boolean; maxCount: number }[] = [];
+    for (const g of Object.values(groups)) {
+      const maxCount = Math.max(...g.counts);
+      const isActive = maxCount > 0;
+      // Merge names — show max 2, abbreviate the rest
+      const text = g.names.length <= 2 ? g.names.join(" / ") : `${g.names[0]} / ${g.names[1]} +${g.names.length - 2}`;
+      labels.push({ text, position: g.position, isActive, maxCount });
+    }
+    // Filter by zoom level
+    return labels.filter((l) => {
+      if (zoom < 12) return l.isActive && l.maxCount >= 5;
+      if (zoom < 14) return l.isActive;
+      return true;
+    });
+  }, [allHoods, hoodCentroids, zoom]);
 
   const handleNearMe = () => {
     if (nearMeActive) {
@@ -393,6 +430,7 @@ export default function MapView({
       />
       <InitialLocationHandler />
       <FlyToHandler target={flyTo} />
+      <ZoomTracker onZoom={setZoom} />
       {/* Near Me radius circle */}
       {nearMeActive && userCoords && (
         <Circle
@@ -417,32 +455,26 @@ export default function MapView({
           interactive={false}
         />
       )}
-      {/* Neighbourhood name labels at polygon centroids — all areas */}
-      {allHoods.map((n) => {
-        const centroid = hoodCentroids[n.name];
-        if (!centroid) return null;
-        const [centerLat, centerLng] = centroid;
-        const isActive = n.count > 0;
-        return (
-          <Marker
-            key={`label-${n.name}`}
-            position={[centerLat, centerLng]}
-            interactive={false}
-            icon={L.divIcon({
-              html: `<div style="
-                white-space:nowrap;font-size:${isActive ? 11 : 10}px;font-weight:${isActive ? 700 : 600};
-                color:${isActive ? "#1e293b" : "#94a3b8"};
-                text-shadow:0 0 4px white, 0 0 4px white, 0 0 8px white, 0 0 8px white;
-                pointer-events:none;text-align:center;
-                opacity:${isActive ? 0.85 : 0.45};letter-spacing:0.3px;
-              ">${n.name}</div>`,
-              className: "",
-              iconSize: [120, 20],
-              iconAnchor: [60, 10],
-            })}
-          />
-        );
-      })}
+      {/* Neighbourhood name labels — deduplicated and zoom-filtered */}
+      {labelData.map((label) => (
+        <Marker
+          key={`label-${label.text}`}
+          position={label.position}
+          interactive={false}
+          icon={L.divIcon({
+            html: `<div style="
+              white-space:nowrap;font-size:${label.isActive ? 11 : 10}px;font-weight:${label.isActive ? 700 : 600};
+              color:${label.isActive ? "#1e293b" : "#94a3b8"};
+              text-shadow:0 0 4px white, 0 0 4px white, 0 0 8px white, 0 0 8px white;
+              pointer-events:none;text-align:center;
+              opacity:${label.isActive ? 0.85 : 0.45};letter-spacing:0.3px;
+            ">${label.text}</div>`,
+            className: "",
+            iconSize: [160, 20],
+            iconAnchor: [80, 10],
+          })}
+        />
+      ))}
       <MarkerClusterGroup
           chunkedLoading
           maxClusterRadius={60}

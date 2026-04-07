@@ -50,7 +50,7 @@ export default async function PlacePage({
       r.google_rating, r.google_reviews_count, r.cuisine_type, r.price_level,
       r.category,
       COUNT(DISTINCT pr.post_id) as mention_count,
-      json_agg(json_build_object(
+      COALESCE(json_agg(json_build_object(
         'id', rp.id,
         'title', rp.title,
         'subreddit', rp.subreddit,
@@ -59,10 +59,10 @@ export default async function PlacePage({
         'permalink', rp.permalink,
         'sentiment', pr.sentiment,
         'created_utc', rp.created_utc
-      ) ORDER BY rp.created_utc DESC) as posts
+      ) ORDER BY rp.created_utc DESC) FILTER (WHERE rp.id IS NOT NULL), '[]'::json) as posts
     FROM restaurants r
-    JOIN post_restaurants pr ON pr.restaurant_id = r.id
-    JOIN reddit_posts rp ON rp.id = pr.post_id
+    LEFT JOIN post_restaurants pr ON pr.restaurant_id = r.id
+    LEFT JOIN reddit_posts rp ON rp.id = pr.post_id
     WHERE r.name ILIKE ${decodedName}
     GROUP BY r.id
     LIMIT 1

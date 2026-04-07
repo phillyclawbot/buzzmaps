@@ -76,7 +76,7 @@ function PlaceCard({
     <div
       className="group rounded-xl overflow-hidden bg-white border border-slate-200/60 hover:border-slate-300 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-[1.01]"
       style={isEvent ? { borderLeft: `3px solid ${color}` } : undefined}
-      onClick={() => hasPosts && setExpanded(!expanded)}
+      onClick={() => setExpanded(!expanded)}
     >
       {/* Image — clean, no overlay */}
       <div className="relative h-36 overflow-hidden bg-slate-50">
@@ -199,39 +199,52 @@ function PlaceCard({
       </div>
 
       {/* Expanded posts */}
-      {expanded && hasPosts && (
+      {expanded && (
         <div className="px-3.5 pb-3 border-t border-slate-100">
-          <div className="space-y-1 pt-2.5">
-            {posts.map((p) => (
+          {hasPosts ? (
+            <div className="space-y-1 pt-2.5">
+              {posts.map((p) => (
+                <a
+                  key={p.id}
+                  href={isPublication(p.subreddit) ? p.permalink : `https://reddit.com${p.permalink}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-start gap-2 text-xs text-slate-500 hover:text-[#ff6b35] transition-colors py-1 px-1.5 -mx-1.5 rounded-lg hover:bg-slate-50"
+                >
+                  <span
+                    className="inline-block w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
+                    style={{ background: SENTIMENT_COLORS[p.sentiment] || SENTIMENT_COLORS.neutral }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate leading-relaxed">{p.title}</p>
+                    <p className="text-slate-400 text-[10px]">
+                      {isPublication(p.subreddit) ? (
+                        <span className="inline-block px-1 py-0.5 bg-blue-50 text-blue-500 rounded text-[10px] mr-1">📰 {p.subreddit}</span>
+                      ) : (
+                        <span>r/{p.subreddit} · </span>
+                      )}
+                      {p.score} pts · {formatTimeAgo(p.created_utc)}
+                      {(p.mentions_in_thread ?? 1) > 1 && (
+                        <span className="ml-1 text-[#ff6b35]">· {p.mentions_in_thread}x mentioned</span>
+                      )}
+                    </p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          ) : (
+            <div className="py-3 text-center">
+              <p className="text-xs text-slate-400">No Reddit mentions yet</p>
               <a
-                key={p.id}
-                href={isPublication(p.subreddit) ? p.permalink : `https://reddit.com${p.permalink}`}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={`/place/${encodeURIComponent(r.name)}`}
                 onClick={(e) => e.stopPropagation()}
-                className="flex items-start gap-2 text-xs text-slate-500 hover:text-[#ff6b35] transition-colors py-1 px-1.5 -mx-1.5 rounded-lg hover:bg-slate-50"
+                className="inline-block mt-2 text-xs font-medium text-[#ff6b35] hover:underline"
               >
-                <span
-                  className="inline-block w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
-                  style={{ background: SENTIMENT_COLORS[p.sentiment] || SENTIMENT_COLORS.neutral }}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="truncate leading-relaxed">{p.title}</p>
-                  <p className="text-slate-400 text-[10px]">
-                    {isPublication(p.subreddit) ? (
-                      <span className="inline-block px-1 py-0.5 bg-blue-50 text-blue-500 rounded text-[10px] mr-1">📰 {p.subreddit}</span>
-                    ) : (
-                      <span>r/{p.subreddit} · </span>
-                    )}
-                    {p.score} pts · {formatTimeAgo(p.created_utc)}
-                    {(p.mentions_in_thread ?? 1) > 1 && (
-                      <span className="ml-1 text-[#ff6b35]">· {p.mentions_in_thread}x mentioned</span>
-                    )}
-                  </p>
-                </div>
+                View place profile →
               </a>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
