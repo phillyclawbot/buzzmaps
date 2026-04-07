@@ -595,21 +595,16 @@ function Home() {
         </div>
       )}
 
-      {/* Map view — always mounted; hidden when list is active */}
-      <div className="h-full w-full" style={view === "map" ? {} : { position: "absolute", left: 0, top: 0, pointerEvents: "none", opacity: 0, zIndex: -1 }}>
-          {/* Sidebar — only when map is active */}
-          {view === "map" && (
-            <Sidebar
-              posts={posts}
-              isOpen={sidebarOpen}
-              onToggle={() => setSidebarOpen(!sidebarOpen)}
-              onFlyTo={handleFlyTo}
-              totalRestaurants={stats.places}
-              totalPosts={stats.posts}
-            />
-          )}
-
-          {/* Map */}
+      {view === "map" ? (
+        <>
+          <Sidebar
+            posts={posts}
+            isOpen={sidebarOpen}
+            onToggle={() => setSidebarOpen(!sidebarOpen)}
+            onFlyTo={handleFlyTo}
+            totalRestaurants={stats.places}
+            totalPosts={stats.posts}
+          />
           <div className="h-full w-full pt-[92px] pb-14 md:pb-8 relative">
             {/* Top edge fade */}
             <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "40px", background: "linear-gradient(to bottom, rgba(255,255,255,0.6) 0%, transparent 100%)", pointerEvents: "none", zIndex: 500 }} />
@@ -735,10 +730,8 @@ function Home() {
 
 <MapView places={filteredPlaces} flyTo={flyTo} nearMeActive={nearMeActive} nearMeRadius={nearMeRadius} onNearMeToggle={handleNearMeToggle} onRadiusChange={setNearMeRadius} nearMeCount={filteredPlaces.length} />
           </div>
-      </div>
-
-      {/* List view — conditionally rendered (lightweight to remount) */}
-      {view === "list" && (
+        </>
+      ) : (
         <ListView
           places={places}
           searchQuery={searchQuery}
