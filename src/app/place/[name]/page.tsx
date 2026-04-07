@@ -338,7 +338,7 @@ export default async function PlacePage({
 
         {/* Reddit posts */}
         <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider px-1 mb-3">
-          Reddit Posts ({posts.length})
+          💬 Mentions ({posts.length})
         </h2>
 
         {posts.length === 0 ? (
@@ -370,9 +370,15 @@ export default async function PlacePage({
                       {post.title}
                     </p>
                     <div className="flex items-center flex-wrap gap-2 mt-2">
-                      <span className="text-xs bg-[#ff6b35]/10 text-[#ff6b35] px-2 py-0.5 rounded-full font-medium">
-                        r/{post.subreddit}
-                      </span>
+                      {isPublication(post.subreddit) ? (
+                        <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">
+                          📰 {post.subreddit}
+                        </span>
+                      ) : (
+                        <span className="text-xs bg-[#ff6b35]/10 text-[#ff6b35] px-2 py-0.5 rounded-full font-medium">
+                          r/{post.subreddit}
+                        </span>
+                      )}
                       <SentimentBadge sentiment={post.sentiment} />
                       <span className="text-xs text-slate-400">
                         ↑ {post.score} pts

@@ -174,9 +174,9 @@ function PlaceCard({
             <a
               href={`/place/${encodeURIComponent(r.name)}`}
               onClick={(e) => e.stopPropagation()}
-              className="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors text-center"
+              className="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#ff6b35] bg-[#ff6b35]/10 hover:bg-[#ff6b35]/20 transition-colors text-center"
             >
-              Profile
+              Details
             </a>
           )}
           <button
@@ -236,15 +236,15 @@ function PlaceCard({
           ) : (
             <div className="py-3 text-center">
               <p className="text-xs text-slate-400">No Reddit mentions yet</p>
-              <a
-                href={`/place/${encodeURIComponent(r.name)}`}
-                onClick={(e) => e.stopPropagation()}
-                className="inline-block mt-2 text-xs font-medium text-[#ff6b35] hover:underline"
-              >
-                View place profile →
-              </a>
             </div>
           )}
+          <a
+            href={`/place/${encodeURIComponent(r.name)}`}
+            onClick={(e) => e.stopPropagation()}
+            className="mt-2 flex items-center justify-center gap-1.5 w-full py-2 rounded-lg text-xs font-semibold text-[#ff6b35] bg-[#ff6b35]/5 hover:bg-[#ff6b35]/10 transition-colors border border-[#ff6b35]/20"
+          >
+            View full details →
+          </a>
         </div>
       )}
 
