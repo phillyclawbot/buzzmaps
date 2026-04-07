@@ -282,10 +282,21 @@ function Home() {
     }
   };
 
-  const handleFlyTo = (lat: number, lng: number) => {
+  const handleFlyTo = useCallback((lat: number, lng: number) => {
     setFlyTo([lat, lng]);
     setTimeout(() => setFlyTo(null), 100);
-  };
+  }, []);
+
+  const handleViewOnMap = useCallback((lat: number, lng: number) => {
+    setFlyTo([lat, lng]);
+    setTimeout(() => setFlyTo(null), 100);
+    setView("map");
+  }, []);
+
+  const handleNearMeToggle = useCallback((coords: { lat: number; lng: number } | null) => {
+    setNearMeCoords(coords);
+    setNearMeActive(coords !== null);
+  }, []);
 
   const filterButtons: { label: string; since: string }[] = [
     { label: "All Time", since: "all" },
@@ -701,7 +712,7 @@ function Home() {
               )}
             </div>
 
-<MapView places={filteredPlaces} flyTo={flyTo} nearMeActive={nearMeActive} nearMeRadius={nearMeRadius} onNearMeToggle={(coords) => { setNearMeCoords(coords); setNearMeActive(coords !== null); }} onRadiusChange={setNearMeRadius} nearMeCount={filteredPlaces.length} />
+<MapView places={filteredPlaces} flyTo={flyTo} nearMeActive={nearMeActive} nearMeRadius={nearMeRadius} onNearMeToggle={handleNearMeToggle} onRadiusChange={setNearMeRadius} nearMeCount={filteredPlaces.length} />
           </div>
       </div>
 
@@ -713,10 +724,7 @@ function Home() {
           onSearchChange={setSearchQuery}
           loading={loading}
           activeCategory={filter.category}
-          onViewOnMap={(lat, lng) => {
-            handleFlyTo(lat, lng);
-            setView("map");
-          }}
+          onViewOnMap={handleViewOnMap}
         />
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, memo } from "react";
 import type { Place, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
 import { NEIGHBOURHOODS, filterByNeighbourhood, getNeighbourhood } from "@/lib/neighbourhoods";
@@ -277,7 +277,7 @@ function PlaceCard({
   );
 }
 
-export default function ListView({
+export default memo(function ListView({
   places,
   searchQuery,
   onSearchChange,
@@ -470,4 +470,4 @@ export default function ListView({
       </div>
     </div>
   );
-}
+})

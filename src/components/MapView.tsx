@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, memo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
@@ -197,7 +197,7 @@ function ZoomTracker({ onZoom }: { onZoom: (z: number) => void }) {
 
 
 
-export default function MapView({
+export default memo(function MapView({
   places,
   flyTo,
   onNearMeToggle,
@@ -676,4 +676,4 @@ export default function MapView({
     </MapContainer>
     </div>
   );
-}
+})
