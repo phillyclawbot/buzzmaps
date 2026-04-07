@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import PlaceMapWrapper from "@/components/PlaceMapWrapper";
 import ShareButton from "@/app/place/ShareButton";
 import CheckinButton from "@/components/CheckinButton";
-import { CATEGORY_GRADIENT, SENTIMENT_COLORS, SENTIMENT_LABELS } from "@/lib/constants";
+import { CATEGORY_GRADIENT, SENTIMENT_COLORS, SENTIMENT_LABELS, isPublication } from "@/lib/constants";
 import { haversineDistance } from "@/lib/utils";
 
 function formatDate(utc: number): string {
@@ -48,7 +48,7 @@ export default async function PlacePage({
     SELECT
       r.id, r.name, r.place_id, r.address, r.lat, r.lng,
       r.google_rating, r.google_reviews_count, r.cuisine_type, r.price_level,
-      r.category,
+      r.category, r.metadata,
       COUNT(DISTINCT pr.post_id) as mention_count,
       COALESCE(json_agg(json_build_object(
         'id', rp.id,
@@ -320,7 +320,7 @@ export default async function PlacePage({
                       {monthPosts.map((p) => (
                         <a
                           key={p.id}
-                          href={`https://reddit.com${p.permalink}`}
+                          href={isPublication(p.subreddit) ? p.permalink : `https://reddit.com${p.permalink}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="block text-xs text-slate-500 hover:text-[#ff6b35] transition-colors truncate pl-[7.5rem]"
@@ -348,7 +348,7 @@ export default async function PlacePage({
             {posts.map((post) => (
               <a
                 key={post.id}
-                href={`https://reddit.com${post.permalink}`}
+                href={isPublication(post.subreddit) ? post.permalink : `https://reddit.com${post.permalink}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:border-[#ff6b35]/60 hover:shadow-md transition-all group"

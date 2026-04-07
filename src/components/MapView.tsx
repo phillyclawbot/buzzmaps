@@ -16,7 +16,8 @@ import {
 import MarkerClusterGroup from "react-leaflet-cluster";
 import type { Place, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
-import { CATEGORY_COLORS, SENTIMENT_COLORS } from "@/lib/constants";
+import { CATEGORY_COLORS, SENTIMENT_COLORS, isPublication } from "@/lib/constants";
+import { formatTimeAgo } from "@/lib/utils";
 import { NEIGHBOURHOODS, NEIGHBOURHOOD_GEOJSON_MAP, getNeighbourhood, computeFeatureCentroid } from "@/lib/neighbourhoods";
 
 const HOOD_PALETTE = [
@@ -519,7 +520,7 @@ export default function MapView({
               position={[r.lat, r.lng]}
               icon={createPinIcon(category, mentionCount, isRecent)}
             >
-              <Popup maxWidth={300} minWidth={240}>
+              <Popup maxWidth={320} minWidth={240}>
                 <div style={{ fontFamily: "inherit" }}>
                   {/* Compact header */}
                   <div style={{
@@ -560,15 +561,42 @@ export default function MapView({
                     }}>
                       💬 {r.mention_count} mention{Number(r.mention_count) !== 1 ? "s" : ""}
                     </span>
-                    {r.posts?.[0] && (
-                      <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: SENTIMENT_COLORS[r.posts[0].sentiment] || SENTIMENT_COLORS.neutral }} />
-                    )}
                   </div>
 
-                  {/* Top post preview */}
-                  {r.posts?.[0] && (
-                    <div style={{ fontSize: "11px", color: "#64748b", fontStyle: "italic", marginBottom: "8px", lineHeight: 1.4 }}>
-                      &ldquo;{r.posts[0].title.slice(0, 80)}{r.posts[0].title.length > 80 ? "..." : ""}&rdquo;
+                  {/* Scrollable mentions list */}
+                  {r.posts?.length ? (
+                    <div style={{ maxHeight: "140px", overflowY: "auto", marginBottom: "8px", borderTop: "1px solid #f1f5f9", paddingTop: "6px" }}>
+                      <div style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "4px" }}>
+                        Mentions
+                      </div>
+                      {r.posts.map((p: { id: number; title: string; subreddit: string; score: number; sentiment: string; created_utc: number; permalink: string; mentions_in_thread?: number }) => (
+                        <a
+                          key={p.id}
+                          href={isPublication(p.subreddit) ? p.permalink : `https://reddit.com${p.permalink}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ display: "flex", alignItems: "flex-start", gap: "6px", padding: "4px 2px", textDecoration: "none", borderRadius: "4px" }}
+                        >
+                          <span style={{
+                            display: "inline-block", width: "6px", height: "6px", borderRadius: "50%",
+                            marginTop: "5px", flexShrink: 0,
+                            background: SENTIMENT_COLORS[p.sentiment] || SENTIMENT_COLORS.neutral,
+                          }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: "11px", color: "#334155", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {p.title}
+                            </div>
+                            <div style={{ fontSize: "10px", color: "#94a3b8", marginTop: "1px" }}>
+                              {isPublication(p.subreddit) ? `📰 ${p.subreddit}` : `r/${p.subreddit}`} · {p.score} pts · {formatTimeAgo(p.created_utc)}
+                              {(p.mentions_in_thread ?? 1) > 1 ? ` · ${p.mentions_in_thread}x` : ""}
+                            </div>
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: "11px", color: "#94a3b8", textAlign: "center", padding: "8px 0", borderTop: "1px solid #f1f5f9", marginBottom: "8px" }}>
+                      No mentions yet
                     </div>
                   )}
 
