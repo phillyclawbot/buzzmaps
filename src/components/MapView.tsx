@@ -304,24 +304,47 @@ export default function MapView({
     return centroids;
   }, [geoData]);
 
-  // Merge overlapping labels (hoods sharing same centroid) and filter by zoom
+  // Merge overlapping labels (nearby centroids) and filter by zoom
   const labelData = useMemo(() => {
-    const groups: Record<string, { names: string[]; position: [number, number]; counts: number[] }> = {};
+    // Distance threshold in degrees (~500m) for merging nearby labels
+    const MERGE_THRESHOLD = 0.005;
+    const items: { name: string; position: [number, number]; count: number }[] = [];
     for (const n of allHoods) {
       const centroid = hoodCentroids[n.name];
       if (!centroid) continue;
-      // Round to 3 decimals (~100m) to catch overlapping centroids
-      const key = `${centroid[0].toFixed(3)},${centroid[1].toFixed(3)}`;
-      if (!groups[key]) groups[key] = { names: [], position: centroid, counts: [] };
-      groups[key].names.push(n.name);
-      groups[key].counts.push(n.count);
+      items.push({ name: n.name, position: centroid, count: n.count });
+    }
+    // Greedy merge: for each item, attach to nearest existing group within threshold
+    const groups: { names: string[]; position: [number, number]; counts: number[] }[] = [];
+    for (const item of items) {
+      let merged = false;
+      for (const g of groups) {
+        const dLat = Math.abs(g.position[0] - item.position[0]);
+        const dLng = Math.abs(g.position[1] - item.position[1]);
+        if (dLat < MERGE_THRESHOLD && dLng < MERGE_THRESHOLD) {
+          g.names.push(item.name);
+          g.counts.push(item.count);
+          merged = true;
+          break;
+        }
+      }
+      if (!merged) {
+        groups.push({ names: [item.name], position: item.position, counts: [item.count] });
+      }
     }
     const labels: { text: string; position: [number, number]; isActive: boolean; maxCount: number }[] = [];
-    for (const g of Object.values(groups)) {
+    for (const g of groups) {
       const maxCount = Math.max(...g.counts);
       const isActive = maxCount > 0;
-      // Merge names — show max 2, abbreviate the rest
-      const text = g.names.length <= 2 ? g.names.join(" / ") : `${g.names[0]} / ${g.names[1]} +${g.names.length - 2}`;
+      // Show the highest-count name as primary label
+      const sorted = g.names
+        .map((n, i) => ({ n, c: g.counts[i] }))
+        .sort((a, b) => b.c - a.c);
+      const text = sorted.length === 1
+        ? sorted[0].n
+        : sorted.length === 2
+          ? `${sorted[0].n} / ${sorted[1].n}`
+          : `${sorted[0].n} +${sorted.length - 1}`;
       labels.push({ text, position: g.position, isActive, maxCount });
     }
     // Filter by zoom level
