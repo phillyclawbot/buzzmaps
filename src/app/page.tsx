@@ -589,8 +589,8 @@ function Home() {
         </div>
       )}
 
-      {/* Map view — kept mounted, hidden via CSS when not active */}
-      <div className={view === "map" ? "" : "invisible absolute inset-0 pointer-events-none -z-10"}>
+      {/* Map view — always mounted; hidden view uses offscreen positioning */}
+      <div style={view === "map" ? {} : { position: "fixed", left: "-200vw", visibility: "hidden" as const }}>
           {/* Sidebar */}
           <Sidebar
             posts={posts}
@@ -730,7 +730,8 @@ function Home() {
       </div>
 
       {/* List view — kept mounted, hidden via CSS when not active */}
-      <div className={view === "list" ? "" : "invisible absolute inset-0 pointer-events-none -z-10"}>
+      {/* List view — always mounted; hidden view uses offscreen positioning */}
+      <div style={view === "list" ? {} : { position: "fixed", left: "-200vw", visibility: "hidden" as const }}>
         <ListView
           places={places}
           searchQuery={searchQuery}
