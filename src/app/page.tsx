@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import ListView from "@/components/ListView";
 import type { Place, RedditPostWithPlaces, Stats, PlaceCategory } from "@/lib/types";
@@ -34,8 +35,9 @@ function Home() {
   const [scrapingEvents, setScrapingEvents] = useState(false);
   const [scrapingAll, setScrapingAll] = useState(false);
   const [fetchingPhotos, setFetchingPhotos] = useState(false);
+  const searchParams = useSearchParams();
+  const view = (searchParams.get("view") === "list" ? "list" : "map") as "map" | "list";
   const [menuOpen, setMenuOpen] = useState(false);
-  const [view, setView] = useState<"map" | "list">("map");
   const [filter, setFilter] = useState<{ since: string; sentiment: string; category: string }>({
     since: "all",
     sentiment: "all",
@@ -60,7 +62,6 @@ function Home() {
   const mapSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const highlightedPlace = useRef<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const searchParams = useSearchParams();
   const router = useRouter();
 
   // Keyboard shortcut: "/" opens search, Escape clears/closes
@@ -189,7 +190,7 @@ function Home() {
     );
     if (found) {
       handleFlyTo(found.lat, found.lng);
-      setView("map");
+      router.replace("/", { scroll: false });
     }
   }, [searchParams, places]);  // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -290,8 +291,8 @@ function Home() {
   const handleViewOnMap = useCallback((lat: number, lng: number) => {
     setFlyTo([lat, lng]);
     setTimeout(() => setFlyTo(null), 100);
-    setView("map");
-  }, []);
+    router.replace("/", { scroll: false });
+  }, [router]);
 
   const handleNearMeToggle = useCallback((coords: { lat: number; lng: number } | null) => {
     setNearMeCoords(coords);
@@ -336,28 +337,32 @@ function Home() {
 
         {/* View toggle — desktop only */}
         <div className="hidden md:flex bg-slate-100 rounded-lg overflow-hidden ml-2 p-0.5 shrink-0">
-          <button
-            onClick={() => setView("map")}
+          <Link
+            href="/"
+            replace
+            scroll={false}
             className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
               view === "map" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
             }`}
           >
             Map
-          </button>
-          <button
-            onClick={() => setView("list")}
+          </Link>
+          <Link
+            href="/?view=list"
+            replace
+            scroll={false}
             className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
               view === "list" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
             }`}
           >
             List
-          </button>
-          <button
-            onClick={() => router.push("/collections")}
+          </Link>
+          <Link
+            href="/collections"
             className="px-3 py-1 rounded-md text-xs font-semibold transition-all text-slate-400 hover:text-slate-600"
           >
             Collections
-          </button>
+          </Link>
         </div>
 
         {/* Mobile legend — only in map view */}
@@ -905,49 +910,7 @@ function Home() {
         <a href="/stats" className="ml-auto text-slate-500 hover:text-[#ff6b35] transition-colors">📊 Stats</a>
       </div>
 
-      {/* Mobile bottom navigation bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white z-[1000] md:hidden flex items-stretch" style={{ height: "56px", borderTop: "1px solid #f1f5f9", paddingTop: "12px" }}>
-        <button
-          onClick={() => setView("map")}
-          className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors"
-          style={{ color: view === "map" ? "#E05D36" : "#94a3b8" }}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-          <span style={{ fontSize: "10px", fontWeight: 600 }}>Explore</span>
-        </button>
-        <button
-          onClick={() => setView("list")}
-          className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors"
-          style={{ color: view === "list" ? "#E05D36" : "#94a3b8" }}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-          <span style={{ fontSize: "10px", fontWeight: 600 }}>List</span>
-        </button>
-        <button
-          onClick={() => router.push("/collections")}
-          className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors"
-          style={{ color: "#94a3b8" }}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
-          <span style={{ fontSize: "10px", fontWeight: 600 }}>Collections</span>
-        </button>
-        <button
-          onClick={() => { setSubmitOpen(true); setSubmitState("idle"); setSubmitError(""); setSubmitForm({ name: "", category: "other", address: "", reason: "", eventDate: "", ticketUrl: "" }); }}
-          className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors"
-          style={{ color: "#94a3b8" }}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <span style={{ fontSize: "10px", fontWeight: 600 }}>Submit</span>
-        </button>
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors"
-          style={{ color: menuOpen ? "#E05D36" : "#94a3b8" }}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-          <span style={{ fontSize: "10px", fontWeight: 600 }}>More</span>
-        </button>
-      </div>
+      {/* Mobile bottom navigation is handled by BottomNav in layout.tsx */}
     </div>
   );
 }
