@@ -5,6 +5,7 @@ import type { CollectionPlaceRow } from "@/lib/types";
 import CollectionCard from "@/components/CollectionCard";
 import { COLLECTIONS } from "@/lib/collections";
 import type { CollectionQuery } from "@/lib/collections";
+import { IconGrid } from "@/lib/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -130,9 +131,14 @@ export default async function CollectionsPage() {
 
       <div className="max-w-4xl mx-auto px-4 py-8 pb-20 page-enter">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">
-            📚 Collections
-          </h1>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#ff6b35] to-[#f59e0b] flex items-center justify-center shadow-sm">
+              <IconGrid size={18} className="text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900">
+              Collections
+            </h1>
+          </div>
           <p className="text-slate-500 text-sm">
             Curated lists of Toronto&apos;s best places, powered by Reddit
             buzz.
@@ -144,7 +150,6 @@ export default async function CollectionsPage() {
             <CollectionCard
               key={col.id}
               id={col.id}
-              emoji={col.emoji}
               title={col.title}
               description={col.description}
               places={col.places}

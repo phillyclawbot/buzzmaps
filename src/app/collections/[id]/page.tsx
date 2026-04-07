@@ -1,11 +1,11 @@
 import { getDb } from "@/lib/db";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CATEGORY_EMOJI } from "@/lib/types";
 import type { PlaceCategory } from "@/lib/types";
 import { getCollectionById } from "@/lib/collections";
 import type { CollectionQuery } from "@/lib/collections";
 import { isPublication } from "@/lib/constants";
+import { CollectionIcon, CategoryIcon, IconStar, IconChat, IconMap, IconExternalLink, IconUpArrow } from "@/lib/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -225,7 +225,9 @@ export default async function CollectionDetailPage({
       <div className="bg-gradient-to-br from-[#ff6b35]/10 to-[#f59e0b]/5 border-b border-slate-200">
         <div className="max-w-2xl mx-auto px-4 py-8">
           <div className="flex items-start gap-4">
-            <span className="text-6xl leading-none drop-shadow-sm">{collection.emoji}</span>
+            <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shadow-sm shrink-0">
+              <CollectionIcon id={id} size={32} />
+            </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-900">
                 {collection.title}
@@ -246,7 +248,7 @@ export default async function CollectionDetailPage({
                   href={`/?category=${collection.query.type === "category" ? collection.query.category : "all"}`}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-medium hover:border-[#ff6b35] hover:text-[#ff6b35] transition-all shadow-sm"
                 >
-                  🗺️ View on Map
+                  <IconMap size={14} className="text-current" /> View on Map
                 </Link>
               </div>
             </div>
@@ -258,7 +260,7 @@ export default async function CollectionDetailPage({
       <div className="max-w-2xl mx-auto px-4 py-6 pb-20 page-enter">
         {places.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-            <span className="text-4xl mb-3">{collection.emoji}</span>
+            <div className="mb-3"><CollectionIcon id={id} size={48} /></div>
             <p className="text-sm">No places found in this collection yet.</p>
             <p className="text-xs mt-1">Know a place that belongs here?</p>
             <Link
@@ -282,8 +284,8 @@ export default async function CollectionDetailPage({
                     <span className="text-sm font-bold text-slate-400 w-6 shrink-0">
                       {i + 1}
                     </span>
-                    <span className="text-2xl leading-none shrink-0">
-                      {CATEGORY_EMOJI[place.category] || "\u{1F4CD}"}
+                    <span className="text-slate-400 shrink-0">
+                      <CategoryIcon category={place.category} size={22} />
                     </span>
                     <div className="flex-1 min-w-0">
                       <Link
@@ -300,12 +302,12 @@ export default async function CollectionDetailPage({
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       {place.google_rating && (
-                        <span className="text-xs text-slate-500">
-                          ⭐ {place.google_rating.toFixed(1)}
+                        <span className="flex items-center gap-0.5 text-xs text-slate-500">
+                          <IconStar size={12} className="text-amber-400" /> {place.google_rating.toFixed(1)}
                         </span>
                       )}
-                      <span className="text-xs text-[#ff6b35] font-bold bg-[#ff6b35]/10 px-2 py-1 rounded-full">
-                        {place.mention_count} 💬
+                      <span className="flex items-center gap-1 text-xs text-[#ff6b35] font-bold bg-[#ff6b35]/10 px-2 py-1 rounded-full">
+                        {place.mention_count} <IconChat size={12} className="text-[#ff6b35]" />
                       </span>
                     </div>
                   </div>
@@ -333,16 +335,16 @@ export default async function CollectionDetailPage({
                             </p>
                             <div className="flex items-center gap-2 mt-0.5">
                               {isPub ? (
-                                <span className="text-[10px] px-1 py-0.5 bg-blue-50 text-blue-500 rounded font-medium">
-                                  📰 {post.subreddit}
+                                <span className="inline-flex items-center gap-0.5 text-[10px] px-1 py-0.5 bg-blue-50 text-blue-500 rounded font-medium">
+                                  {post.subreddit}
                                 </span>
                               ) : (
                                 <span className="text-[10px] text-[#ff6b35]/80 font-medium">
                                   r/{post.subreddit}
                                 </span>
                               )}
-                              <span className="text-[10px] text-slate-400">
-                                ↑{post.score}
+                              <span className="inline-flex items-center gap-0.5 text-[10px] text-slate-400">
+                                <IconUpArrow size={9} />{post.score}
                               </span>
                               <span className="text-[10px] text-slate-400">
                                 {post.num_comments} comments
@@ -352,19 +354,7 @@ export default async function CollectionDetailPage({
                               </span>
                             </div>
                           </div>
-                          <svg
-                            className="text-slate-300 group-hover:text-[#ff6b35] transition-colors shrink-0 mt-0.5"
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
-                          </svg>
+                          <IconExternalLink size={12} className="text-slate-300 group-hover:text-[#ff6b35] transition-colors shrink-0 mt-0.5" />
                         </a>
                         );
                       })}
