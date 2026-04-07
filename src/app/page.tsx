@@ -323,8 +323,8 @@ function Home() {
           <span className="font-semibold text-sm tracking-tight bg-gradient-to-r from-[#ff6b35] to-[#f59e0b] bg-clip-text text-transparent">BuzzMaps</span>
         </div>
 
-        {/* View toggle */}
-        <div className="flex bg-slate-100 rounded-lg overflow-hidden ml-2 p-0.5 shrink-0">
+        {/* View toggle — desktop only */}
+        <div className="hidden md:flex bg-slate-100 rounded-lg overflow-hidden ml-2 p-0.5 shrink-0">
           <button
             onClick={() => setView("map")}
             className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
@@ -348,6 +348,26 @@ function Home() {
             Collections
           </button>
         </div>
+
+        {/* Mobile legend — only in map view */}
+        {view === "map" && (
+          <div className="flex md:hidden items-center gap-2.5 ml-2 overflow-x-auto no-scrollbar shrink">
+            {[
+              { label: "Food", color: "#E05D36" },
+              { label: "Bar", color: "#8B5CF6" },
+              { label: "Cafe", color: "#D97706" },
+              { label: "Park", color: "#22c55e" },
+              { label: "Shop", color: "#06b6d4" },
+              { label: "Venue", color: "#3B82F6" },
+              { label: "Event", color: "#d946ef" },
+            ].map((c) => (
+              <span key={c.label} className="flex items-center gap-1 shrink-0">
+                <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
+                <span className="text-[10px] text-slate-500 font-medium">{c.label}</span>
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Desktop search */}
         <input

@@ -102,22 +102,43 @@ function createClusterIcon(cluster: { getChildCount: () => number; getAllChildMa
   const count = cluster.getChildCount();
   const size = Math.max(32, Math.min(50, 32 + Math.floor(count / 10) * 2));
 
-  // Determine dominant category color from child markers
+  // Determine dominant category color + neighbourhood from child markers
   const markers = cluster.getAllChildMarkers();
   const catCounts: Record<string, number> = {};
-  for (const m of markers) {
-    const cat = (m.options as { category?: string }).category;
-    if (cat) catCounts[cat] = (catCounts[cat] || 0) + 1;
+  let hood = "";
+  if (markers.length > 0) {
+    let totalLat = 0, totalLng = 0;
+    for (const m of markers) {
+      const ll = m.getLatLng();
+      totalLat += ll.lat;
+      totalLng += ll.lng;
+      const cat = (m.options as { category?: string }).category;
+      if (cat) catCounts[cat] = (catCounts[cat] || 0) + 1;
+    }
+    hood = getNeighbourhood(totalLat / markers.length, totalLng / markers.length) || "";
   }
-  // Find dominant category, fallback to brand orange
   let dominantColor = "#E05D36";
   let maxCount = 0;
   for (const [cat, c] of Object.entries(catCounts)) {
     if (c > maxCount) { maxCount = c; dominantColor = PIN_COLORS[cat as PlaceCategory] || "#E05D36"; }
   }
 
+  const labelHtml = hood
+    ? `<div style="
+        position:absolute;top:${size + 2}px;left:50%;transform:translateX(-50%);
+        white-space:nowrap;font-size:9px;font-weight:600;color:#475569;
+        background:rgba(255,255,255,0.92);
+        padding:1px 6px;border-radius:6px;
+        box-shadow:0 1px 3px rgba(0,0,0,0.08);
+        pointer-events:none;letter-spacing:0.2px;
+      ">${hood}</div>`
+    : "";
+
+  const totalH = hood ? size + 18 : size;
+
   return L.divIcon({
-    html: `<div style="
+    html: `<div style="position:relative;width:${size}px;height:${totalH}px;">
+      <div style="
         width:${size}px;height:${size}px;min-width:32px;
         border-radius:50%;background:white;
         border:2.5px solid ${dominantColor};
@@ -125,9 +146,11 @@ function createClusterIcon(cluster: { getChildCount: () => number; getAllChildMa
         display:flex;align-items:center;justify-content:center;
         font-size:${count >= 100 ? 11 : 13}px;font-weight:700;
         color:${dominantColor};font-family:system-ui,-apple-system,sans-serif;
-      ">${count}</div>`,
+      ">${count}</div>
+      ${labelHtml}
+    </div>`,
     className: "",
-    iconSize: [size, size],
+    iconSize: [size, totalH],
     iconAnchor: [size / 2, size / 2],
   });
 }
