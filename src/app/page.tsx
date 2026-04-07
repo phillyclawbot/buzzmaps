@@ -76,6 +76,12 @@ function Home() {
     return () => window.removeEventListener("buzzmaps:setview", handler);
   }, []);
 
+  // Sync view state when navigating to /?view=list from another page
+  useEffect(() => {
+    const v = searchParamsRaw.get("view");
+    setView(v === "list" ? "list" : "map");
+  }, [searchParamsRaw]);
+
   // Keyboard shortcut: "/" opens search, Escape clears/closes
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
