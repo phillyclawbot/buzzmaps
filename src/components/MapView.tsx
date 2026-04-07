@@ -49,24 +49,6 @@ const PIN_COLORS: Record<PlaceCategory, string> = {
   other: "#64748b",
 };
 
-// Filled SVG icons per category — bold, legible at small sizes (20x20 viewBox)
-const CATEGORY_PIN_ICON: Record<PlaceCategory, string> = {
-  restaurant: '<path d="M5 3v7a3 3 0 003 3v5a1 1 0 002 0v-5a3 3 0 003-3V3" fill="none" stroke="WH" stroke-width="1.8" stroke-linecap="round"/><line x1="7" y1="3" x2="7" y2="7" stroke="WH" stroke-width="1.8" stroke-linecap="round"/><line x1="11" y1="3" x2="11" y2="7" stroke="WH" stroke-width="1.8" stroke-linecap="round"/><path d="M15 3c0 0 0 4 0 5s-1 2-1 3v5a1 1 0 002 0v-5c0-1-1-2-1-3s0-5 0-5" fill="WH" opacity="0.9"/>',
-  bar:        '<path d="M5 3h10l-3 5.5a3 3 0 01-4 0L5 3z" fill="WH" opacity="0.25"/><path d="M5 3h10l-3 5.5a3 3 0 01-4 0L5 3z" fill="none" stroke="WH" stroke-width="1.6" stroke-linejoin="round"/><line x1="10" y1="9" x2="10" y2="15" stroke="WH" stroke-width="1.6"/><line x1="7" y1="15" x2="13" y2="15" stroke="WH" stroke-width="1.6" stroke-linecap="round"/>',
-  cafe:       '<path d="M4 7h9v4a4 4 0 01-4 4H8a4 4 0 01-4-4V7z" fill="WH" opacity="0.2"/><path d="M4 7h9v4a4 4 0 01-4 4H8a4 4 0 01-4-4V7z" fill="none" stroke="WH" stroke-width="1.6" stroke-linejoin="round"/><path d="M13 8h1.5a2.5 2.5 0 010 5H13" fill="none" stroke="WH" stroke-width="1.6"/><path d="M7 4c0-1 .5-2 1.5-2S10 3 10 4" fill="none" stroke="WH" stroke-width="1.4" stroke-linecap="round"/>',
-  club:       '<circle cx="7" cy="13" r="2.5" fill="WH" opacity="0.25"/><circle cx="7" cy="13" r="2.5" fill="none" stroke="WH" stroke-width="1.6"/><circle cx="15" cy="11" r="2.5" fill="WH" opacity="0.25"/><circle cx="15" cy="11" r="2.5" fill="none" stroke="WH" stroke-width="1.6"/><line x1="9.5" y1="13" x2="9.5" y2="4" stroke="WH" stroke-width="1.6"/><line x1="9.5" y1="4" x2="17.5" y2="3" stroke="WH" stroke-width="1.6" stroke-linecap="round"/><line x1="17.5" y1="3" x2="17.5" y2="11" stroke="WH" stroke-width="1.6"/>',
-  shop:       '<path d="M4 7l1.5-4h9L16 7" fill="WH" opacity="0.2" stroke="WH" stroke-width="1.6" stroke-linejoin="round"/><rect x="4" y="7" width="12" height="9" rx="1" fill="none" stroke="WH" stroke-width="1.6"/><path d="M8 11a2 2 0 004 0" fill="none" stroke="WH" stroke-width="1.6" stroke-linecap="round"/>',
-  park:       '<path d="M10 17V10" stroke="WH" stroke-width="2" stroke-linecap="round"/><path d="M10 4l-5 6h10L10 4z" fill="WH" opacity="0.3"/><path d="M10 4l-5 6h10L10 4z" fill="none" stroke="WH" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 7l-4 5h8L10 7z" fill="WH" opacity="0.2"/><path d="M10 7l-4 5h8L10 7z" fill="none" stroke="WH" stroke-width="1.6" stroke-linejoin="round"/>',
-  gym:        '<line x1="3" y1="10" x2="17" y2="10" stroke="WH" stroke-width="2.5" stroke-linecap="round"/><rect x="5" y="6" width="3" height="8" rx="1" fill="WH" opacity="0.3" stroke="WH" stroke-width="1.2"/><rect x="12" y="6" width="3" height="8" rx="1" fill="WH" opacity="0.3" stroke="WH" stroke-width="1.2"/>',
-  venue:      '<path d="M3 15l7-10 7 10" fill="WH" opacity="0.15"/><path d="M3 15l7-10 7 10" fill="none" stroke="WH" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="10" r="2" fill="WH" opacity="0.6"/><line x1="4" y1="17" x2="16" y2="17" stroke="WH" stroke-width="1.6" stroke-linecap="round"/>',
-  market:     '<circle cx="7" cy="16" r="1.2" fill="WH"/><circle cx="14" cy="16" r="1.2" fill="WH"/><path d="M3 4h2l2 9h8l2-6H7" fill="none" stroke="WH" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
-  museum:     '<path d="M10 3L2 8h16L10 3z" fill="WH" opacity="0.25"/><path d="M10 3L2 8h16L10 3z" fill="none" stroke="WH" stroke-width="1.5" stroke-linejoin="round"/><line x1="5" y1="8" x2="5" y2="15" stroke="WH" stroke-width="1.6"/><line x1="10" y1="8" x2="10" y2="15" stroke="WH" stroke-width="1.6"/><line x1="15" y1="8" x2="15" y2="15" stroke="WH" stroke-width="1.6"/><line x1="2" y1="15" x2="18" y2="15" stroke="WH" stroke-width="1.8" stroke-linecap="round"/>',
-  event:      '<rect x="3" y="5" width="14" height="12" rx="2" fill="WH" opacity="0.2" stroke="WH" stroke-width="1.5"/><line x1="3" y1="9" x2="17" y2="9" stroke="WH" stroke-width="1.5"/><line x1="7" y1="3" x2="7" y2="6" stroke="WH" stroke-width="1.6" stroke-linecap="round"/><line x1="13" y1="3" x2="13" y2="6" stroke="WH" stroke-width="1.6" stroke-linecap="round"/><circle cx="10" cy="13" r="1.2" fill="WH"/>',
-  landmark:   '<path d="M10 3L4 8v9h12V8L10 3z" fill="WH" opacity="0.2"/><path d="M10 3L4 8v9h12V8L10 3z" fill="none" stroke="WH" stroke-width="1.6" stroke-linejoin="round"/><rect x="8" y="12" width="4" height="5" fill="WH" opacity="0.5" stroke="WH" stroke-width="1"/>',
-  attraction: '<circle cx="10" cy="10" r="7" fill="WH" opacity="0.15" stroke="WH" stroke-width="1.6"/><circle cx="10" cy="10" r="3" fill="WH" opacity="0.3" stroke="WH" stroke-width="1.4"/><circle cx="10" cy="10" r="1" fill="WH"/>',
-  other:      '<circle cx="10" cy="9" r="3" fill="WH" opacity="0.4"/><circle cx="10" cy="9" r="3" fill="none" stroke="WH" stroke-width="1.6"/><path d="M10 12v2" stroke="WH" stroke-width="2" stroke-linecap="round"/>',
-};
-
 // Simple stroke icons for popup display (24x24 viewBox)
 const POPUP_ICON_PATH: Record<string, string> = {
   restaurant: 'M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2M7 2v20M21 15V2a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3v7',
@@ -89,34 +71,30 @@ function createPinIcon(category: PlaceCategory, mentionCount: number, isRecent: 
   const color = PIN_COLORS[category] || PIN_COLORS.other;
   const showPulse = isRecent && mentionCount >= 2;
 
-  const CSS_W = 36;
-  const CSS_H = 44;
-  const iconSvg = CATEGORY_PIN_ICON[category] || CATEGORY_PIN_ICON.other;
-  // Replace WH placeholder with white
-  const iconMarkup = iconSvg.replace(/WH/g, '#fff');
+  // Size scales with mentions: base 22, max 34
+  const dotSize = Math.min(34, Math.max(22, 18 + Math.sqrt(mentionCount) * 4));
+  const CSS_W = Math.ceil(dotSize);
+  const CSS_H = Math.ceil(dotSize);
+  const r = dotSize / 2;
 
   const pulseRing = showPulse ? `
-    <div style="position:absolute;top:-2px;left:-2px;width:${CSS_W + 4}px;height:${CSS_W + 4}px;border-radius:50%;border:2px solid ${color};opacity:0;animation:pinPulse 2s ease-out infinite;pointer-events:none;"></div>
-    <div style="position:absolute;top:-2px;left:-2px;width:${CSS_W + 4}px;height:${CSS_W + 4}px;border-radius:50%;border:2px solid ${color};opacity:0;animation:pinPulse 2s ease-out 1s infinite;pointer-events:none;"></div>
+    <div style="position:absolute;top:-4px;left:-4px;width:${CSS_W + 8}px;height:${CSS_H + 8}px;border-radius:50%;border:2px solid ${color};opacity:0;animation:pinPulse 2s ease-out infinite;pointer-events:none;"></div>
+    <div style="position:absolute;top:-4px;left:-4px;width:${CSS_W + 8}px;height:${CSS_H + 8}px;border-radius:50%;border:2px solid ${color};opacity:0;animation:pinPulse 2s ease-out 1s infinite;pointer-events:none;"></div>
   ` : '';
 
-  // Rounded-square pin with colored body and white icon inside
+  // Clean circle dot with white border
   const svgPin = `
-    <svg width="${CSS_W}" height="${CSS_H}" viewBox="0 0 36 44" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.25)) drop-shadow(0 1px 2px rgba(0,0,0,0.15));">
-      <path d="M18 42l-1-1.2C9.4 32 4 26 4 18.5 4 10.5 10 4.5 18 4.5s14 6 14 14c0 7.5-5.4 13.5-13 22.3L18 42z" fill="${color}"/>
-      <rect x="6" y="6" width="24" height="24" rx="6" fill="${color}"/>
-      <rect x="7" y="7" width="22" height="22" rx="5" fill="${color}" stroke="white" stroke-opacity="0.15" stroke-width="0.5"/>
-      <g transform="translate(8,7) scale(1.1)">
-        ${iconMarkup}
-      </g>
+    <svg width="${CSS_W}" height="${CSS_H}" viewBox="0 0 ${CSS_W} ${CSS_H}" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 1px 3px rgba(0,0,0,0.3));">
+      <circle cx="${r}" cy="${r}" r="${r}" fill="${color}"/>
+      <circle cx="${r}" cy="${r}" r="${r - 1.5}" fill="${color}" stroke="white" stroke-width="2.5"/>
     </svg>`;
 
   return L.divIcon({
-    html: `<div style="position:relative;width:${CSS_W}px;height:${CSS_H}px;">${pulseRing}${svgPin}</div>`,
+    html: `<div style="position:relative;width:${CSS_W}px;height:${CSS_H}px;transition:transform 0.15s ease;">${pulseRing}${svgPin}</div>`,
     className: '',
     iconSize: [CSS_W, CSS_H],
-    iconAnchor: [CSS_W / 2, CSS_H],
-    popupAnchor: [0, -CSS_H + 6],
+    iconAnchor: [CSS_W / 2, CSS_H / 2],
+    popupAnchor: [0, -CSS_H / 2],
   });
 }
 
@@ -369,13 +347,25 @@ export default function MapView({
           : `${sorted[0].n} +${sorted.length - 1}`;
       labels.push({ text, position: g.position, isActive, maxCount });
     }
-    // Filter by zoom level
+    // Filter by zoom level — only show labels when zoomed in enough
     return labels.filter((l) => {
-      if (zoom < 12) return l.isActive && l.maxCount >= 5;
-      if (zoom < 14) return l.isActive;
+      if (zoom < 14) return false; // hide all labels when zoomed out
+      if (zoom < 15) return l.isActive && l.maxCount >= 3;
       return true;
     });
   }, [allHoods, hoodCentroids, zoom]);
+
+  // Deduplicate places with the same name — keep highest mention count, merge posts
+  const dedupedPlaces = useMemo(() => {
+    const byName = new Map<string, typeof places[0]>();
+    for (const p of places) {
+      const existing = byName.get(p.name);
+      if (!existing || Number(p.mention_count) > Number(existing.mention_count)) {
+        byName.set(p.name, p);
+      }
+    }
+    return Array.from(byName.values());
+  }, [places]);
 
   const handleNearMe = () => {
     if (nearMeActive) {
@@ -529,7 +519,7 @@ export default function MapView({
           disableClusteringAtZoom={16}
           animate
         >
-        {places.map((r) => {
+        {dedupedPlaces.map((r) => {
           const category = r.category || "other";
           const mentionCount = Number(r.mention_count);
           const isRecent = Date.now() / 1000 - r.latest_mention < 86400;

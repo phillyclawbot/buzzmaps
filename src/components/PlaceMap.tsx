@@ -22,19 +22,19 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 function createSinglePin(color: string) {
-  const svg = `<svg width="36" height="44" viewBox="0 0 36 44" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.25)) drop-shadow(0 1px 2px rgba(0,0,0,0.15));">
-    <path d="M18 42l-1-1.2C9.4 32 4 26 4 18.5 4 10.5 10 4.5 18 4.5s14 6 14 14c0 7.5-5.4 13.5-13 22.3L18 42z" fill="${color}"/>
-    <rect x="6" y="6" width="24" height="24" rx="6" fill="${color}"/>
-    <rect x="7" y="7" width="22" height="22" rx="5" fill="${color}" stroke="white" stroke-opacity="0.15" stroke-width="0.5"/>
-    <circle cx="18" cy="18" r="5" fill="white" opacity="0.9"/>
+  const size = 28;
+  const r = size / 2;
+  const svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 1px 3px rgba(0,0,0,0.3));">
+    <circle cx="${r}" cy="${r}" r="${r}" fill="${color}"/>
+    <circle cx="${r}" cy="${r}" r="${r - 1.5}" fill="${color}" stroke="white" stroke-width="2.5"/>
   </svg>`;
 
   return L.divIcon({
-    html: `<div style="position:relative;width:36px;height:44px;">${svg}</div>`,
+    html: `<div style="position:relative;width:${size}px;height:${size}px;">${svg}</div>`,
     className: "",
-    iconSize: [36, 44],
-    iconAnchor: [18, 44],
-    popupAnchor: [0, -38],
+    iconSize: [size, size],
+    iconAnchor: [r, r],
+    popupAnchor: [0, -r],
   });
 }
 
