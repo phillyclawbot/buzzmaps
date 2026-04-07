@@ -7,6 +7,7 @@ import { NEIGHBOURHOODS, filterByNeighbourhood, getNeighbourhood } from "@/lib/n
 import CheckinButton from "@/components/CheckinButton";
 import { CATEGORY_COLORS, SENTIMENT_COLORS, isPublication } from "@/lib/constants";
 import { formatTimeAgo } from "@/lib/utils";
+import { CategoryIcon, IconStar, IconChat } from "@/lib/icons";
 
 type SortMode = "mentions" | "newest" | "az" | "rating" | "buzz" | "neighbourhood";
 
@@ -23,9 +24,9 @@ function buzzScore(r: Place): number {
 }
 
 function buzzLabel(score: number): string {
-  if (score >= 80) return "🔥🔥";
-  if (score >= 50) return "🔥";
-  if (score >= 20) return "📈";
+  if (score >= 80) return "HOT";
+  if (score >= 50) return "Trending";
+  if (score >= 20) return "Rising";
   return "";
 }
 
@@ -88,10 +89,12 @@ function PlaceCard({
           />
         ) : (
           <div
-            className="w-full h-full flex items-center justify-center text-3xl"
+            className="w-full h-full flex items-center justify-center"
             style={{ background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)` }}
           >
-            {CATEGORY_EMOJI[r.category] || "📍"}
+            <span style={{ color }}>
+              <CategoryIcon category={r.category} size={36} />
+            </span>
           </div>
         )}
         {/* Buzz badge — top right on image */}
@@ -107,14 +110,15 @@ function PlaceCard({
         {/* Category pill + event badge */}
         <div className="flex items-center gap-1.5 mb-2">
           <span
-            className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full"
+            className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
             style={{ background: `${color}12`, color }}
           >
-            {CATEGORY_EMOJI[r.category]} {r.category}
+            <CategoryIcon category={r.category} size={11} /> {r.category}
           </span>
           {isEvent && (
-            <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-600">
-              📅 Upcoming
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-600">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Upcoming
             </span>
           )}
         </div>
@@ -129,19 +133,26 @@ function PlaceCard({
         {/* Stats */}
         <div className="flex items-center gap-2 mb-3">
           {isEvent && r.metadata?.event_date ? (
-            <span className="text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
-              📅 {new Date(r.metadata.event_date).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              {new Date(r.metadata.event_date).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}
             </span>
           ) : (
-            <span className="text-[11px] font-medium text-slate-500">
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500">
+              <IconChat size={11} className="text-slate-400" />
               {r.mention_count} mention{Number(r.mention_count) !== 1 ? "s" : ""}
             </span>
           )}
           {r.google_rating && (
-            <span className="text-[11px] text-amber-500 font-medium">⭐ {r.google_rating.toFixed(1)}</span>
+            <span className="inline-flex items-center gap-0.5 text-[11px] text-amber-500 font-medium">
+              <IconStar size={11} className="text-amber-400" /> {r.google_rating.toFixed(1)}
+            </span>
           )}
           {isEvent && r.metadata?.venue_name && (
-            <span className="text-[10px] text-slate-400 truncate">📍 {r.metadata.venue_name}</span>
+            <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 truncate">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              {r.metadata.venue_name}
+            </span>
           )}
           <span className="text-[10px] text-slate-300 ml-auto">{formatTimeAgo(r.latest_mention)}</span>
         </div>
@@ -220,7 +231,7 @@ function PlaceCard({
                     <p className="truncate leading-relaxed">{p.title}</p>
                     <p className="text-slate-400 text-[10px]">
                       {isPublication(p.subreddit) ? (
-                        <span className="inline-block px-1 py-0.5 bg-blue-50 text-blue-500 rounded text-[10px] mr-1">📰 {p.subreddit}</span>
+                        <span className="inline-block px-1 py-0.5 bg-blue-50 text-blue-500 rounded text-[10px] mr-1">{p.subreddit}</span>
                       ) : (
                         <span>r/{p.subreddit} · </span>
                       )}
@@ -344,12 +355,12 @@ export default function ListView({
               onChange={(e) => setSort(e.target.value as SortMode)}
               className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 outline-none focus:border-[#ff6b35] cursor-pointer"
             >
-              <option value="buzz">🔥 Buzz</option>
+              <option value="buzz">Buzz Score</option>
               <option value="mentions">Most Mentioned</option>
               <option value="newest">Newest</option>
               <option value="az">A-Z</option>
-              <option value="rating">⭐ Rating</option>
-              <option value="neighbourhood">📍 Neighbourhood</option>
+              <option value="rating">Rating</option>
+              <option value="neighbourhood">Neighbourhood</option>
             </select>
             <select
               value={neighbourhood}
@@ -383,7 +394,9 @@ export default function ListView({
                   onClick={() => onViewOnMap(r.lat, r.lng)}
                   className="shrink-0 flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 hover:border-[#ff6b35] hover:shadow-sm transition-all group"
                 >
-                  <span className="text-base">{CATEGORY_EMOJI[r.category] || "📍"}</span>
+                  <span style={{ color: CATEGORY_COLORS[r.category] || "#64748b" }}>
+                    <CategoryIcon category={r.category} size={18} />
+                  </span>
                   <div className="text-left">
                     <div className="text-xs font-medium text-slate-700 truncate max-w-[100px] group-hover:text-[#ff6b35]">{r.name}</div>
                     <div className="text-[10px] text-slate-400">{r.mention_count} mentions</div>
@@ -401,7 +414,7 @@ export default function ListView({
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-            <span className="text-3xl mb-3">🔍</span>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300 mb-3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             {searchQuery ? (
               <>
                 <p className="text-sm">No places found for &ldquo;{searchQuery}&rdquo;</p>
