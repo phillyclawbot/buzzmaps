@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
 
 const tabs = [
@@ -40,6 +40,7 @@ const tabs = [
 function BottomNavInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const viewParam = searchParams.get("view");
 
   return (
@@ -50,12 +51,38 @@ function BottomNavInner() {
       {tabs.map((tab) => {
         const active = tab.match(pathname, viewParam);
         const isHomeTab = tab.href === "/" || tab.href === "/?view=list";
+
+        // Home tabs (Explore/List): use router for reliable param switching
+        if (isHomeTab) {
+          return (
+            <button
+              key={tab.label}
+              onClick={() => {
+                if (pathname === "/") {
+                  // Already on home — just change the query param
+                  router.replace(tab.href, { scroll: false });
+                } else {
+                  // Coming from another page
+                  router.push(tab.href);
+                }
+              }}
+              className="flex-1 flex flex-col items-center justify-center gap-0.5"
+              style={{ color: active ? "#E05D36" : "#94a3b8" }}
+            >
+              <svg
+                width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                dangerouslySetInnerHTML={{ __html: tab.icon }}
+              />
+              <span style={{ fontSize: "10px", fontWeight: 600 }}>{tab.label}</span>
+            </button>
+          );
+        }
+
         return (
           <Link
             key={tab.label}
             href={tab.href}
-            replace={isHomeTab && pathname === "/"}
-            scroll={false}
             prefetch={true}
             className="flex-1 flex flex-col items-center justify-center gap-0.5"
             style={{ color: active ? "#E05D36" : "#94a3b8" }}
