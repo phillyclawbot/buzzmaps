@@ -513,8 +513,8 @@ function Home() {
         </div>
       )}
 
-      {/* Active filter chips */}
-      {(filter.category !== "all" || filter.since !== "all" || filter.sentiment !== "all" || searchQuery) && (
+      {/* Active filter chips — only on map view to avoid blocking list search */}
+      {view === "map" && (filter.category !== "all" || filter.since !== "all" || filter.sentiment !== "all" || searchQuery) && (
         <div className="fixed top-[92px] left-0 right-0 z-[597] px-3 py-1.5 flex items-center gap-2 overflow-x-auto no-scrollbar bg-white/80 backdrop-blur-sm border-b border-slate-100" style={{ top: "92px" }}>
           <span className="text-[10px] text-slate-400 shrink-0">Showing {filteredPlaces.length} of {places.length} places</span>
           <div className="flex gap-1.5 ml-auto">
