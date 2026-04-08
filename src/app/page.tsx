@@ -36,7 +36,8 @@ function Home() {
   const [scrapingAll, setScrapingAll] = useState(false);
   const [fetchingPhotos, setFetchingPhotos] = useState(false);
   const searchParamsRaw = useSearchParams();
-  const view = searchParamsRaw.get("view") === "list" ? "list" : "map";
+  const initialView = searchParamsRaw.get("view") === "list" ? "list" : "map";
+  const [view, setView] = useState<"map" | "list">(initialView);
   const [menuOpen, setMenuOpen] = useState(false);
   const [filter, setFilter] = useState<{ since: string; sentiment: string; category: string }>({
     since: "all",
@@ -63,6 +64,13 @@ function Home() {
   const highlightedPlace = useRef<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  // Listen for view switch from BottomNav
+  useEffect(() => {
+    const handler = (e: Event) => setView((e as CustomEvent).detail);
+    window.addEventListener("buzzmaps:setview", handler);
+    return () => window.removeEventListener("buzzmaps:setview", handler);
+  }, []);
 
   // Keyboard shortcut: "/" opens search, Escape clears/closes
   useEffect(() => {
@@ -291,8 +299,8 @@ function Home() {
   const handleViewOnMap = useCallback((lat: number, lng: number) => {
     setFlyTo([lat, lng]);
     setTimeout(() => setFlyTo(null), 100);
-    router.replace("/", { scroll: false });
-  }, [router]);
+    setView("map");
+  }, []);
 
   const handleNearMeToggle = useCallback((coords: { lat: number; lng: number } | null) => {
     setNearMeCoords(coords);
@@ -337,26 +345,22 @@ function Home() {
 
         {/* View toggle — desktop only */}
         <div className="hidden md:flex bg-slate-100 rounded-lg overflow-hidden ml-2 p-0.5 shrink-0">
-          <Link
-            href="/"
-            replace
-            scroll={false}
+          <button
+            onClick={() => setView("map")}
             className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
               view === "map" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
             }`}
           >
             Map
-          </Link>
-          <Link
-            href="/?view=list"
-            replace
-            scroll={false}
+          </button>
+          <button
+            onClick={() => setView("list")}
             className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
               view === "list" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
             }`}
           >
             List
-          </Link>
+          </button>
           <Link
             href="/collections"
             className="px-3 py-1 rounded-md text-xs font-semibold transition-all text-slate-400 hover:text-slate-600"
