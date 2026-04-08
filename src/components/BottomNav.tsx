@@ -1,22 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
 const tabs = [
   {
     label: "Explore",
     href: "/",
-    viewTarget: "map" as const,
     icon: '<polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>',
-    match: (p: string) => p === "/",
+    match: (p: string, v: string | null) => p === "/" && v !== "list",
   },
   {
     label: "List",
     href: "/?view=list",
-    viewTarget: "list" as const,
     icon: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
-    match: (p: string) => p === "/",
+    match: (p: string, v: string | null) => p === "/" && v === "list",
   },
   {
     label: "Collections",
@@ -38,8 +37,10 @@ const tabs = [
   },
 ];
 
-export default function BottomNav() {
+function BottomNavInner() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const viewParam = searchParams.get("view");
 
   return (
     <nav
@@ -47,37 +48,16 @@ export default function BottomNav() {
       style={{ height: "56px", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       {tabs.map((tab) => {
-        const isHomePage = pathname === "/";
-        const isViewTab = "viewTarget" in tab;
-
-        // For Explore/List tabs on the home page: fire a DOM event instead of navigating
-        if (isHomePage && isViewTab) {
-          return (
-            <button
-              key={tab.label}
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent("buzzmaps:setview", { detail: tab.viewTarget }));
-              }}
-              className="flex-1 flex flex-col items-center justify-center gap-0.5"
-              style={{ color: "#94a3b8" }}
-            >
-              <svg
-                width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                dangerouslySetInnerHTML={{ __html: tab.icon }}
-              />
-              <span style={{ fontSize: "10px", fontWeight: 600 }}>{tab.label}</span>
-            </button>
-          );
-        }
-
-        const active = tab.match(pathname);
+        const active = tab.match(pathname, viewParam);
+        const isHomeTab = tab.href === "/" || tab.href === "/?view=list";
         return (
           <Link
             key={tab.label}
             href={tab.href}
+            replace={isHomeTab && pathname === "/"}
+            scroll={false}
             prefetch={true}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 relative"
+            className="flex-1 flex flex-col items-center justify-center gap-0.5"
             style={{ color: active ? "#E05D36" : "#94a3b8" }}
           >
             <svg
@@ -90,5 +70,13 @@ export default function BottomNav() {
         );
       })}
     </nav>
+  );
+}
+
+export default function BottomNav() {
+  return (
+    <Suspense fallback={null}>
+      <BottomNavInner />
+    </Suspense>
   );
 }

@@ -36,9 +36,7 @@ function Home() {
   const [scrapingAll, setScrapingAll] = useState(false);
   const [fetchingPhotos, setFetchingPhotos] = useState(false);
   const searchParamsRaw = useSearchParams();
-  const [view, setView] = useState<"map" | "list">(
-    () => (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("view") === "list" ? "list" : "map")
-  );
+  const view = searchParamsRaw.get("view") === "list" ? "list" : "map";
   const [menuOpen, setMenuOpen] = useState(false);
   const [filter, setFilter] = useState<{ since: string; sentiment: string; category: string }>({
     since: "all",
@@ -65,22 +63,6 @@ function Home() {
   const highlightedPlace = useRef<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-
-  // Listen for view switch events from BottomNav (avoids URL navigation)
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as "map" | "list";
-      setView(detail);
-    };
-    window.addEventListener("buzzmaps:setview", handler);
-    return () => window.removeEventListener("buzzmaps:setview", handler);
-  }, []);
-
-  // Sync view state when navigating to /?view=list from another page
-  useEffect(() => {
-    const v = searchParamsRaw.get("view");
-    setView(v === "list" ? "list" : "map");
-  }, [searchParamsRaw]);
 
   // Keyboard shortcut: "/" opens search, Escape clears/closes
   useEffect(() => {
@@ -309,8 +291,8 @@ function Home() {
   const handleViewOnMap = useCallback((lat: number, lng: number) => {
     setFlyTo([lat, lng]);
     setTimeout(() => setFlyTo(null), 100);
-    setView("map");
-  }, []);
+    router.replace("/", { scroll: false });
+  }, [router]);
 
   const handleNearMeToggle = useCallback((coords: { lat: number; lng: number } | null) => {
     setNearMeCoords(coords);
@@ -355,22 +337,26 @@ function Home() {
 
         {/* View toggle — desktop only */}
         <div className="hidden md:flex bg-slate-100 rounded-lg overflow-hidden ml-2 p-0.5 shrink-0">
-          <button
-            onClick={() => setView("map")}
+          <Link
+            href="/"
+            replace
+            scroll={false}
             className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
               view === "map" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
             }`}
           >
             Map
-          </button>
-          <button
-            onClick={() => setView("list")}
+          </Link>
+          <Link
+            href="/?view=list"
+            replace
+            scroll={false}
             className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
               view === "list" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
             }`}
           >
             List
-          </button>
+          </Link>
           <Link
             href="/collections"
             className="px-3 py-1 rounded-md text-xs font-semibold transition-all text-slate-400 hover:text-slate-600"
