@@ -138,10 +138,10 @@ function Home() {
       if (filter.since !== "all") params.set("since", filter.since);
       if (filter.sentiment !== "all") params.set("sentiment", filter.sentiment);
       if (filter.category !== "all") params.set("category", filter.category);
-      if (searchQuery) params.set("q", searchQuery);
+      params.set("limit", "2000");
 
       const [rRes, pRes, sRes] = await Promise.all([
-        fetch(`/api/places??${params}`),
+        fetch(`/api/places?${params}`),
         fetch("/api/posts"),
         fetch("/api/stats"),
       ]);
@@ -168,7 +168,7 @@ function Home() {
     } finally {
       if (!background) setLoading(false);
     }
-  }, [filter, searchQuery]);
+  }, [filter]);
 
   useEffect(() => {
     fetchData();
