@@ -36,8 +36,12 @@ function Home() {
   const [scrapingAll, setScrapingAll] = useState(false);
   const [fetchingPhotos, setFetchingPhotos] = useState(false);
   const searchParamsRaw = useSearchParams();
-  const initialView = searchParamsRaw.get("view") === "list" ? "list" : "map";
-  const [view, setView] = useState<"map" | "list">(initialView);
+  const [view, setView] = useState<"map" | "list">(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("view") === "list" ? "list" : "map";
+    }
+    return "map";
+  });
   const [menuOpen, setMenuOpen] = useState(false);
   const [filter, setFilter] = useState<{ since: string; sentiment: string; category: string }>({
     since: "all",
