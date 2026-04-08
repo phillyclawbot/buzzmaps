@@ -51,13 +51,16 @@ function PlaceCard({
   r,
   onViewOnMap,
   index = 0,
+  linkedEvents = [],
 }: {
   r: Place;
   onViewOnMap: (lat: number, lng: number) => void;
   index?: number;
+  linkedEvents?: Place[];
 }) {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showEvents, setShowEvents] = useState(false);
   const posts = r.posts ?? [];
   const hasPosts = posts.length > 0;
   const color = CATEGORY_COLORS[r.category] || "#ff6b35";
@@ -223,6 +226,56 @@ function PlaceCard({
         </div>
       </div>
 
+      {/* Upcoming Events section — shown when venue has linked Ticketmaster events */}
+      {linkedEvents.length > 0 && (
+        <div className="px-3.5 pb-2 border-t border-slate-50" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => setShowEvents(v => !v)}
+            className="flex items-center justify-between w-full py-2 text-left"
+          >
+            <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wide">
+              🎟 {linkedEvents.length} Upcoming Event{linkedEvents.length !== 1 ? "s" : ""}
+            </span>
+            <svg
+              width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+              className={`text-slate-400 transition-transform ${showEvents ? "rotate-180" : ""}`}
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          {showEvents && (
+            <div className="space-y-1.5 pb-1">
+              {linkedEvents.map((ev) => (
+                <div key={ev.id} className="flex items-center gap-2 py-1 border-b border-slate-50 last:border-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-semibold text-slate-700 truncate">{ev.name}</p>
+                    <p className="text-[10px] text-slate-400">
+                      {ev.metadata?.event_date
+                        ? new Date(ev.metadata.event_date).toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric" })
+                        : ""}
+                      {ev.metadata?.genre ? ` · ${ev.metadata.genre}` : ""}
+                    </p>
+                  </div>
+                  {ev.metadata?.ticket_url && (
+                    <a
+                      href={ev.metadata.ticket_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="shrink-0 text-[9px] font-bold text-white px-2 py-1 rounded-md"
+                      style={{ background: "linear-gradient(135deg, #7c3aed, #9333ea)" }}
+                    >
+                      Tickets
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Expanded posts */}
       <div className={`expand-grid ${expanded ? "open" : ""}`}>
         <div>
@@ -292,6 +345,8 @@ export default memo(function ListView({
   onViewOnMap,
   loading = false,
   activeCategory = "all",
+  venueEvents = new Map(),
+  linkedEventIds = new Set(),
 }: {
   places: Place[];
   searchQuery: string;
@@ -299,6 +354,8 @@ export default memo(function ListView({
   onViewOnMap: (lat: number, lng: number) => void;
   loading?: boolean;
   activeCategory?: string;
+  venueEvents?: Map<number, Place[]>;
+  linkedEventIds?: Set<number>;
 }) {
   const [sort, setSort] = useState<SortMode>("buzz");
   const [neighbourhood, setNeighbourhood] = useState("all");
@@ -314,6 +371,10 @@ export default memo(function ListView({
   const filtered = useMemo(() => {
     let items = places;
     if (activeCategory !== "all") items = items.filter((r) => r.category === activeCategory);
+    // Hide venue-linked events from main list unless specifically filtering for events
+    if (activeCategory !== "event") {
+      items = items.filter(p => p.category !== "event" || !linkedEventIds.has(p.id));
+    }
     if (neighbourhood !== "all") items = filterByNeighbourhood(items, neighbourhood);
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -342,7 +403,7 @@ export default memo(function ListView({
       default: break;
     }
     return sorted;
-  }, [places, activeCategory, neighbourhood, searchQuery, sort]);
+  }, [places, activeCategory, neighbourhood, searchQuery, sort, linkedEventIds]);
 
   const grouped = useMemo(() => {
     if (sort !== "neighbourhood") return null;
@@ -462,7 +523,7 @@ export default memo(function ListView({
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {places.map((r, pi) => (
-                    <PlaceCard key={r.id} r={r} onViewOnMap={onViewOnMap} index={pi} />
+                    <PlaceCard key={r.id} r={r} onViewOnMap={onViewOnMap} index={pi} linkedEvents={venueEvents.get(r.id) ?? []} />
                   ))}
                 </div>
               </div>
@@ -471,7 +532,7 @@ export default memo(function ListView({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {filtered.map((r, i) => (
-              <PlaceCard key={r.id} r={r} onViewOnMap={onViewOnMap} index={i} />
+              <PlaceCard key={r.id} r={r} onViewOnMap={onViewOnMap} index={i} linkedEvents={venueEvents.get(r.id) ?? []} />
             ))}
           </div>
         )}

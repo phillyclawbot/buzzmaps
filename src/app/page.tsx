@@ -124,6 +124,36 @@ function Home() {
 
   const trendingNow = useMemo(() => places.filter(r => r.latest_mention > Date.now()/1000 - 7*86400).sort((a,b) => b.mention_count - a.mention_count).slice(0, 5), [places]);
 
+  const { venueEvents, linkedEventIds } = useMemo(() => {
+    const venueEvents = new Map<number, typeof places[0][]>();
+    const linkedEventIds = new Set<number>();
+    const events = places.filter(p => p.category === "event");
+    const nonEvents = places.filter(p => p.category !== "event");
+    for (const ev of events) {
+      let closest: typeof places[0] | null = null;
+      let minDist = Infinity;
+      for (const v of nonEvents) {
+        const d = haversineDistance(ev.lat, ev.lng, v.lat, v.lng);
+        if (d < 200 && d < minDist) { minDist = d; closest = v; }
+      }
+      if (closest) {
+        linkedEventIds.add(ev.id);
+        const arr = venueEvents.get(closest.id) ?? [];
+        arr.push(ev);
+        venueEvents.set(closest.id, arr);
+      }
+    }
+    // Sort events by date ascending
+    for (const [, evs] of venueEvents) {
+      evs.sort((a, b) => {
+        const da = a.metadata?.event_date ?? "";
+        const db = b.metadata?.event_date ?? "";
+        return da < db ? -1 : da > db ? 1 : 0;
+      });
+    }
+    return { venueEvents, linkedEventIds };
+  }, [places]);
+
   const filteredPlaces = useMemo(() => {
     let items = places;
     if (mapSearch) {
@@ -143,8 +173,10 @@ function Home() {
         return haversineDistance(lat, lng, r.lat, r.lng) <= nearMeRadius * 1000;
       });
     }
+    // Hide venue-linked events from map; when Events-only mode linkedEventIds is empty so all pass through
+    items = items.filter(p => p.category !== "event" || !linkedEventIds.has(p.id));
     return items;
-  }, [places, mapSearch, thisWeekOnly, sevenDaysAgo, nearMeActive, nearMeCoords, nearMeRadius]);
+  }, [places, mapSearch, thisWeekOnly, sevenDaysAgo, nearMeActive, nearMeCoords, nearMeRadius, linkedEventIds]);
 
   const fetchData = useCallback(async (background = false) => {
     if (!background) setLoading(true);
@@ -724,7 +756,7 @@ function Home() {
               )}
             </div>
 
-<MapView places={filteredPlaces} flyTo={flyTo} nearMeActive={nearMeActive} nearMeRadius={nearMeRadius} onNearMeToggle={handleNearMeToggle} onRadiusChange={setNearMeRadius} nearMeCount={filteredPlaces.length} />
+<MapView places={filteredPlaces} flyTo={flyTo} nearMeActive={nearMeActive} nearMeRadius={nearMeRadius} onNearMeToggle={handleNearMeToggle} onRadiusChange={setNearMeRadius} nearMeCount={filteredPlaces.length} venueEvents={venueEvents} />
           </div>
         </>
       ) : (
@@ -735,6 +767,8 @@ function Home() {
           loading={loading}
           activeCategory={filter.category}
           onViewOnMap={handleViewOnMap}
+          venueEvents={venueEvents}
+          linkedEventIds={linkedEventIds}
         />
       )}
 

@@ -205,6 +205,7 @@ export default memo(function MapView({
   nearMeRadius = 2,
   onRadiusChange,
   nearMeCount,
+  venueEvents = new Map(),
 }: {
   places: Place[];
   flyTo: [number, number] | null;
@@ -213,6 +214,7 @@ export default memo(function MapView({
   nearMeRadius?: number;
   onRadiusChange?: (km: number) => void;
   nearMeCount?: number;
+  venueEvents?: Map<number, Place[]>;
 }) {
   const mapRef = useRef<L.Map | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
@@ -679,6 +681,50 @@ export default memo(function MapView({
                   ) : (
                     <div style={{ fontSize: "11px", color: "#94a3b8", textAlign: "center", padding: "10px", borderTop: "1px solid #f1f5f9", margin: "0 10px 8px" }}>
                       No mentions yet
+                    </div>
+                  )}
+
+                  {/* Upcoming Events at this venue */}
+                  {r.category !== "event" && (venueEvents.get(r.id)?.length ?? 0) > 0 && (
+                    <div style={{ padding: "0 10px 8px", borderTop: "1px solid #f1f5f9", paddingTop: "8px" }}>
+                      <div style={{ fontSize: "10px", fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "6px" }}>
+                        🎟 Upcoming Events ({venueEvents.get(r.id)!.length})
+                      </div>
+                      {venueEvents.get(r.id)!.slice(0, 4).map((ev) => (
+                        <div key={ev.id} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "4px 0", borderBottom: "1px solid #f8fafc" }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: "11px", fontWeight: 600, color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {ev.name}
+                            </div>
+                            <div style={{ fontSize: "10px", color: "#94a3b8", marginTop: "1px" }}>
+                              {ev.metadata?.event_date
+                                ? new Date(ev.metadata.event_date).toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric" })
+                                : ""}
+                              {ev.metadata?.genre ? ` · ${ev.metadata.genre}` : ""}
+                            </div>
+                          </div>
+                          {ev.metadata?.ticket_url && (
+                            <a
+                              href={ev.metadata.ticket_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                flexShrink: 0, fontSize: "9px", fontWeight: 700,
+                                background: "linear-gradient(135deg, #7c3aed, #9333ea)",
+                                color: "white", padding: "3px 7px", borderRadius: "6px",
+                                textDecoration: "none", whiteSpace: "nowrap",
+                              }}
+                            >
+                              Tickets
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                      {(venueEvents.get(r.id)?.length ?? 0) > 4 && (
+                        <div style={{ fontSize: "10px", color: "#94a3b8", textAlign: "center", paddingTop: "4px" }}>
+                          +{(venueEvents.get(r.id)?.length ?? 0) - 4} more events
+                        </div>
+                      )}
                     </div>
                   )}
 
