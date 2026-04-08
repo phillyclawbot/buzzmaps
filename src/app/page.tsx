@@ -327,7 +327,7 @@ function Home() {
   );
 
   return (
-    <div className="h-full w-full relative overflow-hidden">
+    <div className={`h-full w-full relative ${view === "map" ? "overflow-hidden" : ""}`}>
       {/* Top bar */}
       <div className="fixed top-0 left-0 right-0 h-12 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-[1000] flex items-center px-4 gap-2">
         <div className="flex items-center gap-2 shrink-0">
@@ -436,8 +436,8 @@ function Home() {
         </button>
       </div>
 
-      {/* Category filter bar — always visible */}
-      <div className="fixed top-12 left-0 right-0 h-11 bg-white/95 backdrop-blur-sm border-b border-slate-100 z-[999] flex items-center px-3 gap-1.5 overflow-x-auto no-scrollbar">
+      {/* Category filter bar — map view + desktop list */}
+      <div className={`fixed top-12 left-0 right-0 h-11 bg-white/95 backdrop-blur-sm border-b border-slate-100 z-[999] flex items-center px-3 gap-1.5 overflow-x-auto no-scrollbar ${view === "list" ? "hidden md:flex" : ""}`}>
         {CATEGORY_FILTERS.map((c) => {
           const isActive = filter.category === c.value;
           return (
