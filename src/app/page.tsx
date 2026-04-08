@@ -36,12 +36,9 @@ function Home() {
   const [scrapingAll, setScrapingAll] = useState(false);
   const [fetchingPhotos, setFetchingPhotos] = useState(false);
   const searchParamsRaw = useSearchParams();
-  const [view, setView] = useState<"map" | "list">(() => {
-    if (typeof window !== "undefined") {
-      return new URLSearchParams(window.location.search).get("view") === "list" ? "list" : "map";
-    }
-    return "map";
-  });
+  const [view, setView] = useState<"map" | "list">(
+    searchParamsRaw.get("view") === "list" ? "list" : "map"
+  );
   const [menuOpen, setMenuOpen] = useState(false);
   const [filter, setFilter] = useState<{ since: string; sentiment: string; category: string }>({
     since: "all",
@@ -479,7 +476,7 @@ function Home() {
       </div>
 
       {/* Category filter bar — map view + desktop list */}
-      <div className={`fixed top-12 left-0 right-0 h-11 bg-white/95 backdrop-blur-sm border-b border-slate-100 z-[999] flex items-center px-3 gap-1.5 overflow-x-auto no-scrollbar ${view === "list" ? "hidden md:flex" : ""}`}>
+      <div className={`fixed top-12 left-0 right-0 h-11 bg-white/95 backdrop-blur-sm border-b border-slate-100 z-[999] items-center px-3 gap-1.5 overflow-x-auto no-scrollbar ${view === "list" ? "hidden md:flex" : "flex"}`}>
         {CATEGORY_FILTERS.map((c) => {
           const isActive = filter.category === c.value;
           return (
