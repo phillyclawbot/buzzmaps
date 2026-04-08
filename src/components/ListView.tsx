@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, memo } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import type { Place, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
 import { NEIGHBOURHOODS, filterByNeighbourhood, getNeighbourhood } from "@/lib/neighbourhoods";
@@ -80,10 +80,10 @@ function PlaceCard({
 
   return (
     <div
-      className="group rounded-xl overflow-hidden bg-white border border-slate-200/60 hover:border-slate-300 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-[1.01] animate-fade-in-up"
+      className={`group rounded-xl overflow-hidden bg-white border border-slate-200/60 hover:border-slate-300 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-[1.01] ${(index ?? 0) < 15 ? "animate-fade-in-up" : ""}`}
       style={{
         ...(isEvent ? { borderLeft: `3px solid ${color}` } : { borderTop: `2px solid ${color}` }),
-        ...({ "--stagger": index } as Record<string, number>),
+        ...((index ?? 0) < 15 ? { "--stagger": index } as Record<string, number> : {}),
       }}
       onClick={() => setExpanded(!expanded)}
     >
@@ -359,6 +359,7 @@ export default memo(function ListView({
 }) {
   const [sort, setSort] = useState<SortMode>("buzz");
   const [neighbourhood, setNeighbourhood] = useState("all");
+  const [showCount, setShowCount] = useState(30);
 
   const isFiltersActive = !!(searchQuery || activeCategory !== "all" || neighbourhood !== "all");
 
@@ -416,8 +417,14 @@ export default memo(function ListView({
     return Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
   }, [filtered, sort]);
 
+  // Reset pagination when filters change
+  useEffect(() => { setShowCount(30); }, [searchQuery, activeCategory, neighbourhood, sort]);
+
+  const visible = useMemo(() => filtered.slice(0, showCount), [filtered, showCount]);
+  const hasMore = filtered.length > showCount;
+
   return (
-    <div className="h-full pt-14 md:pt-[92px] pb-16 md:pb-8 overflow-y-auto bg-slate-50/50 page-enter relative z-[1]">
+    <div className="h-full pt-14 md:pt-[92px] pb-16 md:pb-8 overflow-y-auto bg-slate-50/50 page-enter">
       <div className="max-w-5xl mx-auto px-4 py-4">
         {/* Search + sort controls */}
         <div className="flex flex-col sm:flex-row gap-2 mb-4">
@@ -530,11 +537,23 @@ export default memo(function ListView({
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filtered.map((r, i) => (
-              <PlaceCard key={r.id} r={r} onViewOnMap={onViewOnMap} index={i} linkedEvents={venueEvents.get(r.id) ?? []} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {visible.map((r, i) => (
+                <PlaceCard key={r.id} r={r} onViewOnMap={onViewOnMap} index={i} linkedEvents={venueEvents.get(r.id) ?? []} />
+              ))}
+            </div>
+            {hasMore && (
+              <div className="flex justify-center mt-6 mb-4">
+                <button
+                  onClick={() => setShowCount((c) => c + 30)}
+                  className="px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:border-[#ff6b35] hover:text-[#ff6b35] transition-colors shadow-sm"
+                >
+                  Show more ({filtered.length - showCount} remaining)
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
