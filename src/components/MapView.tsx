@@ -16,7 +16,7 @@ import {
 import MarkerClusterGroup from "react-leaflet-cluster";
 import type { Place, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
-import { CATEGORY_COLORS, SENTIMENT_COLORS, isPublication } from "@/lib/constants";
+import { CATEGORY_COLORS, SENTIMENT_COLORS, isPublication, isTicketingSource } from "@/lib/constants";
 import { formatTimeAgo } from "@/lib/utils";
 import { NEIGHBOURHOODS, NEIGHBOURHOOD_GEOJSON_MAP, getNeighbourhood, computeFeatureCentroid } from "@/lib/neighbourhoods";
 
@@ -601,8 +601,45 @@ export default memo(function MapView({
                     </div>
                   </div>
 
-                  {/* Mentions list */}
-                  {r.posts?.length ? (
+                  {/* Event metadata OR mentions list */}
+                  {r.category === "event" ? (
+                    <div style={{ padding: "0 10px 8px", borderTop: "1px solid #f1f5f9", paddingTop: "8px" }}>
+                      {r.metadata?.event_date && (
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "5px" }}>
+                          <span style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", minWidth: "44px" }}>Date</span>
+                          <span style={{ fontSize: "11px", color: "#334155", fontWeight: 600 }}>
+                            {new Date(r.metadata.event_date).toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                          </span>
+                        </div>
+                      )}
+                      {r.metadata?.venue_name && (
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "5px" }}>
+                          <span style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", minWidth: "44px" }}>Venue</span>
+                          <span style={{ fontSize: "11px", color: "#334155" }}>{r.metadata.venue_name}</span>
+                        </div>
+                      )}
+                      {r.metadata?.genre && (
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "5px" }}>
+                          <span style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", minWidth: "44px" }}>Genre</span>
+                          <span style={{ fontSize: "10px", background: "#f3e8ff", color: "#7c3aed", padding: "1px 7px", borderRadius: "999px", fontWeight: 600 }}>{r.metadata.genre}</span>
+                        </div>
+                      )}
+                      {r.metadata?.price_range && (
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "5px" }}>
+                          <span style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", minWidth: "44px" }}>Price</span>
+                          <span style={{ fontSize: "11px", color: "#334155" }}>{r.metadata.price_range}</span>
+                        </div>
+                      )}
+                      {/* Source badge */}
+                      {r.posts?.[0] && (
+                        <div style={{ marginTop: "4px" }}>
+                          <span style={{ fontSize: "10px", background: "#f3e8ff", color: "#7c3aed", padding: "2px 8px", borderRadius: "6px", fontWeight: 600 }}>
+                            🎟 via {r.posts[0].subreddit}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ) : r.posts?.length ? (
                     <div style={{ maxHeight: "130px", overflowY: "auto", padding: "0 10px", marginBottom: "8px" }}>
                       <div style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "5px", borderTop: "1px solid #f1f5f9", paddingTop: "8px" }}>
                         Mentions
@@ -625,7 +662,14 @@ export default memo(function MapView({
                               {p.title}
                             </div>
                             <div style={{ fontSize: "10px", color: "#94a3b8", marginTop: "2px" }}>
-                              {isPublication(p.subreddit) ? p.subreddit : `r/${p.subreddit}`} · {p.score} pts · {formatTimeAgo(p.created_utc)}
+                              {isTicketingSource(p.subreddit) ? (
+                                <span style={{ background: "#f3e8ff", color: "#7c3aed", padding: "1px 6px", borderRadius: "4px", fontWeight: 600, marginRight: "4px" }}>🎟 {p.subreddit}</span>
+                              ) : isPublication(p.subreddit) ? (
+                                <span style={{ background: "#eff6ff", color: "#3b82f6", padding: "1px 6px", borderRadius: "4px", marginRight: "4px" }}>{p.subreddit}</span>
+                              ) : (
+                                `r/${p.subreddit} · `
+                              )}
+                              {p.score} pts · {formatTimeAgo(p.created_utc)}
                               {(p.mentions_in_thread ?? 1) > 1 ? ` · ${p.mentions_in_thread}x` : ""}
                             </div>
                           </div>
@@ -640,20 +684,36 @@ export default memo(function MapView({
 
                   {/* Action buttons */}
                   <div style={{ display: "flex", gap: "6px", padding: "0 10px 10px", borderTop: "1px solid #f1f5f9", paddingTop: "10px" }}>
-                    <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px",
-                        padding: "7px 8px",
-                        background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px",
-                        color: "#475569", fontWeight: 600, fontSize: "11px", textDecoration: "none",
-                      }}
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-                      Directions
-                    </a>
+                    {r.category === "event" && r.metadata?.ticket_url ? (
+                      <a
+                        href={r.metadata.ticket_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px",
+                          padding: "7px 8px",
+                          background: "linear-gradient(135deg, #7c3aed, #9333ea)", border: "none", borderRadius: "8px",
+                          color: "white", fontWeight: 700, fontSize: "11px", textDecoration: "none",
+                        }}
+                      >
+                        🎟 Get Tickets
+                      </a>
+                    ) : (
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px",
+                          padding: "7px 8px",
+                          background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px",
+                          color: "#475569", fontWeight: 600, fontSize: "11px", textDecoration: "none",
+                        }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                        Directions
+                      </a>
+                    )}
                     <a
                       href={`/place/${encodeURIComponent(r.name)}`}
                       style={{

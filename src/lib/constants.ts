@@ -67,7 +67,14 @@ export const VALID_CATEGORIES = [
 ] as const;
 
 // Known publication subreddits (not actual Reddit subs)
+export const TICKETING_SOURCES = new Set(["Ticketmaster", "Eventbrite"]);
+
+export function isTicketingSource(subreddit: string): boolean {
+  return TICKETING_SOURCES.has(subreddit);
+}
+
 export const PUBLICATION_NAMES = new Set([
+  "Ticketmaster", "Eventbrite",
   "BlogTO", "BlogTO Food", "BlogTO Arts",
   "Narcity", "Narcity Toronto",
   "Toronto Life", "Toronto Life Food",

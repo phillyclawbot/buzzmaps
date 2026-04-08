@@ -5,7 +5,7 @@ import type { Place, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
 import { NEIGHBOURHOODS, filterByNeighbourhood, getNeighbourhood } from "@/lib/neighbourhoods";
 import CheckinButton from "@/components/CheckinButton";
-import { CATEGORY_COLORS, SENTIMENT_COLORS, isPublication } from "@/lib/constants";
+import { CATEGORY_COLORS, SENTIMENT_COLORS, isPublication, isTicketingSource } from "@/lib/constants";
 import { formatTimeAgo } from "@/lib/utils";
 import { CategoryIcon, IconStar, IconChat } from "@/lib/icons";
 
@@ -245,7 +245,9 @@ function PlaceCard({
                   <div className="flex-1 min-w-0">
                     <p className="truncate leading-relaxed">{p.title}</p>
                     <p className="text-slate-400 text-[10px]">
-                      {isPublication(p.subreddit) ? (
+                      {isTicketingSource(p.subreddit) ? (
+                        <span className="inline-block px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded text-[10px] mr-1 font-medium">🎟 {p.subreddit}</span>
+                      ) : isPublication(p.subreddit) ? (
                         <span className="inline-block px-1 py-0.5 bg-blue-50 text-blue-500 rounded text-[10px] mr-1">{p.subreddit}</span>
                       ) : (
                         <span>r/{p.subreddit} · </span>
