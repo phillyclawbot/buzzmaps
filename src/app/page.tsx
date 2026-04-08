@@ -153,10 +153,10 @@ function Home() {
       if (filter.since !== "all") params.set("since", filter.since);
       if (filter.sentiment !== "all") params.set("sentiment", filter.sentiment);
       if (filter.category !== "all") params.set("category", filter.category);
-      if (searchQuery) params.set("q", searchQuery);
+      params.set("limit", "2000");
 
       const [rRes, pRes, sRes] = await Promise.all([
-        fetch(`/api/places??${params}&limit=2000`),
+        fetch(`/api/places?${params}`),
         fetch("/api/posts"),
         fetch("/api/stats"),
       ]);
@@ -183,7 +183,7 @@ function Home() {
     } finally {
       if (!background) setLoading(false);
     }
-  }, [filter, searchQuery]);
+  }, [filter]);
 
   useEffect(() => {
     fetchData();
@@ -393,14 +393,14 @@ function Home() {
           </div>
         )}
 
-        {/* Desktop search */}
+        {/* Search input — always visible */}
         <input
           ref={searchInputRef}
           type="text"
           placeholder="Search places..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="hidden md:block ml-2 flex-1 max-w-xs px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35] focus:ring-1 focus:ring-[#ff6b35]/20"
+          className="ml-2 flex-1 max-w-xs px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35] focus:ring-1 focus:ring-[#ff6b35]/20"
         />
 
         {/* Desktop time filters */}
@@ -432,16 +432,18 @@ function Home() {
           </button>
         </div>
 
-        {/* Mobile: search toggle (hamburger replaced by bottom nav) */}
-        <button
-          onClick={() => { setSearchOpen(!searchOpen); if (!searchOpen) setTimeout(() => searchInputRef.current?.focus(), 0); }}
-          className="md:hidden ml-auto p-2 text-slate-600"
-          aria-label="Search"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-        </button>
+        {/* Mobile: clear search button — only show when there's a query */}
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery("")}
+            className="md:hidden ml-1 p-1.5 text-slate-400 hover:text-slate-600 shrink-0"
+            aria-label="Clear search"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Category filter bar — map view + desktop list */}
