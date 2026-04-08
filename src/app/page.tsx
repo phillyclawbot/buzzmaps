@@ -48,23 +48,16 @@ function Home() {
     sentiment: "all",
     category: "all",
   });
-  const [mapSearch, setMapSearch] = useState("");
-  const [mapSearchInput, setMapSearchInput] = useState("");
-  const [mapSearchSuggestions, setMapSearchSuggestions] = useState<Place[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const searchContainerRef = useRef<HTMLDivElement>(null);
   const [showLegend, setShowLegend] = useState(false);
   const [thisWeekOnly, setThisWeekOnly] = useState(false);
   const [nearMeActive, setNearMeActive] = useState(false);
   const [nearMeCoords, setNearMeCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [nearMeRadius, setNearMeRadius] = useState(2);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [trendingCollapsed, setTrendingCollapsed] = useState(false);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [submitForm, setSubmitForm] = useState({ name: "", category: "other", address: "", reason: "", eventDate: "", ticketUrl: "" });
   const [submitState, setSubmitState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [submitError, setSubmitError] = useState("");
-  const mapSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const highlightedPlace = useRef<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -76,49 +69,22 @@ function Home() {
     return () => window.removeEventListener("buzzmaps:setview", handler);
   }, []);
 
-  // Keyboard shortcut: "/" opens search, Escape clears/closes
+  // Keyboard shortcut: "/" focuses search, Escape clears
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName.toLowerCase();
       if (tag === "input" || tag === "textarea") return;
       if (e.key === "/") {
         e.preventDefault();
-        setSearchOpen(true);
         setMenuOpen(false);
         setTimeout(() => searchInputRef.current?.focus(), 0);
       } else if (e.key === "Escape") {
         setSearchQuery("");
-        setSearchOpen(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
-
-  const handleMapSearchChange = (val: string) => {
-    setMapSearchInput(val);
-    if (mapSearchTimerRef.current) clearTimeout(mapSearchTimerRef.current);
-    mapSearchTimerRef.current = setTimeout(() => setMapSearch(val), 300);
-    if (val.trim().length >= 1) {
-      const q = val.toLowerCase();
-      const suggestions = places
-        .filter((r) => r.name.toLowerCase().includes(q))
-        .slice(0, 6);
-      setMapSearchSuggestions(suggestions);
-      setShowSuggestions(true);
-    } else {
-      setMapSearchSuggestions([]);
-      setShowSuggestions(false);
-    }
-  };
-
-  const handleSuggestionClick = (r: Place) => {
-    handleFlyTo(r.lat, r.lng);
-    setMapSearchInput("");
-    setMapSearch("");
-    setShowSuggestions(false);
-    setMapSearchSuggestions([]);
-  };
 
   const sevenDaysAgo = useMemo(() => Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000), []);
 
@@ -156,8 +122,8 @@ function Home() {
 
   const filteredPlaces = useMemo(() => {
     let items = places;
-    if (mapSearch) {
-      const q = mapSearch.toLowerCase();
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
       items = items.filter(
         (r) =>
           r.name.toLowerCase().includes(q) ||
@@ -176,7 +142,7 @@ function Home() {
     // Hide venue-linked events from map; when Events-only mode linkedEventIds is empty so all pass through
     items = items.filter(p => p.category !== "event" || !linkedEventIds.has(p.id));
     return items;
-  }, [places, mapSearch, thisWeekOnly, sevenDaysAgo, nearMeActive, nearMeCoords, nearMeRadius, linkedEventIds]);
+  }, [places, searchQuery, thisWeekOnly, sevenDaysAgo, nearMeActive, nearMeCoords, nearMeRadius, linkedEventIds]);
 
   const fetchData = useCallback(async (background = false) => {
     if (!background) setLoading(true);
@@ -506,20 +472,6 @@ function Home() {
         <div className="shrink-0 border-l border-slate-200 pl-1.5 ml-0.5">{thisWeekChip}</div>
       </div>
 
-      {/* Mobile search panel */}
-      {searchOpen && (
-        <div className="fixed top-[92px] left-0 right-0 z-[998] bg-white/95 backdrop-blur-sm border-b border-slate-200 p-3 md:hidden">
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Search places..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35]"
-          />
-        </div>
-      )}
-
       {/* Mobile "More" dropdown panel */}
       {menuOpen && (
         <div className="fixed top-[92px] left-0 right-0 z-[998] bg-white/95 backdrop-blur-sm border-b border-slate-200 p-3 flex flex-col gap-3 md:hidden">
@@ -636,71 +588,6 @@ function Home() {
           <div className="h-full w-full pt-[92px] pb-14 md:pb-8 relative">
             {/* Top edge fade */}
             <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "40px", background: "linear-gradient(to bottom, rgba(255,255,255,0.6) 0%, transparent 100%)", pointerEvents: "none", zIndex: 500 }} />
-            {/* Floating search */}
-            <div ref={searchContainerRef} style={{ position: "absolute", top: "8px", left: "50%", transform: "translateX(-50%)", zIndex: 600, width: "280px" }}>
-              <input
-                type="text"
-                placeholder="🔍 Search places..."
-                value={mapSearchInput}
-                onChange={(e) => handleMapSearchChange(e.target.value)}
-                onFocus={() => { if (mapSearchSuggestions.length > 0) setShowSuggestions(true); }}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                style={{
-                  background: "rgba(255,255,255,0.85)",
-                  backdropFilter: "blur(12px)",
-                  WebkitBackdropFilter: "blur(12px)",
-                  borderRadius: showSuggestions && mapSearchSuggestions.length > 0 ? "16px 16px 0 0" : "9999px",
-                  boxShadow: "0 2px 16px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.6)",
-                  padding: "8px 16px",
-                  width: "100%",
-                  border: "1px solid rgba(226,232,240,0.8)",
-                  borderBottom: showSuggestions && mapSearchSuggestions.length > 0 ? "1px solid #f1f5f9" : "1px solid rgba(226,232,240,0.8)",
-                  fontSize: "16px",
-                  color: "#0f172a",
-                  outline: "none",
-                  boxSizing: "border-box",
-                }}
-              />
-              {showSuggestions && mapSearchSuggestions.length > 0 && (
-                <div style={{
-                  position: "absolute",
-                  top: "100%",
-                  left: 0,
-                  right: 0,
-                  background: "white",
-                  borderRadius: "0 0 16px 16px",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
-                  border: "1px solid #e2e8f0",
-                  borderTop: "none",
-                  zIndex: 700,
-                  maxHeight: "256px",
-                  overflowY: "auto",
-                }}>
-                  {mapSearchSuggestions.map((r) => (
-                    <div
-                      key={r.id}
-                      onMouseDown={() => handleSuggestionClick(r)}
-                      style={{
-                        padding: "8px 16px",
-                        cursor: "pointer",
-                        fontSize: "14px",
-                        color: "#334155",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                      }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "#f8fafc"; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "white"; }}
-                    >
-                      <span style={{ fontSize: "16px" }}>{CATEGORY_EMOJI[r.category as PlaceCategory] || "📍"}</span>
-                      <span style={{ flex: 1, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
-                      {r.address && <span style={{ fontSize: "11px", color: "#94a3b8" }}>{r.address.split(",")[0]}</span>}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Category legend toggle */}
             <div style={{ position: "absolute", bottom: "32px", right: "12px", zIndex: 500 }}>
               <button
