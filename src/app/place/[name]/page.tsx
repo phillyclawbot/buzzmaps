@@ -261,6 +261,24 @@ export default async function PlacePage({
                   </div>
                 </div>
               )}
+              {place.metadata.genre && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-lg">🎭</span>
+                  <div>
+                    <div className="text-sm font-bold text-slate-900">{place.metadata.genre}</div>
+                    <div className="text-xs text-slate-400">Genre</div>
+                  </div>
+                </div>
+              )}
+              {place.metadata.price_range && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-lg">💰</span>
+                  <div>
+                    <div className="text-sm font-bold text-slate-900">{place.metadata.price_range}</div>
+                    <div className="text-xs text-slate-400">Price Range</div>
+                  </div>
+                </div>
+              )}
               {place.metadata.ticket_url && (
                 <a
                   href={place.metadata.ticket_url}

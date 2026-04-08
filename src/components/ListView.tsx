@@ -162,6 +162,12 @@ function PlaceCard({
               {r.metadata.venue_name}
             </span>
           )}
+          {isEvent && r.metadata?.genre && (
+            <span className="text-[10px] text-purple-500 bg-purple-50 px-1.5 py-0.5 rounded font-medium">{r.metadata.genre}</span>
+          )}
+          {isEvent && r.metadata?.price_range && (
+            <span className="text-[10px] text-slate-400">{r.metadata.price_range}</span>
+          )}
           <span className="text-[10px] text-slate-300 ml-auto">{formatTimeAgo(r.latest_mention)}</span>
         </div>
 

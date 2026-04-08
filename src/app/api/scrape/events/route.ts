@@ -1,7 +1,7 @@
 import { getDb } from "@/lib/db";
 import { isInToronto, delay } from "@/lib/utils";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 interface EventResult {
   id: string;
@@ -13,6 +13,9 @@ interface EventResult {
   date: string;
   endDate?: string;
   ticketUrl: string;
+  imageUrl?: string;
+  genre?: string;
+  priceRange?: string;
   source: "eventbrite" | "ticketmaster";
 }
 
@@ -61,6 +64,7 @@ async function fetchEventbriteEvents(): Promise<EventResult[]> {
           date: ev.start?.local || "",
           endDate: ev.end?.local || undefined,
           ticketUrl: ev.url || "",
+          imageUrl: ev.logo?.url || undefined,
           source: "eventbrite",
         });
       }
@@ -80,14 +84,17 @@ async function fetchTicketmasterEvents(): Promise<EventResult[]> {
   if (!apiKey) return [];
 
   const events: EventResult[] = [];
+  const now = new Date().toISOString().split(".")[0] + "Z";
 
   try {
-    for (let page = 0; page < 3; page++) {
+    for (let page = 0; page < 5; page++) {
       const params = new URLSearchParams({
         city: "Toronto",
         countryCode: "CA",
         size: "50",
         page: String(page),
+        sort: "date,asc",
+        startDateTime: now,
         apikey: apiKey,
       });
 
@@ -111,6 +118,24 @@ async function fetchTicketmasterEvents(): Promise<EventResult[]> {
         const startDate = ev.dates?.start?.localDate || "";
         const startTime = ev.dates?.start?.localTime || "";
 
+        // Pick best 16:9 image (prefer wider)
+        const images = ev.images || [];
+        const best = images
+          .filter((img: { ratio?: string; width: number }) => img.ratio === "16_9")
+          .sort((a: { width: number }, b: { width: number }) => b.width - a.width)[0];
+        const imageUrl = best?.url || images[0]?.url || undefined;
+
+        // Genre info
+        const genre = ev.classifications?.[0]?.genre?.name;
+        const segment = ev.classifications?.[0]?.segment?.name;
+        const genreLabel = genre && genre !== "Undefined" ? genre : segment || undefined;
+
+        // Price range
+        const prices = ev.priceRanges?.[0];
+        const priceRange = prices
+          ? `$${Math.round(prices.min)}–$${Math.round(prices.max)} ${prices.currency}`
+          : undefined;
+
         events.push({
           id: `tm_${ev.id}`,
           name: ev.name || "Untitled Event",
@@ -123,13 +148,16 @@ async function fetchTicketmasterEvents(): Promise<EventResult[]> {
           date: startTime ? `${startDate}T${startTime}` : startDate,
           endDate: ev.dates?.end?.localDate || undefined,
           ticketUrl: ev.url || "",
+          imageUrl,
+          genre: genreLabel,
+          priceRange,
           source: "ticketmaster",
         });
       }
 
       const nextLink = data._links?.next;
       if (!nextLink) break;
-      await delay(500);
+      await delay(300);
     }
   } catch (err) {
     console.error("Ticketmaster fetch error:", err);
@@ -151,17 +179,20 @@ async function saveEvents(events: EventResult[]): Promise<number> {
         ...(ev.endDate && { event_end_date: ev.endDate }),
         ticket_url: ev.ticketUrl,
         venue_name: ev.venue,
+        ...(ev.genre && { genre: ev.genre }),
+        ...(ev.priceRange && { price_range: ev.priceRange }),
       });
 
       // Upsert the restaurant/place
       const rows = await sql`
-        INSERT INTO restaurants (name, place_id, address, lat, lng, category, metadata)
-        VALUES (${ev.name}, ${ev.id}, ${ev.address}, ${ev.lat}, ${ev.lng}, 'event', ${metadata}::jsonb)
+        INSERT INTO restaurants (name, place_id, address, lat, lng, category, metadata, photo_url)
+        VALUES (${ev.name}, ${ev.id}, ${ev.address}, ${ev.lat}, ${ev.lng}, 'event', ${metadata}::jsonb, ${ev.imageUrl || null})
         ON CONFLICT (place_id) DO UPDATE SET
           name = EXCLUDED.name,
           address = EXCLUDED.address,
           category = 'event',
-          metadata = EXCLUDED.metadata
+          metadata = EXCLUDED.metadata,
+          photo_url = COALESCE(EXCLUDED.photo_url, restaurants.photo_url)
         RETURNING id
       `;
 
@@ -178,19 +209,20 @@ async function saveEvents(events: EventResult[]): Promise<number> {
           ${redditId},
           ${subreddit},
           ${titleText},
-          ${`Event: ${ev.name}. Venue: ${ev.venue}. Date: ${ev.date}.`},
+          ${`Event: ${ev.name}. Venue: ${ev.venue}. Date: ${ev.date}.${ev.genre ? ` Genre: ${ev.genre}.` : ""}${ev.priceRange ? ` Price: ${ev.priceRange}.` : ""}`},
           ${subreddit},
           ${ev.ticketUrl || "https://buzzmaps.vercel.app"},
           ${ev.ticketUrl || "/events"},
           5,
           0,
-          true,
+          false,
           'positive',
           ${Math.floor(Date.now() / 1000)}
         )
         ON CONFLICT (reddit_id) DO UPDATE SET
           title = EXCLUDED.title,
-          url = EXCLUDED.url
+          url = EXCLUDED.url,
+          selftext = EXCLUDED.selftext
         RETURNING id
       `;
 
