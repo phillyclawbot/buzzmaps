@@ -1,4 +1,5 @@
 import { getDb } from "@/lib/db";
+import { requireAdmin } from "@/lib/admin-auth";
 import { extractSentiment } from "@/lib/reddit";
 import {
   extractVenuesWithAI,
@@ -82,7 +83,9 @@ function slugify(text: string): string {
   return text.toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_]+/g, "-").slice(0, 60);
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const denied = requireAdmin(req);
+  if (denied) return denied;
   try {
     const sql = getDb();
     let totalPosts = 0;

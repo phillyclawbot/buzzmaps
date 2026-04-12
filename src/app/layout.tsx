@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import BottomNav from "@/components/BottomNav";
+import Analytics from "@/components/Analytics";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 import "./globals.css";
 
@@ -63,6 +64,7 @@ export default function RootLayout({
       <body className="h-full">
         {children}
         <BottomNav />
+        <Analytics />
       </body>
     </html>
   );

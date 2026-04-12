@@ -1,4 +1,5 @@
 import { getDb } from "@/lib/db";
+import { requireAdmin } from "@/lib/admin-auth";
 import { enrichPhoto } from "@/lib/photos";
 import type { PhotoSource } from "@/lib/photos";
 import { delay } from "@/lib/utils";
@@ -6,6 +7,8 @@ import { delay } from "@/lib/utils";
 export const maxDuration = 60;
 
 export async function GET(req: Request) {
+  const denied = requireAdmin(req);
+  if (denied) return denied;
   const sql = getDb();
   const url = new URL(req.url);
   const limit = Math.min(Math.max(1, parseInt(url.searchParams.get("limit") || "15", 10) || 15), 50);

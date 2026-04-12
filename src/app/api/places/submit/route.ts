@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { TORONTO_BOUNDS, VALID_CATEGORIES } from "@/lib/constants";
 import { delay, isInToronto } from "@/lib/utils";
+import { checkRateLimit, clientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 async function geocodeAddress(address: string, name: string): Promise<{ lat: number; lng: number; displayName: string } | null> {
   try {
@@ -40,6 +41,10 @@ async function geocodeAddress(address: string, name: string): Promise<{ lat: num
 }
 
 export async function POST(req: NextRequest) {
+  // Abuse mitigation: cap 5 submissions per 10 minutes per IP.
+  const rl = checkRateLimit(`submit:${clientIp(req)}`, 5, 10 * 60_000);
+  if (!rl.allowed) return rateLimitResponse(rl);
+
   try {
     const body = await req.json();
     const { name, category, address, reason, eventDate, ticketUrl } = body;

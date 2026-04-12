@@ -9,10 +9,13 @@ import {
   countMentions,
 } from "@/lib/extract-places";
 import { scrapePublications } from "@/lib/scrape-publications";
+import { requireAdmin } from "@/lib/admin-auth";
 
 export const maxDuration = 60;
 
-export async function GET() {
+export async function GET(req: Request) {
+  const denied = requireAdmin(req);
+  if (denied) return denied;
   try {
     await runMigrations();
     const sql = getDb();
