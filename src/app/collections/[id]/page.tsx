@@ -92,17 +92,6 @@ async function fetchCollectionPlacesWithPosts(
     (Date.now() - 30 * 24 * 60 * 60 * 1000) / 1000
   );
 
-  const postsAgg = `json_agg(json_build_object(
-    'id', rp.id,
-    'title', rp.title,
-    'subreddit', rp.subreddit,
-    'score', rp.score,
-    'num_comments', rp.num_comments,
-    'permalink', rp.permalink,
-    'sentiment', pr.sentiment,
-    'created_utc', rp.created_utc
-  ) ORDER BY rp.created_utc DESC)`;
-
   if (query.type === "name_or_post_contains") {
     const term = `%${query.term}%`;
     const rows = await sql`
@@ -120,7 +109,7 @@ async function fetchCollectionPlacesWithPosts(
       WHERE r.name ILIKE ${term} OR rp.title ILIKE ${term}
       GROUP BY r.id, r.name, r.category, r.address, r.google_rating
       ORDER BY mention_count DESC
-      LIMIT 20
+      LIMIT 200
     `;
     return rows as PlaceWithPosts[];
   }
@@ -141,7 +130,7 @@ async function fetchCollectionPlacesWithPosts(
       WHERE r.category = ${query.category}
       GROUP BY r.id, r.name, r.category, r.address, r.google_rating
       ORDER BY mention_count DESC
-      LIMIT 20
+      LIMIT 200
     `;
     return rows as PlaceWithPosts[];
   }
@@ -163,7 +152,7 @@ async function fetchCollectionPlacesWithPosts(
       WHERE r.category = ${query.category} AND rp.title ILIKE ${term}
       GROUP BY r.id, r.name, r.category, r.address, r.google_rating
       ORDER BY mention_count DESC
-      LIMIT 20
+      LIMIT 200
     `;
     return rows as PlaceWithPosts[];
   }
@@ -184,7 +173,7 @@ async function fetchCollectionPlacesWithPosts(
       WHERE rp.created_utc > ${thirtyDaysAgo}
       GROUP BY r.id, r.name, r.category, r.address, r.google_rating
       ORDER BY MAX(rp.created_utc) DESC
-      LIMIT 20
+      LIMIT 200
     `;
     return rows as PlaceWithPosts[];
   }
@@ -204,7 +193,7 @@ async function fetchCollectionPlacesWithPosts(
       LEFT JOIN reddit_posts rp ON rp.id = pr.post_id
       GROUP BY r.id, r.name, r.category, r.address, r.google_rating
       ORDER BY mention_count DESC
-      LIMIT ${query.limit}
+      LIMIT ${Math.max(query.limit, 200)}
     `;
     return rows as PlaceWithPosts[];
   }
@@ -212,17 +201,65 @@ async function fetchCollectionPlacesWithPosts(
   return [];
 }
 
+const COLLECTION_PAGE_SIZE = 20;
+type CollectionSort = "mentions" | "rating" | "alpha";
+const COLLECTION_SORTS: { id: CollectionSort; label: string }[] = [
+  { id: "mentions", label: "Most mentioned" },
+  { id: "rating", label: "Top rated" },
+  { id: "alpha", label: "A–Z" },
+];
+
 export default async function CollectionDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  const sp = await searchParams;
   const collection = getCollectionById(id);
   if (!collection) notFound();
 
+  const rawSort = Array.isArray(sp.sort) ? sp.sort[0] : sp.sort;
+  const sort: CollectionSort = (["mentions", "rating", "alpha"] as const).includes(
+    rawSort as CollectionSort
+  )
+    ? (rawSort as CollectionSort)
+    : "mentions";
+  const rawPage = Array.isArray(sp.page) ? sp.page[0] : sp.page;
+  const page = Math.max(1, parseInt(rawPage || "1", 10) || 1);
+
   const sql = getDb();
-  const places = await fetchCollectionPlacesWithPosts(sql, collection.query);
+  const allPlaces = await fetchCollectionPlacesWithPosts(sql, collection.query);
+
+  const sorted = [...allPlaces].sort((a, b) => {
+    if (sort === "rating") {
+      const ra = a.google_rating ?? -1;
+      const rb = b.google_rating ?? -1;
+      if (rb !== ra) return rb - ra;
+      return b.mention_count - a.mention_count;
+    }
+    if (sort === "alpha") return a.name.localeCompare(b.name);
+    return b.mention_count - a.mention_count;
+  });
+
+  const total = sorted.length;
+  const totalPages = Math.max(1, Math.ceil(total / COLLECTION_PAGE_SIZE));
+  const offset = (page - 1) * COLLECTION_PAGE_SIZE;
+  const places = sorted.slice(offset, offset + COLLECTION_PAGE_SIZE);
+
+  const qs = (overrides: Record<string, string | number | null>) => {
+    const sp2 = new URLSearchParams();
+    if (sort !== "mentions") sp2.set("sort", sort);
+    if (page !== 1) sp2.set("page", String(page));
+    for (const [k, v] of Object.entries(overrides)) {
+      if (v === null) sp2.delete(k);
+      else sp2.set(k, String(v));
+    }
+    const s = sp2.toString();
+    return s ? `?${s}` : "";
+  };
 
   const itemListLd = {
     "@context": "https://schema.org",
@@ -230,8 +267,8 @@ export default async function CollectionDetailPage({
     name: collection.title,
     description: collection.description,
     url: `${SITE_URL}/collections/${collection.id}`,
-    numberOfItems: places.length,
-    itemListElement: places.slice(0, 50).map((p, i) => ({
+    numberOfItems: total,
+    itemListElement: sorted.slice(0, 50).map((p, i) => ({
       "@type": "ListItem",
       position: i + 1,
       url: `${SITE_URL}/place/${encodeURIComponent(p.name)}`,
@@ -301,10 +338,10 @@ export default async function CollectionDetailPage({
               </p>
               <div className="flex items-center gap-2 mt-3">
                 <span className="inline-block text-xs font-semibold bg-[#ff6b35]/10 text-[#ff6b35] px-2.5 py-1 rounded-full">
-                  {places.length} place{places.length !== 1 ? "s" : ""}
+                  {total} place{total !== 1 ? "s" : ""}
                 </span>
                 <span className="text-xs text-slate-400">
-                  · {places.reduce((sum, p) => sum + p.mention_count, 0)} total mentions
+                  · {sorted.reduce((sum, p) => sum + p.mention_count, 0)} total mentions
                 </span>
               </div>
               <div className="flex gap-2 mt-3">
@@ -322,7 +359,30 @@ export default async function CollectionDetailPage({
 
       {/* Places list */}
       <div className="max-w-2xl mx-auto px-4 py-6 pb-20 page-enter">
-        {places.length === 0 ? (
+        {total > 0 && (
+          <div className="flex flex-wrap gap-1 bg-white border border-slate-200 rounded-full p-1 mb-4 w-fit">
+            {COLLECTION_SORTS.map((s) => {
+              const params = new URLSearchParams();
+              if (s.id !== "mentions") params.set("sort", s.id);
+              const href = params.toString() ? `?${params.toString()}` : "";
+              return (
+                <Link
+                  key={s.id}
+                  href={href}
+                  scroll={false}
+                  className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${
+                    sort === s.id
+                      ? "bg-slate-900 text-white"
+                      : "text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  {s.label}
+                </Link>
+              );
+            })}
+          </div>
+        )}
+        {total === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-slate-400">
             <div className="mb-3"><CollectionIcon id={id} size={48} /></div>
             <p className="text-sm">No places found in this collection yet.</p>
@@ -338,6 +398,7 @@ export default async function CollectionDetailPage({
           <div className="space-y-4">
             {places.map((place, i) => {
               const posts = (place.posts ?? []).filter((p) => p.id !== null);
+              const rank = offset + i + 1;
               return (
                 <div
                   key={place.id}
@@ -346,7 +407,7 @@ export default async function CollectionDetailPage({
                   {/* Place header */}
                   <div className="px-5 py-4 flex items-center gap-3">
                     <span className="text-sm font-bold text-slate-400 w-6 shrink-0">
-                      {i + 1}
+                      {rank}
                     </span>
                     <span className="text-slate-400 shrink-0">
                       <CategoryIcon category={place.category} size={22} />
@@ -428,6 +489,39 @@ export default async function CollectionDetailPage({
               );
             })}
           </div>
+        )}
+
+        {totalPages > 1 && (
+          <nav
+            aria-label="Pagination"
+            className="mt-8 flex items-center justify-center gap-2 text-sm"
+          >
+            <Link
+              href={page > 1 ? qs({ page: page - 1 }) : "#"}
+              aria-disabled={page === 1}
+              className={`px-3 py-1.5 rounded-full border ${
+                page === 1
+                  ? "text-slate-300 border-slate-100 pointer-events-none"
+                  : "text-slate-600 border-slate-200 hover:border-[#ff6b35] hover:text-[#ff6b35]"
+              }`}
+            >
+              ← Prev
+            </Link>
+            <span className="text-xs text-slate-500 px-2">
+              Page {page} of {totalPages}
+            </span>
+            <Link
+              href={page < totalPages ? qs({ page: page + 1 }) : "#"}
+              aria-disabled={page === totalPages}
+              className={`px-3 py-1.5 rounded-full border ${
+                page === totalPages
+                  ? "text-slate-300 border-slate-100 pointer-events-none"
+                  : "text-slate-600 border-slate-200 hover:border-[#ff6b35] hover:text-[#ff6b35]"
+              }`}
+            >
+              Next →
+            </Link>
+          </nav>
         )}
       </div>
     </div>
