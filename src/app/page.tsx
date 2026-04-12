@@ -30,11 +30,6 @@ function Home() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState(false);
-  const [scraping, setScraping] = useState(false);
-  const [scrapingPubs, setScrapingPubs] = useState(false);
-  const [scrapingEvents, setScrapingEvents] = useState(false);
-  const [scrapingAll, setScrapingAll] = useState(false);
-  const [fetchingPhotos, setFetchingPhotos] = useState(false);
   const searchParamsRaw = useSearchParams();
   const [view, setView] = useState<"map" | "list">(() => {
     if (typeof window !== "undefined") {
@@ -238,95 +233,6 @@ function Home() {
     }
   }, [searchParamsRaw, places]);  // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleScrape = async () => {
-    setScraping(true);
-    try {
-      await fetch("/api/scrape");
-      await fetchData();
-    } finally {
-      setScraping(false);
-    }
-  };
-
-  const handleScrapePubs = async () => {
-    setScrapingPubs(true);
-    try {
-      await fetch("/api/scrape/publications");
-      await fetchData();
-    } finally {
-      setScrapingPubs(false);
-    }
-  };
-
-  const handleScrapeEvents = async () => {
-    setScrapingEvents(true);
-    try {
-      const res = await fetch("/api/scrape/events");
-      if (res.ok) {
-        const data = await res.json();
-        setToast(`Found ${data.places_found || 0} events (${data.eventbrite || 0} Eventbrite, ${data.ticketmaster || 0} Ticketmaster)`);
-        setTimeout(() => setToast(null), 4000);
-      }
-      await fetchData();
-    } finally {
-      setScrapingEvents(false);
-    }
-  };
-
-  const handleScrapeAll = async () => {
-    setScrapingAll(true);
-    let totalPlaces = 0;
-    for (const ep of [
-      { name: "Reddit", url: "/api/scrape" },
-      { name: "Publications", url: "/api/scrape/publications" },
-      { name: "Popular lists", url: "/api/scrape/popular" },
-      { name: "Events", url: "/api/scrape/events" },
-    ]) {
-      try {
-        setToast(`Scraping ${ep.name}...`);
-        const res = await fetch(ep.url, { signal: AbortSignal.timeout(90000) });
-        if (res.ok) {
-          const data = await res.json().catch(() => ({}));
-          totalPlaces += data.places_found || 0;
-        }
-      } catch { /* continue */ }
-    }
-    let offset = 0;
-    let batch = 1;
-    while (true) {
-      try {
-        setToast(`Backfill batch ${batch}...`);
-        const res = await fetch(`/api/scrape/backfill?queries=15&offset=${offset}`, { signal: AbortSignal.timeout(90000) });
-        if (!res.ok) break;
-        const data = await res.json();
-        totalPlaces += data.places_found || 0;
-        if (!data.next_offset) break;
-        offset = data.next_offset;
-        batch++;
-      } catch { break; }
-    }
-    try { await fetchData(true); } catch {}
-    setToast(`Scrape complete: ${totalPlaces} places found`);
-    setTimeout(() => setToast(null), 4000);
-    setScrapingAll(false);
-  };
-
-  const handleFetchPhotos = async () => {
-    setFetchingPhotos(true);
-    try {
-      const res = await fetch("/api/places/enrich");
-      const data = await res.json();
-      setToast(`Found ${data.enriched} new photo${data.enriched !== 1 ? "s" : ""} (checked ${data.total_checked} places)`);
-      setTimeout(() => setToast(null), 3000);
-      await fetchData(true);
-    } catch {
-      setToast("Failed to fetch photos");
-      setTimeout(() => setToast(null), 2000);
-    } finally {
-      setFetchingPhotos(false);
-    }
-  };
-
   const handleFlyTo = useCallback((lat: number, lng: number) => {
     setFlyTo([lat, lng]);
     setTimeout(() => setFlyTo(null), 100);
@@ -455,13 +361,6 @@ function Home() {
         {/* Desktop nav links */}
         <div className="hidden md:flex ml-auto gap-1 items-center">
           <a href="/about" className="px-2 py-1 text-xs text-slate-400 hover:text-[#ff6b35] transition-colors">About</a>
-          <button
-            onClick={handleScrapeAll}
-            disabled={scrapingAll}
-            className="ml-1 px-3 py-1.5 bg-[#ff6b35] hover:bg-[#ea580c] disabled:opacity-50 text-white text-[11px] font-semibold rounded-lg transition-colors"
-          >
-            {scrapingAll ? "Scraping..." : "⚡ Scrape All"}
-          </button>
         </div>
 
         {/* Mobile: clear search button — only show when there's a query */}
@@ -542,15 +441,6 @@ function Home() {
             <a href="/about" className="px-3 py-2 text-sm text-slate-600 hover:text-[#ff6b35] transition-colors rounded-lg hover:bg-slate-50">About</a>
             <a href="/stats" className="px-3 py-2 text-sm text-slate-600 hover:text-[#ff6b35] transition-colors rounded-lg hover:bg-slate-50">📊 Stats</a>
             <a href="/digest" className="px-3 py-2 text-sm text-slate-600 hover:text-[#ff6b35] transition-colors rounded-lg hover:bg-slate-50">📬 Digest</a>
-          </div>
-          <div className="flex gap-1.5 flex-wrap border-t border-slate-100 pt-3">
-            <button
-              onClick={() => { handleScrapeAll(); setMenuOpen(false); }}
-              disabled={scrapingAll}
-              className="px-3 py-1.5 bg-[#ff6b35] disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors"
-            >
-              {scrapingAll ? "Scraping..." : "⚡ Scrape All"}
-            </button>
           </div>
         </div>
       )}
