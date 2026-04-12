@@ -8,6 +8,7 @@ import PlaceMapWrapper from "@/components/PlaceMapWrapper";
 import ShareButton from "@/app/place/ShareButton";
 import CheckinButton from "@/components/CheckinButton";
 import JsonLd from "@/components/JsonLd";
+import PostFilterList from "@/components/PostFilterList";
 import { CATEGORY_GRADIENT, SENTIMENT_COLORS, SENTIMENT_LABELS, isPublication } from "@/lib/constants";
 import { haversineDistance } from "@/lib/utils";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
@@ -77,24 +78,6 @@ function formatDate(utc: number): string {
     day: "numeric",
   });
 }
-
-function SentimentBadge({ sentiment }: { sentiment: string }) {
-  const config: Record<string, { label: string; bg: string; text: string }> = {
-    positive: { label: "Positive", bg: "#dcfce7", text: "#16a34a" },
-    negative: { label: "Negative", bg: "#fee2e2", text: "#dc2626" },
-    neutral: { label: "Neutral", bg: "#fef9c3", text: "#ca8a04" },
-  };
-  const c = config[sentiment] || config.neutral;
-  return (
-    <span
-      className="text-xs font-medium px-2 py-0.5 rounded-full"
-      style={{ background: c.bg, color: c.text }}
-    >
-      {c.label}
-    </span>
-  );
-}
-
 
 export default async function PlacePage({
   params,
@@ -466,79 +449,8 @@ export default async function PlacePage({
           </div>
         )}
 
-        {/* Reddit posts */}
-        <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider px-1 mb-3">
-          💬 Mentions ({posts.length})
-        </h2>
-
-        {posts.length === 0 ? (
-          <div className="text-center py-10 text-slate-400 text-sm">No posts yet</div>
-        ) : (
-          <div className="space-y-3 mb-6">
-            {posts.map((post) => (
-              <a
-                key={post.id}
-                href={isPublication(post.subreddit) ? post.permalink : `https://reddit.com${post.permalink}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:border-[#ff6b35]/60 hover:shadow-md transition-all group"
-              >
-                <div className="flex items-start gap-3">
-                  <div
-                    className="w-1 self-stretch rounded-full shrink-0"
-                    style={{
-                      background:
-                        post.sentiment === "positive"
-                          ? "#22c55e"
-                          : post.sentiment === "negative"
-                          ? "#ef4444"
-                          : "#f59e0b",
-                    }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 group-hover:text-[#ff6b35] transition-colors line-clamp-2">
-                      {post.title}
-                    </p>
-                    <div className="flex items-center flex-wrap gap-2 mt-2">
-                      {isPublication(post.subreddit) ? (
-                        <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">
-                          📰 {post.subreddit}
-                        </span>
-                      ) : (
-                        <span className="text-xs bg-[#ff6b35]/10 text-[#ff6b35] px-2 py-0.5 rounded-full font-medium">
-                          r/{post.subreddit}
-                        </span>
-                      )}
-                      <SentimentBadge sentiment={post.sentiment} />
-                      <span className="text-xs text-slate-400">
-                        ↑ {post.score} pts
-                      </span>
-                      <span className="text-xs text-slate-400">
-                        {post.num_comments} comments
-                      </span>
-                      <span className="text-xs text-slate-400 ml-auto">
-                        {formatDate(post.created_utc)}
-                      </span>
-                    </div>
-                  </div>
-                  <svg
-                    className="text-slate-300 group-hover:text-[#ff6b35] transition-colors shrink-0 mt-0.5"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
-                  </svg>
-                </div>
-              </a>
-            ))}
-          </div>
-        )}
+        {/* Reddit posts with sentiment + timeframe filtering */}
+        <PostFilterList posts={posts} />
 
         {/* Related places nearby */}
         {nearby.length > 0 && (
