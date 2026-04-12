@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import PlaceMapWrapper from "@/components/PlaceMapWrapper";
 import ShareButton from "@/app/place/ShareButton";
 import CheckinButton from "@/components/CheckinButton";
+import ReportButton from "@/components/ReportButton";
 import JsonLd from "@/components/JsonLd";
 import PostFilterList from "@/components/PostFilterList";
 import { CATEGORY_GRADIENT, SENTIMENT_COLORS, SENTIMENT_LABELS, isPublication } from "@/lib/constants";
@@ -69,14 +70,6 @@ export async function generateMetadata({
       images: place.photo_url ? [place.photo_url] : undefined,
     },
   };
-}
-
-function formatDate(utc: number): string {
-  return new Date(utc * 1000).toLocaleDateString("en-CA", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 export default async function PlacePage({
@@ -265,9 +258,10 @@ export default async function PlacePage({
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6 pb-20 page-enter">
-        {/* Check-in button */}
-        <div className="mb-4">
+        {/* Check-in + report */}
+        <div className="mb-4 flex flex-wrap items-center gap-2">
           <CheckinButton placeId={place.id} />
+          <ReportButton placeId={place.id} />
         </div>
 
         {/* Stats card */}

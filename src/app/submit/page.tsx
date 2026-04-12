@@ -1,7 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+
+interface Similar {
+  id: number;
+  name: string;
+  address: string | null;
+  category: string | null;
+}
 
 const CATEGORIES = [
   { value: "restaurant", label: "🍽️ Restaurant" },
@@ -24,6 +31,36 @@ export default function SubmitPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<{ name: string; lat: number; lng: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [similar, setSimilar] = useState<Similar[]>([]);
+  const [dismissedDupes, setDismissedDupes] = useState(false);
+
+  // Debounced "did you mean" lookup: nudges the user toward existing listings
+  // before they create a duplicate.
+  useEffect(() => {
+    const name = form.name.trim();
+    if (name.length < 3 || dismissedDupes) {
+      setSimilar([]);
+      return;
+    }
+    const ctrl = new AbortController();
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/places/similar?q=${encodeURIComponent(name)}`,
+          { signal: ctrl.signal }
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        setSimilar(Array.isArray(data.matches) ? data.matches : []);
+      } catch {
+        // aborted or network — ignore
+      }
+    }, 300);
+    return () => {
+      clearTimeout(t);
+      ctrl.abort();
+    };
+  }, [form.name, dismissedDupes]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,9 +159,54 @@ export default function SubmitPage() {
                 required
                 placeholder="e.g. Bar Raval, Cherry Street BBQ"
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, name: e.target.value });
+                  setDismissedDupes(false);
+                }}
                 className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35] transition-colors"
               />
+              {similar.length > 0 && !dismissedDupes && (
+                <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                  <div className="flex items-start gap-2">
+                    <span>🤔</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-amber-900">
+                        Already on the map?
+                      </p>
+                      <p className="text-[11px] text-amber-800 mt-0.5">
+                        We found {similar.length} similar place
+                        {similar.length === 1 ? "" : "s"}. If one of these is
+                        yours, visit it instead of adding a duplicate.
+                      </p>
+                      <ul className="mt-2 space-y-1">
+                        {similar.map((m) => (
+                          <li key={m.id}>
+                            <Link
+                              href={`/place/${encodeURIComponent(m.name)}`}
+                              className="text-xs font-medium text-amber-900 underline"
+                            >
+                              {m.name}
+                            </Link>
+                            {m.address ? (
+                              <span className="text-[11px] text-amber-700">
+                                {" "}
+                                — {m.address}
+                              </span>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                      <button
+                        type="button"
+                        onClick={() => setDismissedDupes(true)}
+                        className="mt-2 text-[11px] font-semibold text-amber-900 underline"
+                      >
+                        None of these — add a new place
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Category */}

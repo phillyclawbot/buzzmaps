@@ -23,6 +23,20 @@ interface RecentPost {
   scraped_at: string;
 }
 
+interface WeekBucket {
+  week_start: string; // ISO date at start of week
+  post_count: number;
+  place_count: number;
+}
+
+interface TopMover {
+  name: string;
+  category: string;
+  recent_count: number;
+  prior_count: number;
+  delta: number;
+}
+
 const CATEGORY_EMOJI: Record<string, string> = {
   restaurant: "🍽️",
   bar: "🍺",
@@ -45,6 +59,13 @@ function formatDate(utc: number | string): string {
 export default async function StatsPage() {
   const sql = getDb();
 
+  // Week buckets for the last 12 weeks. Uses date_trunc on the post's
+  // created_utc (epoch seconds) so the same query works against either
+  // Reddit or publication posts.
+  const twelveWeeksAgo = Math.floor(Date.now() / 1000) - 12 * 7 * 86400;
+  const fourWeeksAgo = Math.floor(Date.now() / 1000) - 28 * 86400;
+  const eightWeeksAgo = Math.floor(Date.now() / 1000) - 56 * 86400;
+
   const [
     [totalPlaces],
     [totalPosts],
@@ -53,6 +74,8 @@ export default async function StatsPage() {
     topPlaces,
     categoryBreakdown,
     recentPosts,
+    weekly,
+    movers,
   ] = await Promise.all([
     sql`SELECT COUNT(*)::int as count FROM restaurants`,
     sql`SELECT COUNT(*)::int as count FROM reddit_posts`,
@@ -78,10 +101,38 @@ export default async function StatsPage() {
       ORDER BY scraped_at DESC
       LIMIT 10
     ` as unknown as Promise<RecentPost[]>,
+    sql`
+      SELECT
+        date_trunc('week', to_timestamp(rp.created_utc))::date AS week_start,
+        COUNT(DISTINCT rp.id)::int AS post_count,
+        COUNT(DISTINCT pr.restaurant_id)::int AS place_count
+      FROM reddit_posts rp
+      LEFT JOIN post_restaurants pr ON pr.post_id = rp.id
+      WHERE rp.created_utc >= ${twelveWeeksAgo}
+      GROUP BY week_start
+      ORDER BY week_start ASC
+    ` as unknown as Promise<WeekBucket[]>,
+    sql`
+      SELECT r.name, r.category,
+        COUNT(*) FILTER (WHERE rp.created_utc >= ${fourWeeksAgo})::int AS recent_count,
+        COUNT(*) FILTER (WHERE rp.created_utc >= ${eightWeeksAgo} AND rp.created_utc < ${fourWeeksAgo})::int AS prior_count
+      FROM restaurants r
+      JOIN post_restaurants pr ON pr.restaurant_id = r.id
+      JOIN reddit_posts rp ON rp.id = pr.post_id
+      WHERE rp.created_utc >= ${eightWeeksAgo}
+      GROUP BY r.id, r.name, r.category
+      HAVING COUNT(*) FILTER (WHERE rp.created_utc >= ${fourWeeksAgo}) > 0
+      ORDER BY (COUNT(*) FILTER (WHERE rp.created_utc >= ${fourWeeksAgo}) - COUNT(*) FILTER (WHERE rp.created_utc >= ${eightWeeksAgo} AND rp.created_utc < ${fourWeeksAgo})) DESC
+      LIMIT 8
+    ` as unknown as Promise<Omit<TopMover, "delta">[]>,
   ]);
 
-  const maxMentions = topPlaces[0]?.mention_count || 1;
   const maxCategoryCount = categoryBreakdown[0]?.count || 1;
+  const weeklyChart = weekly as WeekBucket[];
+  const maxWeekly = Math.max(1, ...weeklyChart.map((w) => w.post_count));
+  const topMovers: TopMover[] = (movers as Omit<TopMover, "delta">[]).map(
+    (m) => ({ ...m, delta: m.recent_count - m.prior_count })
+  );
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -116,6 +167,81 @@ export default async function StatsPage() {
             </div>
           ))}
         </div>
+
+        {/* Weekly trend */}
+        {weeklyChart.length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm mb-6 p-5">
+            <h2 className="font-bold text-slate-800 mb-1">📈 Buzz over the last 12 weeks</h2>
+            <p className="text-xs text-slate-500 mb-4">
+              Posts mentioning a Toronto place, bucketed by the week they were
+              published.
+            </p>
+            <div className="flex items-end gap-1.5 h-36">
+              {weeklyChart.map((w) => {
+                const pct = Math.round((w.post_count / maxWeekly) * 100);
+                const label = new Date(w.week_start).toLocaleDateString(
+                  "en-CA",
+                  { month: "short", day: "numeric" }
+                );
+                return (
+                  <div
+                    key={w.week_start}
+                    className="flex-1 flex flex-col items-center gap-1 group"
+                    title={`Week of ${label}: ${w.post_count} posts, ${w.place_count} places`}
+                  >
+                    <div
+                      className="w-full rounded-t-md bg-gradient-to-t from-[#ff6b35] to-[#f59e0b] transition-all"
+                      style={{ height: `${Math.max(pct, 4)}%` }}
+                    />
+                    <span className="text-[9px] text-slate-400 group-hover:text-slate-600 transition-colors">
+                      {label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Top movers */}
+        {topMovers.length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm mb-6 p-5">
+            <h2 className="font-bold text-slate-800 mb-1">🚀 Top movers</h2>
+            <p className="text-xs text-slate-500 mb-4">
+              Places with the biggest mention jump in the last 4 weeks vs. the
+              previous 4 weeks.
+            </p>
+            <ul className="space-y-2">
+              {topMovers.map((m) => {
+                const positive = m.delta >= 0;
+                return (
+                  <li key={m.name} className="flex items-center gap-3">
+                    <span className="w-6 text-lg shrink-0">
+                      {CATEGORY_EMOJI[m.category] || "📍"}
+                    </span>
+                    <Link
+                      href={`/place/${encodeURIComponent(m.name)}`}
+                      className="flex-1 text-sm font-medium text-slate-800 hover:text-[#ff6b35] transition-colors truncate"
+                    >
+                      {m.name}
+                    </Link>
+                    <span className="text-xs text-slate-500 w-24 text-right shrink-0">
+                      {m.prior_count} → {m.recent_count}
+                    </span>
+                    <span
+                      className={`text-xs font-bold w-14 text-right shrink-0 ${
+                        positive ? "text-green-600" : "text-red-500"
+                      }`}
+                    >
+                      {positive ? "+" : ""}
+                      {m.delta}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
 
         {/* Top 10 Places */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm mb-6">
