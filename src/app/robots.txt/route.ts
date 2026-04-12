@@ -1,10 +1,16 @@
+import { SITE_URL } from "@/lib/site";
+
 export function GET() {
-  return new Response(
-    `User-agent: *\nAllow: /\nSitemap: https://buzzmaps.vercel.app/sitemap.xml\n`,
-    {
-      headers: {
-        "Content-Type": "text/plain",
-      },
-    }
-  );
+  const body = [
+    "User-agent: *",
+    "Allow: /",
+    "Disallow: /api/",
+    "Disallow: /card-demo",
+    `Sitemap: ${SITE_URL}/sitemap.xml`,
+    "",
+  ].join("\n");
+
+  return new Response(body, {
+    headers: { "Content-Type": "text/plain" },
+  });
 }

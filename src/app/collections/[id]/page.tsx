@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getDb } from "@/lib/db";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -6,8 +7,40 @@ import { getCollectionById } from "@/lib/collections";
 import type { CollectionQuery } from "@/lib/collections";
 import { isPublication } from "@/lib/constants";
 import { CollectionIcon, CategoryIcon, IconStar, IconChat, IconMap, IconExternalLink, IconUpArrow } from "@/lib/icons";
+import JsonLd from "@/components/JsonLd";
+import { SITE_URL, SITE_NAME } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const collection = getCollectionById(id);
+  if (!collection) {
+    return { title: `Collection — ${SITE_NAME}` };
+  }
+  const title = `${collection.title} — ${SITE_NAME} Toronto`;
+  const canonical = `${SITE_URL}/collections/${collection.id}`;
+  return {
+    title,
+    description: collection.description,
+    alternates: { canonical },
+    openGraph: {
+      title,
+      description: collection.description,
+      url: canonical,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: collection.description,
+    },
+  };
+}
 
 function formatDate(utc: number): string {
   return new Date(utc * 1000).toLocaleDateString("en-CA", {
@@ -191,8 +224,39 @@ export default async function CollectionDetailPage({
   const sql = getDb();
   const places = await fetchCollectionPlacesWithPosts(sql, collection.query);
 
+  const itemListLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: collection.title,
+    description: collection.description,
+    url: `${SITE_URL}/collections/${collection.id}`,
+    numberOfItems: places.length,
+    itemListElement: places.slice(0, 50).map((p, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `${SITE_URL}/place/${encodeURIComponent(p.name)}`,
+      name: p.name,
+    })),
+  };
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Map", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Collections", item: `${SITE_URL}/collections` },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: collection.title,
+        item: `${SITE_URL}/collections/${collection.id}`,
+      },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
+      <JsonLd data={itemListLd} />
+      <JsonLd data={breadcrumbLd} />
       {/* Top bar */}
       <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-10 h-12 flex items-center px-4 gap-3">
         <Link

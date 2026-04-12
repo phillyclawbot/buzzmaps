@@ -1,9 +1,39 @@
+import type { Metadata } from "next";
 import { getDb } from "@/lib/db";
 import Link from "next/link";
 import { CATEGORY_EMOJI } from "@/lib/types";
 import type { PlaceCategory } from "@/lib/types";
+import JsonLd from "@/components/JsonLd";
+import { SITE_URL, SITE_NAME } from "@/lib/site";
+import { VALID_CATEGORIES } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ cat: string }>;
+}): Promise<Metadata> {
+  const { cat } = await params;
+  const isValid = (VALID_CATEGORIES as readonly string[]).includes(cat);
+  const label = cat.charAt(0).toUpperCase() + cat.slice(1);
+  const emoji = CATEGORY_EMOJI[cat as PlaceCategory] || "📍";
+
+  if (!isValid) {
+    return { title: `Category — ${SITE_NAME}` };
+  }
+
+  const title = `${emoji} ${label} in Toronto — ${SITE_NAME}`;
+  const description = `Discover Toronto's best ${label.toLowerCase()} places, ranked by how often Reddit and local blogs talk about them.`;
+  const canonical = `${SITE_URL}/category/${cat}`;
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: { title, description, url: canonical, type: "website" },
+    twitter: { card: "summary_large_image", title, description },
+  };
+}
 
 interface CategoryPlace {
   id: number;
@@ -40,8 +70,37 @@ export default async function CategoryPage({
   const emoji = CATEGORY_EMOJI[cat as PlaceCategory] || "📍";
   const label = capitalize(cat);
 
+  const itemListLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: `${label} in Toronto`,
+    url: `${SITE_URL}/category/${cat}`,
+    numberOfItems: places.length,
+    itemListElement: places.slice(0, 50).map((p, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `${SITE_URL}/place/${encodeURIComponent(p.name)}`,
+      name: p.name,
+    })),
+  };
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Map", item: SITE_URL },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: label,
+        item: `${SITE_URL}/category/${cat}`,
+      },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
+      <JsonLd data={itemListLd} />
+      <JsonLd data={breadcrumbLd} />
       {/* Top bar */}
       <div className="fixed top-0 left-0 right-0 h-12 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-50 flex items-center px-4 gap-3">
         <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">

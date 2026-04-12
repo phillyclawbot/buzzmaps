@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getDb } from "@/lib/db";
 import { CATEGORY_EMOJI } from "@/lib/types";
 import type { PlaceCategory } from "@/lib/types";
@@ -6,8 +7,68 @@ import { notFound } from "next/navigation";
 import PlaceMapWrapper from "@/components/PlaceMapWrapper";
 import ShareButton from "@/app/place/ShareButton";
 import CheckinButton from "@/components/CheckinButton";
+import JsonLd from "@/components/JsonLd";
 import { CATEGORY_GRADIENT, SENTIMENT_COLORS, SENTIMENT_LABELS, isPublication } from "@/lib/constants";
 import { haversineDistance } from "@/lib/utils";
+import { SITE_URL, SITE_NAME } from "@/lib/site";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ name: string }>;
+}): Promise<Metadata> {
+  const { name } = await params;
+  const decoded = decodeURIComponent(name);
+  const sql = getDb();
+  const rows = (await sql`
+    SELECT r.name, r.address, r.category, r.cuisine_type, r.photo_url,
+           COUNT(DISTINCT pr.post_id)::int AS mention_count
+    FROM restaurants r
+    LEFT JOIN post_restaurants pr ON pr.restaurant_id = r.id
+    WHERE r.name ILIKE ${decoded}
+    GROUP BY r.id
+    LIMIT 1
+  `) as {
+    name: string;
+    address: string | null;
+    category: string | null;
+    cuisine_type: string | null;
+    photo_url: string | null;
+    mention_count: number;
+  }[];
+
+  if (!rows.length) {
+    return { title: `Place not found — ${SITE_NAME}` };
+  }
+
+  const place = rows[0];
+  const title = `${place.name} — ${SITE_NAME} Toronto`;
+  const cuisineOrCat = place.cuisine_type || place.category || "place";
+  const mentions = place.mention_count
+    ? `Mentioned ${place.mention_count} time${place.mention_count === 1 ? "" : "s"} on Reddit and local blogs. `
+    : "";
+  const description = `${place.name}${place.address ? ` — ${place.address}` : ""}. ${mentions}Discover what Toronto is saying about this ${cuisineOrCat}.`;
+
+  const canonical = `${SITE_URL}/place/${encodeURIComponent(place.name)}`;
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      type: "article",
+      images: place.photo_url ? [{ url: place.photo_url }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: place.photo_url ? [place.photo_url] : undefined,
+    },
+  };
+}
 
 function formatDate(utc: number): string {
   return new Date(utc * 1000).toLocaleDateString("en-CA", {
@@ -134,8 +195,56 @@ export default async function PlacePage({
     { positive: 0, neutral: 0, negative: 0 }
   );
 
+  const placeUrl = `${SITE_URL}/place/${encodeURIComponent(place.name)}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: place.name,
+    address: place.address
+      ? {
+          "@type": "PostalAddress",
+          streetAddress: place.address,
+          addressLocality: "Toronto",
+          addressRegion: "ON",
+          addressCountry: "CA",
+        }
+      : undefined,
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: place.lat,
+      longitude: place.lng,
+    },
+    url: placeUrl,
+    ...(place.google_rating !== null
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: place.google_rating,
+            reviewCount: place.google_reviews_count ?? place.mention_count,
+          },
+        }
+      : {}),
+    ...(place.cuisine_type ? { servesCuisine: place.cuisine_type } : {}),
+  };
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Map", item: SITE_URL },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: place.category,
+        item: `${SITE_URL}/category/${place.category}`,
+      },
+      { "@type": "ListItem", position: 3, name: place.name, item: placeUrl },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
+      <JsonLd data={jsonLd} />
+      <JsonLd data={breadcrumbLd} />
       {/* Top bar */}
       <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-10 h-12 flex items-center px-4 gap-3">
         <Link

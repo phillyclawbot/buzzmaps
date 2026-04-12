@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import BottomNav from "@/components/BottomNav";
+import { SITE_URL, SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,20 +20,33 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'BuzzMaps Toronto — Discover places locals love on Reddit',
-  description: "Interactive map of Toronto places — restaurants, bars, shops, parks, gyms, venues and more — powered by Reddit and local blogs",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} Toronto — Discover places locals love on Reddit`,
+    template: `%s — ${SITE_NAME}`,
+  },
+  description:
+    "Interactive map of Toronto places — restaurants, bars, shops, parks, gyms, venues and more — powered by Reddit and local blogs",
+  alternates: {
+    canonical: SITE_URL,
+    types: {
+      "application/atom+xml": [
+        { url: `${SITE_URL}/feed.xml`, title: `${SITE_NAME} — New places` },
+      ],
+    },
+  },
   openGraph: {
-    title: 'BuzzMaps Toronto',
-    description: "Toronto's places, as told by the internet",
-    url: 'https://buzzmaps.vercel.app',
-    siteName: 'BuzzMaps',
-    locale: 'en_CA',
-    type: 'website',
+    title: `${SITE_NAME} Toronto`,
+    description: SITE_TAGLINE,
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    locale: "en_CA",
+    type: "website",
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'BuzzMaps Toronto',
-    description: "Toronto's places, as told by the internet",
+    card: "summary_large_image",
+    title: `${SITE_NAME} Toronto`,
+    description: SITE_TAGLINE,
   },
 };
 
