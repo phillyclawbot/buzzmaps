@@ -26,7 +26,6 @@ export const metadata: Metadata = {
     description: "Toronto's places, as told by the internet",
     url: 'https://buzzmaps.vercel.app',
     siteName: 'BuzzMaps',
-    images: [{ url: 'https://via.placeholder.com/1200x630/ff6b35/ffffff?text=BuzzMaps+Toronto', width: 1200, height: 630 }],
     locale: 'en_CA',
     type: 'website',
   },
