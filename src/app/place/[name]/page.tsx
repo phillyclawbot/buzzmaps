@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getDb } from "@/lib/db";
 import { CATEGORY_EMOJI } from "@/lib/types";
 import type { PlaceCategory } from "@/lib/types";
@@ -6,34 +7,72 @@ import { notFound } from "next/navigation";
 import PlaceMapWrapper from "@/components/PlaceMapWrapper";
 import ShareButton from "@/app/place/ShareButton";
 import CheckinButton from "@/components/CheckinButton";
+import ReportButton from "@/components/ReportButton";
+import SaveButton from "@/components/SaveButton";
+import JsonLd from "@/components/JsonLd";
+import PostFilterList from "@/components/PostFilterList";
 import { CATEGORY_GRADIENT, SENTIMENT_COLORS, SENTIMENT_LABELS, isPublication } from "@/lib/constants";
 import { haversineDistance } from "@/lib/utils";
+import { SITE_URL, SITE_NAME } from "@/lib/site";
+import { getSession } from "@/lib/auth";
 
-function formatDate(utc: number): string {
-  return new Date(utc * 1000).toLocaleDateString("en-CA", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ name: string }>;
+}): Promise<Metadata> {
+  const { name } = await params;
+  const decoded = decodeURIComponent(name);
+  const sql = getDb();
+  const rows = (await sql`
+    SELECT r.name, r.address, r.category, r.cuisine_type, r.photo_url,
+           COUNT(DISTINCT pr.post_id)::int AS mention_count
+    FROM restaurants r
+    LEFT JOIN post_restaurants pr ON pr.restaurant_id = r.id
+    WHERE r.name ILIKE ${decoded}
+    GROUP BY r.id
+    LIMIT 1
+  `) as {
+    name: string;
+    address: string | null;
+    category: string | null;
+    cuisine_type: string | null;
+    photo_url: string | null;
+    mention_count: number;
+  }[];
 
-function SentimentBadge({ sentiment }: { sentiment: string }) {
-  const config: Record<string, { label: string; bg: string; text: string }> = {
-    positive: { label: "Positive", bg: "#dcfce7", text: "#16a34a" },
-    negative: { label: "Negative", bg: "#fee2e2", text: "#dc2626" },
-    neutral: { label: "Neutral", bg: "#fef9c3", text: "#ca8a04" },
+  if (!rows.length) {
+    return { title: `Place not found — ${SITE_NAME}` };
+  }
+
+  const place = rows[0];
+  const title = `${place.name} — ${SITE_NAME} Toronto`;
+  const cuisineOrCat = place.cuisine_type || place.category || "place";
+  const mentions = place.mention_count
+    ? `Mentioned ${place.mention_count} time${place.mention_count === 1 ? "" : "s"} on Reddit and local blogs. `
+    : "";
+  const description = `${place.name}${place.address ? ` — ${place.address}` : ""}. ${mentions}Discover what Toronto is saying about this ${cuisineOrCat}.`;
+
+  const canonical = `${SITE_URL}/place/${encodeURIComponent(place.name)}`;
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      type: "article",
+      images: place.photo_url ? [{ url: place.photo_url }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: place.photo_url ? [place.photo_url] : undefined,
+    },
   };
-  const c = config[sentiment] || config.neutral;
-  return (
-    <span
-      className="text-xs font-medium px-2 py-0.5 rounded-full"
-      style={{ background: c.bg, color: c.text }}
-    >
-      {c.label}
-    </span>
-  );
 }
-
 
 export default async function PlacePage({
   params,
@@ -134,8 +173,69 @@ export default async function PlacePage({
     { positive: 0, neutral: 0, negative: 0 }
   );
 
+  // Viewer session (for saved-places state). Runs in parallel with the main
+  // fetch — keeps signed-out users just as fast.
+  const session = await getSession();
+  let initiallySaved = false;
+  if (session) {
+    const savedRows = (await sql`
+      SELECT 1 FROM saved_places
+      WHERE user_id = ${session.id} AND restaurant_id = ${place.id}
+      LIMIT 1
+    `) as { "?column?": number }[];
+    initiallySaved = savedRows.length > 0;
+  }
+
+  const placeUrl = `${SITE_URL}/place/${encodeURIComponent(place.name)}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: place.name,
+    address: place.address
+      ? {
+          "@type": "PostalAddress",
+          streetAddress: place.address,
+          addressLocality: "Toronto",
+          addressRegion: "ON",
+          addressCountry: "CA",
+        }
+      : undefined,
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: place.lat,
+      longitude: place.lng,
+    },
+    url: placeUrl,
+    ...(place.google_rating !== null
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: place.google_rating,
+            reviewCount: place.google_reviews_count ?? place.mention_count,
+          },
+        }
+      : {}),
+    ...(place.cuisine_type ? { servesCuisine: place.cuisine_type } : {}),
+  };
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Map", item: SITE_URL },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: place.category,
+        item: `${SITE_URL}/category/${place.category}`,
+      },
+      { "@type": "ListItem", position: 3, name: place.name, item: placeUrl },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
+      <JsonLd data={jsonLd} />
+      <JsonLd data={breadcrumbLd} />
       {/* Top bar */}
       <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-10 h-12 flex items-center px-4 gap-3">
         <Link
@@ -173,9 +273,15 @@ export default async function PlacePage({
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6 pb-20 page-enter">
-        {/* Check-in button */}
-        <div className="mb-4">
+        {/* Save + check-in + report */}
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <SaveButton
+            placeId={place.id}
+            signedIn={!!session}
+            initiallySaved={initiallySaved}
+          />
           <CheckinButton placeId={place.id} />
+          <ReportButton placeId={place.id} />
         </div>
 
         {/* Stats card */}
@@ -357,79 +463,8 @@ export default async function PlacePage({
           </div>
         )}
 
-        {/* Reddit posts */}
-        <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider px-1 mb-3">
-          💬 Mentions ({posts.length})
-        </h2>
-
-        {posts.length === 0 ? (
-          <div className="text-center py-10 text-slate-400 text-sm">No posts yet</div>
-        ) : (
-          <div className="space-y-3 mb-6">
-            {posts.map((post) => (
-              <a
-                key={post.id}
-                href={isPublication(post.subreddit) ? post.permalink : `https://reddit.com${post.permalink}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:border-[#ff6b35]/60 hover:shadow-md transition-all group"
-              >
-                <div className="flex items-start gap-3">
-                  <div
-                    className="w-1 self-stretch rounded-full shrink-0"
-                    style={{
-                      background:
-                        post.sentiment === "positive"
-                          ? "#22c55e"
-                          : post.sentiment === "negative"
-                          ? "#ef4444"
-                          : "#f59e0b",
-                    }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 group-hover:text-[#ff6b35] transition-colors line-clamp-2">
-                      {post.title}
-                    </p>
-                    <div className="flex items-center flex-wrap gap-2 mt-2">
-                      {isPublication(post.subreddit) ? (
-                        <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">
-                          📰 {post.subreddit}
-                        </span>
-                      ) : (
-                        <span className="text-xs bg-[#ff6b35]/10 text-[#ff6b35] px-2 py-0.5 rounded-full font-medium">
-                          r/{post.subreddit}
-                        </span>
-                      )}
-                      <SentimentBadge sentiment={post.sentiment} />
-                      <span className="text-xs text-slate-400">
-                        ↑ {post.score} pts
-                      </span>
-                      <span className="text-xs text-slate-400">
-                        {post.num_comments} comments
-                      </span>
-                      <span className="text-xs text-slate-400 ml-auto">
-                        {formatDate(post.created_utc)}
-                      </span>
-                    </div>
-                  </div>
-                  <svg
-                    className="text-slate-300 group-hover:text-[#ff6b35] transition-colors shrink-0 mt-0.5"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
-                  </svg>
-                </div>
-              </a>
-            ))}
-          </div>
-        )}
+        {/* Reddit posts with sentiment + timeframe filtering */}
+        <PostFilterList posts={posts} />
 
         {/* Related places nearby */}
         {nearby.length > 0 && (

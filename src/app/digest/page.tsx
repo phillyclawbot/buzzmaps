@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import { getDb } from "@/lib/db";
 import Link from "next/link";
 import { CATEGORY_EMOJI } from "@/lib/types";
 import type { PlaceCategory } from "@/lib/types";
+import DigestSubscribeForm from "@/components/DigestSubscribeForm";
 
 export const dynamic = "force-dynamic";
 
@@ -222,24 +224,15 @@ export default async function DigestPage() {
             <div className="text-center">
               <h3 className="font-bold text-slate-800 mb-1">📬 Get This Weekly</h3>
               <p className="text-xs text-slate-500 mb-4">
-                Subscribe to get Toronto's top picks delivered to your inbox every Monday.
+                Subscribe to get Toronto&apos;s top picks delivered to your inbox every Monday.
               </p>
-              <div className="flex gap-2 max-w-sm mx-auto">
-                <input
-                  type="email"
-                  placeholder="your@email.com"
-                  disabled
-                  className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-400 placeholder-slate-300 outline-none cursor-not-allowed"
-                />
-                <button
-                  disabled
-                  className="px-4 py-2 text-sm font-semibold text-white rounded-lg cursor-not-allowed opacity-60"
-                  style={{ background: "linear-gradient(135deg, #ff6b35 0%, #ea580c 100%)" }}
-                >
-                  Subscribe
-                </button>
-              </div>
-              <p className="text-[10px] text-slate-400 mt-2">Coming soon — subscriptions not yet active</p>
+              <Suspense
+                fallback={
+                  <div className="max-w-sm mx-auto h-10 rounded-lg bg-slate-100 animate-pulse" />
+                }
+              >
+                <DigestSubscribeForm />
+              </Suspense>
             </div>
           </div>
 

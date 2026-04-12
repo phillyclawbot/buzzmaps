@@ -1,7 +1,11 @@
 import { getDb } from "@/lib/db";
 import { PUBLICATION_NAMES } from "@/lib/constants";
+import { requireAdmin } from "@/lib/admin-auth";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const denied = requireAdmin(req);
+  if (denied) return denied;
+
   const sql = getDb();
 
   // 1. Count posts by source type

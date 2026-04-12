@@ -127,4 +127,73 @@ export async function runMigrations() {
       ('torontobiking', 'toronto')
     ON CONFLICT DO NOTHING
   `;
+
+  // Phase 4: digest subscribers
+  await sql`
+    CREATE TABLE IF NOT EXISTS digest_subscribers (
+      id SERIAL PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      confirm_token TEXT NOT NULL,
+      unsubscribe_token TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      confirmed_at TIMESTAMPTZ,
+      unsubscribed_at TIMESTAMPTZ
+    )
+  `;
+
+  // Phase 6: user-submitted reports (flagging)
+  await sql`
+    CREATE TABLE IF NOT EXISTS place_reports (
+      id SERIAL PRIMARY KEY,
+      restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE CASCADE,
+      reason TEXT NOT NULL,
+      details TEXT,
+      reporter_ip TEXT,
+      status TEXT NOT NULL DEFAULT 'new',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS place_reports_restaurant_idx
+      ON place_reports(restaurant_id)
+  `;
+
+  // Phase 7: users + magic-link sessions + saved places
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      last_login_at TIMESTAMPTZ
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS auth_tokens (
+      token TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_at TIMESTAMPTZ
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS user_sessions (
+      token TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      expires_at TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS user_sessions_user_idx
+      ON user_sessions(user_id)
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS saved_places (
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      restaurant_id INTEGER NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (user_id, restaurant_id)
+    )
+  `;
 }

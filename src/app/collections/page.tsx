@@ -1,13 +1,30 @@
+import type { Metadata } from "next";
 import { getDb } from "@/lib/db";
 import Link from "next/link";
 import type { PlaceCategory } from "@/lib/types";
 import type { CollectionPlaceRow } from "@/lib/types";
 import CollectionCard from "@/components/CollectionCard";
+import JsonLd from "@/components/JsonLd";
 import { COLLECTIONS } from "@/lib/collections";
 import type { CollectionQuery } from "@/lib/collections";
 import { IconGrid } from "@/lib/icons";
+import { SITE_URL, SITE_NAME } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: `Collections — ${SITE_NAME} Toronto`,
+  description:
+    "Curated lists of Toronto's best places — buzzing now, coffee, bars, parks, Kensington Market, the Danforth, Chinatown and more.",
+  alternates: { canonical: `${SITE_URL}/collections` },
+  openGraph: {
+    title: `Collections — ${SITE_NAME} Toronto`,
+    description:
+      "Curated lists of Toronto's best places, powered by Reddit and local blogs.",
+    url: `${SITE_URL}/collections`,
+    type: "website",
+  },
+};
 
 async function fetchCollectionPlaces(
   sql: ReturnType<typeof getDb>,
@@ -99,8 +116,23 @@ export default async function CollectionsPage() {
     })
   );
 
+  const collectionsLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: `Collections — ${SITE_NAME} Toronto`,
+    url: `${SITE_URL}/collections`,
+    hasPart: collectionsWithData.map((c) => ({
+      "@type": "ItemList",
+      name: c.title,
+      description: c.description,
+      url: `${SITE_URL}/collections/${c.id}`,
+      numberOfItems: c.places.length,
+    })),
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
+      <JsonLd data={collectionsLd} />
       {/* Top bar */}
       <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-10 h-12 flex items-center px-4 gap-3">
         <Link

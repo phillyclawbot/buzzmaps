@@ -1,4 +1,5 @@
 import { getDb, runMigrations } from "@/lib/db";
+import { requireAdmin } from "@/lib/admin-auth";
 import { extractSentiment, isPlaceRelated, type RedditPost } from "@/lib/reddit";
 import {
   extractVenuesWithAI,
@@ -328,6 +329,8 @@ async function searchReddit(
 export const maxDuration = 120;
 
 export async function GET(req: Request) {
+  const denied = requireAdmin(req);
+  if (denied) return denied;
   try {
     await runMigrations();
     const sql = getDb();

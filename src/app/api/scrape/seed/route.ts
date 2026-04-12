@@ -1,4 +1,5 @@
 import { getDb, runMigrations } from "@/lib/db";
+import { requireAdmin } from "@/lib/admin-auth";
 import { fetchSubredditPosts, extractSentiment, type RedditPost } from "@/lib/reddit";
 import {
   extractVenuesWithAI,
@@ -31,7 +32,9 @@ async function savePosts(posts: RedditPost[]): Promise<number[]> {
   return ids;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const denied = requireAdmin(req);
+  if (denied) return denied;
   try {
     await runMigrations();
     const sql = getDb();

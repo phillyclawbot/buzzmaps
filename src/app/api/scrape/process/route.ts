@@ -1,10 +1,13 @@
 import { getDb } from "@/lib/db";
 import { extractVenuesWithAI, extractRestaurantNames, geocodeRestaurant, saveRestaurant, countMentions } from "@/lib/extract-places";
 import { extractSentiment } from "@/lib/reddit";
+import { requireAdmin } from "@/lib/admin-auth";
 
 export const maxDuration = 60;
 
 export async function GET(req: Request) {
+  const denied = requireAdmin(req);
+  if (denied) return denied;
   const sql = getDb();
   const url = new URL(req.url);
   const batch = Math.min(Math.max(1, parseInt(url.searchParams.get("batch") || "25", 10) || 25), 100);

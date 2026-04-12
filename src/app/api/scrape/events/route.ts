@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/db";
 import { isInToronto, delay } from "@/lib/utils";
+import { requireAdmin } from "@/lib/admin-auth";
 
 export const maxDuration = 120;
 
@@ -243,7 +244,9 @@ async function saveEvents(events: EventResult[]): Promise<number> {
   return saved;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const denied = requireAdmin(req);
+  if (denied) return denied;
   try {
     // Fetch from both sources in parallel
     const [eventbriteEvents, ticketmasterEvents] = await Promise.all([
