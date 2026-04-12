@@ -158,4 +158,42 @@ export async function runMigrations() {
     CREATE INDEX IF NOT EXISTS place_reports_restaurant_idx
       ON place_reports(restaurant_id)
   `;
+
+  // Phase 7: users + magic-link sessions + saved places
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      last_login_at TIMESTAMPTZ
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS auth_tokens (
+      token TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_at TIMESTAMPTZ
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS user_sessions (
+      token TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      expires_at TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS user_sessions_user_idx
+      ON user_sessions(user_id)
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS saved_places (
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      restaurant_id INTEGER NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (user_id, restaurant_id)
+    )
+  `;
 }

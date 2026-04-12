@@ -8,11 +8,13 @@ import PlaceMapWrapper from "@/components/PlaceMapWrapper";
 import ShareButton from "@/app/place/ShareButton";
 import CheckinButton from "@/components/CheckinButton";
 import ReportButton from "@/components/ReportButton";
+import SaveButton from "@/components/SaveButton";
 import JsonLd from "@/components/JsonLd";
 import PostFilterList from "@/components/PostFilterList";
 import { CATEGORY_GRADIENT, SENTIMENT_COLORS, SENTIMENT_LABELS, isPublication } from "@/lib/constants";
 import { haversineDistance } from "@/lib/utils";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
+import { getSession } from "@/lib/auth";
 
 export async function generateMetadata({
   params,
@@ -171,6 +173,19 @@ export default async function PlacePage({
     { positive: 0, neutral: 0, negative: 0 }
   );
 
+  // Viewer session (for saved-places state). Runs in parallel with the main
+  // fetch — keeps signed-out users just as fast.
+  const session = await getSession();
+  let initiallySaved = false;
+  if (session) {
+    const savedRows = (await sql`
+      SELECT 1 FROM saved_places
+      WHERE user_id = ${session.id} AND restaurant_id = ${place.id}
+      LIMIT 1
+    `) as { "?column?": number }[];
+    initiallySaved = savedRows.length > 0;
+  }
+
   const placeUrl = `${SITE_URL}/place/${encodeURIComponent(place.name)}`;
   const jsonLd = {
     "@context": "https://schema.org",
@@ -258,8 +273,13 @@ export default async function PlacePage({
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6 pb-20 page-enter">
-        {/* Check-in + report */}
+        {/* Save + check-in + report */}
         <div className="mb-4 flex flex-wrap items-center gap-2">
+          <SaveButton
+            placeId={place.id}
+            signedIn={!!session}
+            initiallySaved={initiallySaved}
+          />
           <CheckinButton placeId={place.id} />
           <ReportButton placeId={place.id} />
         </div>
