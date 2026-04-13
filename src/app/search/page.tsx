@@ -206,45 +206,59 @@ export default async function SearchPage({
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       {itemListLd ? <JsonLd data={itemListLd} /> : null}
 
-      <TopBar title="🔎 Search" />
+      <TopBar title="Search" />
 
-      <div className="pt-12 md:pt-14 pb-20 max-w-4xl mx-auto px-4 py-6 page-enter">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold" style={{ color: "var(--fg)" }}>
-            Search Toronto
-          </h1>
-          <p className="text-sm mt-1" style={{ color: "var(--fg-muted)" }}>
-            Find places by name, address, neighbourhood, or cuisine.
+      <article className="pt-14 md:pt-16 pb-24 max-w-4xl mx-auto px-6 md:px-10 page-enter">
+        <header
+          className="text-center pt-8 pb-8 mb-10"
+          style={{ borderBottom: "1px solid var(--fg)" }}
+        >
+          <p className="eyebrow mb-3" style={{ color: "var(--brand)" }}>
+            Index
           </p>
-        </div>
+          <h1
+            className="font-display text-5xl md:text-6xl"
+            style={{ color: "var(--fg)", fontWeight: 500, lineHeight: 1 }}
+          >
+            Search Toronto.
+          </h1>
+          <p
+            className="caption mt-4 max-w-md mx-auto"
+            style={{ color: "var(--fg-muted)" }}
+          >
+            By name, neighbourhood, cuisine — or any keyword from a Reddit thread.
+          </p>
+        </header>
 
         {/* GET form — server-rendered, no client JS needed */}
         <form
           method="GET"
           action="/search"
-          className="flex flex-col sm:flex-row gap-2 mb-5"
+          className="flex flex-col sm:flex-row gap-3 mb-10 max-w-2xl mx-auto"
         >
           <input
             type="search"
             name="q"
             defaultValue={q}
             maxLength={MAX_Q}
-            placeholder="Search places, cuisines, neighbourhoods…"
-            className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none focus-ring"
+            placeholder="Try ‘ramen’, ‘Kensington’, ‘west end coffee’…"
+            className="flex-1 px-4 py-3 text-base outline-none focus-ring font-serif"
             style={{
               background: "var(--bg-elevated)",
               color: "var(--fg)",
               border: "1px solid var(--border)",
+              borderRadius: "var(--radius-sm)",
             }}
           />
           <select
             name="category"
             defaultValue={category ?? ""}
-            className="px-3 py-2.5 rounded-xl text-sm outline-none focus-ring"
+            className="px-4 py-3 text-sm outline-none focus-ring"
             style={{
               background: "var(--bg-elevated)",
               color: "var(--fg)",
               border: "1px solid var(--border)",
+              borderRadius: "var(--radius-sm)",
             }}
           >
             <option value="">All categories</option>
@@ -257,11 +271,12 @@ export default async function SearchPage({
           </select>
           <button
             type="submit"
-            className="px-5 py-2.5 rounded-xl font-semibold text-sm press-down hover:opacity-90 transition-opacity"
+            className="px-6 py-3 text-sm font-semibold press-down transition-colors"
             style={{
-              backgroundImage:
-                "linear-gradient(135deg, var(--brand), var(--brand-hover))",
-              color: "var(--fg-inverse)",
+              background: "var(--ink)",
+              color: "var(--ink-inverse)",
+              borderRadius: "var(--radius-sm)",
+              letterSpacing: "0.04em",
             }}
           >
             Search
@@ -270,13 +285,8 @@ export default async function SearchPage({
 
         {/* Sort control only when we have results */}
         {total > 0 && (
-          <div
-            className="flex flex-wrap gap-1 rounded-full p-1 mb-5 w-fit"
-            style={{
-              background: "var(--bg-elevated)",
-              border: "1px solid var(--border)",
-            }}
-          >
+          <div className="flex items-baseline gap-5 mb-8">
+            <p className="dateline">Sort by:</p>
             {(
               [
                 { id: "mentions", label: "Most mentioned" },
@@ -293,10 +303,13 @@ export default async function SearchPage({
                     page: null,
                   })}
                   scroll={false}
-                  className="text-xs font-medium px-3 py-1 rounded-full transition-colors"
+                  className="text-sm transition-colors"
                   style={{
-                    background: active ? "var(--fg)" : "transparent",
-                    color: active ? "var(--fg-inverse)" : "var(--fg-muted)",
+                    color: active ? "var(--fg)" : "var(--fg-muted)",
+                    fontWeight: active ? 600 : 400,
+                    textDecoration: active ? "underline" : "none",
+                    textUnderlineOffset: "5px",
+                    textDecorationColor: "var(--brand)",
                   }}
                 >
                   {s.label}
@@ -307,36 +320,48 @@ export default async function SearchPage({
         )}
 
         {!hasQuery ? (
-          <p className="text-sm" style={{ color: "var(--fg-muted)" }}>
+          <p
+            className="caption text-center py-12"
+            style={{ color: "var(--fg-muted)" }}
+          >
             Type something above to search.
           </p>
         ) : total === 0 ? (
           <EmptyState
-            title={`No matches${q ? ` for "${q}"` : ""}`}
+            title={`No matches${q ? ` for “${q}”` : ""}`}
             message="Try different keywords, or submit a place we don't know about yet."
             action={
               <Link
                 href="/submit"
-                className="inline-block px-5 py-2 rounded-lg text-xs font-semibold press-down hover:opacity-90 transition-opacity"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(135deg, var(--brand), var(--brand-hover))",
-                  color: "var(--fg-inverse)",
-                }}
+                className="font-display text-xl ink-underline"
+                style={{ color: "var(--brand)", fontWeight: 500 }}
               >
-                ➕ Submit a place
+                Submit a place →
               </Link>
             }
           />
         ) : (
           <>
-            <p
-              className="text-xs mb-3"
-              style={{ color: "var(--fg-muted)" }}
+            <div
+              className="flex items-baseline justify-between mb-8 pb-3"
+              style={{ borderBottom: "1px solid var(--fg)" }}
             >
-              {total} result{total !== 1 ? "s" : ""}
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <h2
+                className="font-display text-2xl md:text-3xl"
+                style={{ color: "var(--fg)", fontWeight: 500 }}
+              >
+                {total} {total === 1 ? "result" : "results"}
+                {q && (
+                  <>
+                    {" "}for{" "}
+                    <span style={{ color: "var(--brand)" }} className="italic">
+                      “{q}”
+                    </span>
+                  </>
+                )}
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
               {rows.map((place, i) => (
                 <PlaceCard key={place.id} place={place} stagger={i} />
               ))}
@@ -382,7 +407,7 @@ export default async function SearchPage({
             )}
           </>
         )}
-      </div>
+      </article>
     </div>
   );
 }

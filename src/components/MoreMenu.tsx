@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useEffect } from "react";
 
-type Item = { href: string; label: string; desc: string; emoji: string };
+type Item = { href: string; label: string; desc: string };
 
 const ITEMS: Item[] = [
-  { href: "/digest", label: "Weekly Digest", desc: "Get Toronto's top picks by email", emoji: "📧" },
-  { href: "/stats", label: "Stats", desc: "Trends, movers, and totals", emoji: "📊" },
-  { href: "/about", label: "About", desc: "How BuzzMaps works", emoji: "ℹ️" },
-  { href: "/account", label: "Account", desc: "Sign in & saved places", emoji: "⭐" },
+  { href: "/digest", label: "Dispatch", desc: "Weekly email. This week's top picks." },
+  { href: "/stats", label: "Index", desc: "Trends, movers, totals." },
+  { href: "/about", label: "About", desc: "How BuzzMaps works." },
+  { href: "/account", label: "Account", desc: "Saved places · sign in." },
 ];
 
 export default function MoreMenu({
@@ -19,7 +19,6 @@ export default function MoreMenu({
   open: boolean;
   onClose: () => void;
 }) {
-  // Close on Escape
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -36,79 +35,66 @@ export default function MoreMenu({
       className="fixed inset-0 z-[1100] md:hidden flex items-end"
       role="dialog"
       aria-modal="true"
-      aria-label="More options"
+      aria-label="More"
     >
-      {/* Backdrop */}
       <button
         type="button"
         aria-label="Close menu"
         onClick={onClose}
         className="absolute inset-0"
-        style={{ background: "rgba(15, 23, 42, 0.45)" }}
+        style={{ background: "rgba(20, 18, 17, 0.55)" }}
       />
 
-      {/* Sheet */}
       <div
-        className="relative w-full animate-sheet-in rounded-t-2xl overflow-hidden"
+        className="relative w-full animate-sheet-in overflow-hidden"
         style={{
-          background: "var(--bg-elevated)",
-          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)",
+          background: "var(--bg)",
+          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 24px)",
           boxShadow: "var(--shadow-lg)",
           borderTop: "1px solid var(--border)",
         }}
       >
-        <div className="flex justify-center pt-3 pb-1">
+        <div className="flex justify-center pt-3 pb-2">
           <span
-            className="w-10 h-1.5 rounded-full"
+            className="w-10 h-1 rounded-full"
             style={{ background: "var(--border-strong)" }}
           />
         </div>
-        <div className="px-4 pb-2">
-          <h2
-            className="text-xs font-bold uppercase tracking-wider mb-2"
-            style={{ color: "var(--fg-subtle)" }}
-          >
-            More
-          </h2>
-          <ul className="divide-y" style={{ borderColor: "var(--border)" }}>
-            {ITEMS.map((item) => (
-              <li key={item.href}>
+        <div className="px-6 pt-4 pb-2">
+          <p className="eyebrow mb-4">More from BuzzMaps</p>
+          <ul>
+            {ITEMS.map((item, i) => (
+              <li
+                key={item.href}
+                style={{
+                  borderTop: i === 0 ? "1px solid var(--fg)" : "1px solid var(--border)",
+                }}
+              >
                 <Link
                   href={item.href}
                   onClick={onClose}
-                  className="flex items-center gap-3 py-3 press-down"
+                  className="flex items-baseline justify-between gap-4 py-4 press-down group"
                 >
-                  <span className="text-xl shrink-0" aria-hidden="true">
-                    {item.emoji}
-                  </span>
                   <span className="flex-1 min-w-0">
                     <span
-                      className="block text-sm font-semibold"
-                      style={{ color: "var(--fg)" }}
+                      className="font-display block text-2xl leading-tight"
+                      style={{ color: "var(--fg)", fontWeight: 500 }}
                     >
                       {item.label}
                     </span>
                     <span
-                      className="block text-[11px]"
-                      style={{ color: "var(--fg-subtle)" }}
+                      className="caption block mt-1"
+                      style={{ color: "var(--fg-muted)" }}
                     >
                       {item.desc}
                     </span>
                   </span>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    style={{ color: "var(--fg-faint)" }}
-                    aria-hidden="true"
+                  <span
+                    className="eyebrow shrink-0 group-hover:text-[color:var(--brand)] transition-colors"
+                    style={{ color: "var(--fg-subtle)" }}
                   >
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
+                    Go →
+                  </span>
                 </Link>
               </li>
             ))}

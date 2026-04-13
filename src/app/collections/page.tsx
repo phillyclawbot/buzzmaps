@@ -136,30 +136,30 @@ export default async function CollectionsPage() {
       <JsonLd data={collectionsLd} />
       <TopBar title="Collections" />
 
-      <div className="pt-12 md:pt-14 max-w-4xl mx-auto px-4 py-8 pb-20 page-enter">
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shadow-sm"
-              style={{
-                backgroundImage:
-                  "linear-gradient(135deg, var(--brand), var(--brand-hover))",
-                color: "var(--fg-inverse)",
-              }}
-            >
-              <IconGrid size={18} />
-            </div>
-            <h1 className="text-2xl font-bold" style={{ color: "var(--fg)" }}>
-              Collections
-            </h1>
-          </div>
-          <p className="text-sm" style={{ color: "var(--fg-muted)" }}>
-            Curated lists of Toronto&apos;s best places, powered by Reddit
-            buzz.
+      <article className="pt-14 md:pt-16 max-w-5xl mx-auto px-6 md:px-10 py-12 pb-24 page-enter">
+        <header
+          className="text-center pt-8 pb-8 mb-12"
+          style={{ borderBottom: "1px solid var(--fg)" }}
+        >
+          <p className="eyebrow mb-3" style={{ color: "var(--brand)" }}>
+            The Edit
           </p>
-        </div>
+          <h1
+            className="font-display text-5xl md:text-6xl"
+            style={{ color: "var(--fg)", fontWeight: 500, lineHeight: 1 }}
+          >
+            Collections
+          </h1>
+          <p
+            className="caption mt-4 max-w-md mx-auto"
+            style={{ color: "var(--fg-muted)" }}
+          >
+            Curated lists of Toronto&apos;s best places, ranked by what locals are
+            actually mentioning.
+          </p>
+        </header>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
           {collectionsWithData.map((col, i) => (
             <CollectionCard
               key={col.id}
@@ -171,7 +171,7 @@ export default async function CollectionsPage() {
             />
           ))}
         </div>
-      </div>
+      </article>
     </div>
   );
 }

@@ -137,37 +137,71 @@ export default async function StatsPage() {
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
-      <TopBar title="📊 Stats" />
+      <TopBar title="Index" />
 
-      <div className="pt-12 md:pt-14 pb-20 max-w-4xl mx-auto px-4 py-6 page-enter">
-        <h1 className="text-2xl font-bold text-slate-900 mb-1">📊 BuzzMaps Stats</h1>
-        <p className="text-sm text-slate-500 mb-6">Toronto places as tracked by BuzzMaps</p>
+      <article className="pt-14 md:pt-16 pb-24 max-w-5xl mx-auto px-6 md:px-10 py-12 page-enter">
+        <header
+          className="text-center pt-8 pb-8 mb-12"
+          style={{ borderBottom: "1px solid var(--fg)" }}
+        >
+          <p className="eyebrow mb-3" style={{ color: "var(--brand)" }}>
+            By the Numbers
+          </p>
+          <h1
+            className="font-display text-5xl md:text-6xl"
+            style={{ color: "var(--fg)", fontWeight: 500, lineHeight: 1 }}
+          >
+            The Index.
+          </h1>
+          <p
+            className="caption mt-4 max-w-md mx-auto"
+            style={{ color: "var(--fg-muted)" }}
+          >
+            Everything we&apos;ve catalogued so far &mdash; updated as the
+            scrapes come in.
+          </p>
+        </header>
 
-        {/* Summary cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+        {/* Summary numbers */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-8 mb-16">
           {[
-            { label: "Total Places", value: totalPlaces.count, emoji: "📍" },
-            { label: "Total Posts", value: totalPosts.count, emoji: "💬" },
-            { label: "Reddit Posts", value: redditPosts.count, emoji: "🤖" },
-            { label: "Publication Posts", value: pubPosts.count, emoji: "📰" },
+            { label: "Places", value: totalPlaces.count },
+            { label: "Posts", value: totalPosts.count },
+            { label: "From Reddit", value: redditPosts.count },
+            { label: "From the press", value: pubPosts.count },
           ].map((s) => (
-            <div key={s.label} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-1">
-              <span className="text-2xl">{s.emoji}</span>
-              <span className="text-2xl font-bold text-slate-900">{s.value.toLocaleString()}</span>
-              <span className="text-xs text-slate-500">{s.label}</span>
+            <div key={s.label}>
+              <p
+                className="font-display tabular-nums leading-none"
+                style={{
+                  color: "var(--fg)",
+                  fontSize: "clamp(2.5rem, 5vw, 4rem)",
+                  fontWeight: 500,
+                }}
+              >
+                {s.value.toLocaleString()}
+              </p>
+              <p className="dateline mt-2">{s.label}</p>
             </div>
           ))}
         </div>
 
         {/* Weekly trend */}
         {weeklyChart.length > 0 && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm mb-6 p-5">
-            <h2 className="font-bold text-slate-800 mb-1">📈 Buzz over the last 12 weeks</h2>
-            <p className="text-xs text-slate-500 mb-4">
-              Posts mentioning a Toronto place, bucketed by the week they were
-              published.
-            </p>
-            <div className="flex items-end gap-1.5 h-36">
+          <section className="mb-16">
+            <div
+              className="flex items-baseline justify-between pb-3 mb-6"
+              style={{ borderBottom: "1px solid var(--fg)" }}
+            >
+              <h2
+                className="font-display text-2xl md:text-3xl"
+                style={{ color: "var(--fg)", fontWeight: 500 }}
+              >
+                Twelve weeks of buzz
+              </h2>
+              <p className="dateline">Posts per week</p>
+            </div>
+            <div className="flex items-end gap-2 h-40">
               {weeklyChart.map((w) => {
                 const pct = Math.round((w.post_count / maxWeekly) * 100);
                 const label = new Date(w.week_start).toLocaleDateString(
@@ -177,52 +211,76 @@ export default async function StatsPage() {
                 return (
                   <div
                     key={w.week_start}
-                    className="flex-1 flex flex-col items-center gap-1 group"
+                    className="flex-1 flex flex-col items-center gap-2 group"
                     title={`Week of ${label}: ${w.post_count} posts, ${w.place_count} places`}
                   >
                     <div
-                      className="w-full rounded-t-md bg-gradient-to-t from-[#ff6b35] to-[#f59e0b] transition-all"
-                      style={{ height: `${Math.max(pct, 4)}%` }}
+                      className="w-full transition-all"
+                      style={{
+                        height: `${Math.max(pct, 4)}%`,
+                        background: "var(--fg)",
+                      }}
                     />
-                    <span className="text-[9px] text-slate-400 group-hover:text-slate-600 transition-colors">
+                    <span className="dateline" style={{ fontSize: 10 }}>
                       {label}
                     </span>
                   </div>
                 );
               })}
             </div>
-          </div>
+          </section>
         )}
 
         {/* Top movers */}
         {topMovers.length > 0 && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm mb-6 p-5">
-            <h2 className="font-bold text-slate-800 mb-1">🚀 Top movers</h2>
-            <p className="text-xs text-slate-500 mb-4">
-              Places with the biggest mention jump in the last 4 weeks vs. the
-              previous 4 weeks.
-            </p>
-            <ul className="space-y-2">
+          <section className="mb-16">
+            <div
+              className="flex items-baseline justify-between pb-3 mb-2"
+              style={{ borderBottom: "1px solid var(--fg)" }}
+            >
+              <h2
+                className="font-display text-2xl md:text-3xl"
+                style={{ color: "var(--fg)", fontWeight: 500 }}
+              >
+                Top movers
+              </h2>
+              <p className="dateline">Last 4 weeks vs. previous 4</p>
+            </div>
+            <ul>
               {topMovers.map((m) => {
                 const positive = m.delta >= 0;
                 return (
-                  <li key={m.name} className="flex items-center gap-3">
-                    <span className="w-6 text-lg shrink-0">
-                      {CATEGORY_EMOJI[m.category] || "📍"}
-                    </span>
+                  <li
+                    key={m.name}
+                    className="flex items-baseline gap-4 py-4"
+                    style={{ borderBottom: "1px solid var(--border)" }}
+                  >
                     <Link
                       href={`/place/${encodeURIComponent(m.name)}`}
-                      className="flex-1 text-sm font-medium text-slate-800 hover:text-[#ff6b35] transition-colors truncate"
+                      className="flex-1 min-w-0 group"
                     >
-                      {m.name}
+                      <p
+                        className="eyebrow"
+                        style={{ color: "var(--brand)" }}
+                      >
+                        {m.category.toUpperCase()}
+                      </p>
+                      <p
+                        className="font-display text-xl mt-1 group-hover:text-[color:var(--brand)] transition-colors"
+                        style={{ color: "var(--fg)", fontWeight: 500 }}
+                      >
+                        {m.name}
+                      </p>
                     </Link>
-                    <span className="text-xs text-slate-500 w-24 text-right shrink-0">
+                    <span className="dateline shrink-0">
                       {m.prior_count} → {m.recent_count}
                     </span>
                     <span
-                      className={`text-xs font-bold w-14 text-right shrink-0 ${
-                        positive ? "text-green-600" : "text-red-500"
-                      }`}
+                      className="font-display text-xl tabular-nums shrink-0 w-16 text-right"
+                      style={{
+                        color: positive ? "var(--sent-pos)" : "var(--sent-neg)",
+                        fontWeight: 500,
+                      }}
                     >
                       {positive ? "+" : ""}
                       {m.delta}
@@ -231,95 +289,162 @@ export default async function StatsPage() {
                 );
               })}
             </ul>
-          </div>
+          </section>
         )}
 
         {/* Top 10 Places */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm mb-6">
-          <div className="px-5 py-4 border-b border-slate-100">
-            <h2 className="font-bold text-slate-800">🏆 Top 10 Places by Mentions</h2>
+        <section className="mb-16">
+          <div
+            className="flex items-baseline justify-between pb-3 mb-6"
+            style={{ borderBottom: "1px solid var(--fg)" }}
+          >
+            <h2
+              className="font-display text-2xl md:text-3xl"
+              style={{ color: "var(--fg)", fontWeight: 500 }}
+            >
+              The All-Time Top Ten
+            </h2>
+            <p className="dateline">By total mentions</p>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-xs text-slate-500 border-b border-slate-100">
-                  <th className="text-left px-5 py-3 font-semibold">#</th>
-                  <th className="text-left px-3 py-3 font-semibold">Place</th>
-                  <th className="text-left px-3 py-3 font-semibold">Category</th>
-                  <th className="text-right px-3 py-3 font-semibold">Mentions</th>
-                  <th className="text-right px-5 py-3 font-semibold">Rating</th>
-                </tr>
-              </thead>
-              <tbody>
-                {topPlaces.map((place, i) => (
-                  <tr key={place.name} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                    <td className="px-5 py-3 text-slate-400 font-medium text-xs">{i + 1}</td>
-                    <td className="px-3 py-3">
-                      <Link
-                        href={`/place/${encodeURIComponent(place.name)}`}
-                        className="font-semibold text-slate-800 hover:text-[#ff6b35] transition-colors"
-                      >
-                        {place.name}
-                      </Link>
-                    </td>
-                    <td className="px-3 py-3 text-slate-500 text-xs">
-                      {CATEGORY_EMOJI[place.category] || "📍"} {place.category}
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      <span className="text-xs font-bold text-[#ff6b35] bg-[#ff6b35]/10 px-2 py-0.5 rounded-full">
-                        {place.mention_count}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-right text-xs text-slate-500">
-                      {place.google_rating ? `⭐ ${place.google_rating.toFixed(1)}` : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+          <ol>
+            {topPlaces.map((place, i) => (
+              <li
+                key={place.name}
+                className="flex items-baseline gap-5 py-4"
+                style={{ borderBottom: "1px solid var(--border)" }}
+              >
+                <span
+                  className="font-display tabular-nums shrink-0"
+                  style={{
+                    color: "var(--fg-faint)",
+                    fontSize: 28,
+                    fontWeight: 400,
+                    width: 48,
+                  }}
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <Link
+                  href={`/place/${encodeURIComponent(place.name)}`}
+                  className="flex-1 min-w-0 group"
+                >
+                  <p
+                    className="eyebrow"
+                    style={{ color: "var(--brand)" }}
+                  >
+                    {place.category.toUpperCase()}
+                  </p>
+                  <p
+                    className="font-display text-xl mt-1 group-hover:text-[color:var(--brand)] transition-colors"
+                    style={{ color: "var(--fg)", fontWeight: 500 }}
+                  >
+                    {place.name}
+                  </p>
+                </Link>
+                <span
+                  className="font-display text-2xl tabular-nums shrink-0"
+                  style={{ color: "var(--fg)", fontWeight: 500 }}
+                >
+                  {place.mention_count}
+                </span>
+                <span className="dateline shrink-0 w-12 text-right">
+                  {place.google_rating
+                    ? `${place.google_rating.toFixed(1)}★`
+                    : "—"}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
 
         {/* Category breakdown */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm mb-6 p-5">
-          <h2 className="font-bold text-slate-800 mb-4">🗂️ Breakdown by Category</h2>
-          <div className="space-y-3">
+        <section className="mb-16">
+          <div
+            className="flex items-baseline justify-between pb-3 mb-6"
+            style={{ borderBottom: "1px solid var(--fg)" }}
+          >
+            <h2
+              className="font-display text-2xl md:text-3xl"
+              style={{ color: "var(--fg)", fontWeight: 500 }}
+            >
+              By category
+            </h2>
+          </div>
+          <ul className="space-y-3">
             {categoryBreakdown.map((cat) => (
-              <Link key={cat.category} href={`/category/${cat.category}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity group">
-                <span className="text-lg w-6 shrink-0">{CATEGORY_EMOJI[cat.category] || "📍"}</span>
-                <span className="text-sm text-slate-600 w-20 shrink-0 capitalize group-hover:text-[#ff6b35] transition-colors">{cat.category}</span>
-                <div className="flex-1 h-4 bg-slate-100 rounded-full overflow-hidden">
+              <li
+                key={cat.category}
+                className="flex items-baseline gap-4"
+                style={{ borderBottom: "1px solid var(--border)", paddingBottom: 12 }}
+              >
+                <Link
+                  href={`/category/${cat.category}`}
+                  className="font-display text-lg capitalize w-28 shrink-0 hover:text-[color:var(--brand)] transition-colors"
+                  style={{ color: "var(--fg)", fontWeight: 500 }}
+                >
+                  {cat.category}
+                </Link>
+                <div
+                  className="flex-1 h-px"
+                  style={{ background: "var(--border)" }}
+                >
                   <div
-                    className="h-full bg-gradient-to-r from-[#ff6b35] to-[#ea580c] rounded-full transition-all"
-                    style={{ width: `${Math.round((cat.count / maxCategoryCount) * 100)}%` }}
+                    className="h-1 -translate-y-0.5"
+                    style={{
+                      width: `${Math.round((cat.count / maxCategoryCount) * 100)}%`,
+                      background: "var(--fg)",
+                    }}
                   />
                 </div>
-                <span className="text-xs font-bold text-slate-500 w-8 text-right shrink-0">{cat.count}</span>
-              </Link>
+                <span
+                  className="font-display tabular-nums shrink-0"
+                  style={{ color: "var(--fg)", fontWeight: 500, fontSize: 18 }}
+                >
+                  {cat.count}
+                </span>
+              </li>
             ))}
-          </div>
-        </div>
+          </ul>
+        </section>
 
-        {/* Latest 10 posts */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
-          <div className="px-5 py-4 border-b border-slate-100">
-            <h2 className="font-bold text-slate-800">🆕 Latest Posts Added</h2>
+        {/* Latest posts */}
+        <section>
+          <div
+            className="flex items-baseline justify-between pb-3 mb-2"
+            style={{ borderBottom: "1px solid var(--fg)" }}
+          >
+            <h2
+              className="font-display text-2xl md:text-3xl"
+              style={{ color: "var(--fg)", fontWeight: 500 }}
+            >
+              Just in
+            </h2>
+            <p className="dateline">Latest scraped posts</p>
           </div>
-          <div className="divide-y divide-slate-50">
+          <ul>
             {recentPosts.map((post) => (
-              <div key={post.id} className="px-5 py-3 hover:bg-slate-50 transition-colors">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm text-slate-700 font-medium line-clamp-2 flex-1">{post.title}</p>
-                  <span className="text-[10px] text-slate-400 shrink-0 pt-0.5">{formatDate(post.scraped_at)}</span>
-                </div>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {post.subreddit.match(/^[a-zA-Z0-9_]+$/) ? `r/${post.subreddit}` : post.subreddit}
+              <li
+                key={post.id}
+                className="py-4"
+                style={{ borderBottom: "1px solid var(--border)" }}
+              >
+                <p className="dateline mb-1">
+                  {post.subreddit.match(/^[a-zA-Z0-9_]+$/)
+                    ? `r/${post.subreddit}`
+                    : post.subreddit}{" "}
+                  · {formatDate(post.scraped_at)}
                 </p>
-              </div>
+                <p
+                  className="font-serif text-lg leading-snug"
+                  style={{ color: "var(--fg)" }}
+                >
+                  {post.title}
+                </p>
+              </li>
             ))}
-          </div>
-        </div>
-      </div>
+          </ul>
+        </section>
+      </article>
     </div>
   );
 }

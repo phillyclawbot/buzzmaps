@@ -210,6 +210,12 @@ const COLLECTION_SORTS: { id: CollectionSort; label: string }[] = [
   { id: "alpha", label: "A–Z" },
 ];
 
+// Editorial issue numbers — purely cosmetic, lookup by collection id.
+import { COLLECTIONS } from "@/lib/collections";
+const COLLECTIONS_INDEX: Record<string, string> = Object.fromEntries(
+  COLLECTIONS.map((c, i) => [c.id, String(i + 1).padStart(2, "0")])
+);
+
 export default async function CollectionDetailPage({
   params,
   searchParams,
@@ -298,66 +304,72 @@ export default async function CollectionDetailPage({
 
       <TopBar back="/collections" backLabel="Collections" title={collection.title} />
 
-      {/* Hero header */}
-      <div
-        className="pt-12 md:pt-14 border-b"
-        style={{
-          background:
-            "linear-gradient(135deg, var(--brand-tint) 0%, color-mix(in srgb, var(--brand) 4%, transparent) 100%)",
-          borderColor: "var(--border)",
-        }}
-      >
-        <div className="max-w-2xl mx-auto px-4 py-8">
-          <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shadow-sm shrink-0">
-              <CollectionIcon id={id} size={32} />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">
-                {collection.title}
-              </h1>
-              <p className="text-sm text-slate-500 mt-1 leading-relaxed">
-                {collection.description}
-              </p>
-              <div className="flex items-center gap-2 mt-3">
-                <span className="inline-block text-xs font-semibold bg-[#ff6b35]/10 text-[#ff6b35] px-2.5 py-1 rounded-full">
-                  {total} place{total !== 1 ? "s" : ""}
-                </span>
-                <span className="text-xs text-slate-400">
-                  · {sorted.reduce((sum, p) => sum + p.mention_count, 0)} total mentions
-                </span>
-              </div>
-              <div className="flex gap-2 mt-3">
-                <Link
-                  href={`/?category=${collection.query.type === "category" ? collection.query.category : "all"}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-medium hover:border-[#ff6b35] hover:text-[#ff6b35] transition-all shadow-sm"
-                >
-                  <IconMap size={14} className="text-current" /> View on Map
-                </Link>
-              </div>
-            </div>
+      {/* Editorial header */}
+      <header className="pt-14 md:pt-16">
+        <div className="max-w-3xl mx-auto px-6 md:px-10 pt-12 pb-10 text-center">
+          <p
+            className="eyebrow mb-3"
+            style={{ color: "var(--brand)" }}
+          >
+            The Edit · No. {COLLECTIONS_INDEX[id] ?? "01"}
+          </p>
+          <h1
+            className="font-display text-5xl md:text-6xl lg:text-7xl"
+            style={{ color: "var(--fg)", fontWeight: 500, lineHeight: 1.0 }}
+          >
+            {collection.title}
+          </h1>
+          <p
+            className="caption mt-5 max-w-xl mx-auto text-lg"
+            style={{ color: "var(--fg-muted)" }}
+          >
+            {collection.description}
+          </p>
+          <div className="flex items-baseline justify-center gap-5 mt-8">
+            <span className="dateline">
+              {total} {total === 1 ? "place" : "places"}
+            </span>
+            <span className="dateline">·</span>
+            <span className="dateline">
+              {sorted.reduce((sum, p) => sum + p.mention_count, 0)} mentions
+            </span>
+            <span className="dateline">·</span>
+            <Link
+              href="/map"
+              className="dateline hover:text-[color:var(--brand)] transition-colors"
+            >
+              On the map →
+            </Link>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Places list */}
-      <div className="max-w-2xl mx-auto px-4 py-6 pb-20 page-enter">
+      <article className="max-w-3xl mx-auto px-6 md:px-10 pb-24 page-enter">
         {total > 0 && (
-          <div className="flex flex-wrap gap-1 bg-white border border-slate-200 rounded-full p-1 mb-4 w-fit">
+          <div
+            className="flex items-baseline gap-5 py-4"
+            style={{ borderTop: "1px solid var(--fg)", borderBottom: "1px solid var(--fg)" }}
+          >
+            <p className="dateline">Sort by:</p>
             {COLLECTION_SORTS.map((s) => {
               const params = new URLSearchParams();
               if (s.id !== "mentions") params.set("sort", s.id);
               const href = params.toString() ? `?${params.toString()}` : "";
+              const active = sort === s.id;
               return (
                 <Link
                   key={s.id}
                   href={href}
                   scroll={false}
-                  className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${
-                    sort === s.id
-                      ? "bg-slate-900 text-white"
-                      : "text-slate-600 hover:bg-slate-100"
-                  }`}
+                  className="text-sm transition-colors"
+                  style={{
+                    color: active ? "var(--fg)" : "var(--fg-muted)",
+                    fontWeight: active ? 600 : 400,
+                    textDecoration: active ? "underline" : "none",
+                    textUnderlineOffset: "5px",
+                    textDecorationColor: "var(--brand)",
+                  }}
                 >
                   {s.label}
                 </Link>
@@ -366,109 +378,132 @@ export default async function CollectionDetailPage({
           </div>
         )}
         {total === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-            <div className="mb-3"><CollectionIcon id={id} size={48} /></div>
-            <p className="text-sm">No places found in this collection yet.</p>
-            <p className="text-xs mt-1">Know a place that belongs here?</p>
-            <Link
-              href="/"
-              className="mt-3 px-4 py-1.5 bg-[#ff6b35] text-white text-xs rounded-lg font-medium hover:bg-[#ea580c] transition-colors"
+          <div className="text-center py-20">
+            <h2
+              className="font-display text-3xl md:text-4xl mb-3"
+              style={{ color: "var(--fg)", fontWeight: 500 }}
             >
-              Submit a Place
+              No places yet.
+            </h2>
+            <p
+              className="caption mb-8 max-w-sm mx-auto"
+              style={{ color: "var(--fg-muted)" }}
+            >
+              Know a place that belongs here?
+            </p>
+            <Link
+              href="/submit"
+              className="font-display text-xl ink-underline"
+              style={{ color: "var(--brand)", fontWeight: 500 }}
+            >
+              Submit one →
             </Link>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div>
             {places.map((place, i) => {
               const posts = (place.posts ?? []).filter((p) => p.id !== null);
               const rank = offset + i + 1;
               return (
-                <div
+                <article
                   key={place.id}
-                  className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+                  className="py-8"
+                  style={{ borderBottom: "1px solid var(--border)" }}
                 >
-                  {/* Place header */}
-                  <div className="px-5 py-4 flex items-center gap-3">
-                    <span className="text-sm font-bold text-slate-400 w-6 shrink-0">
-                      {rank}
-                    </span>
-                    <span className="text-slate-400 shrink-0">
-                      <CategoryIcon category={place.category} size={22} />
+                  <div className="flex items-baseline gap-6">
+                    <span
+                      className="font-display tabular-nums shrink-0"
+                      style={{
+                        color: "var(--fg-faint)",
+                        fontSize: 36,
+                        fontWeight: 400,
+                        lineHeight: 1,
+                        width: 56,
+                      }}
+                    >
+                      {String(rank).padStart(2, "0")}
                     </span>
                     <div className="flex-1 min-w-0">
+                      <p
+                        className="eyebrow mb-1.5"
+                        style={{ color: "var(--brand)" }}
+                      >
+                        {String(place.category).toUpperCase()}
+                      </p>
                       <Link
                         href={`/place/${encodeURIComponent(place.name)}`}
-                        className="text-base font-bold text-slate-900 hover:text-[#ff6b35] transition-colors"
+                        className="font-display text-2xl md:text-3xl ink-underline inline"
+                        style={{ color: "var(--fg)", fontWeight: 500, lineHeight: 1.1 }}
                       >
                         {place.name}
                       </Link>
                       {place.address && (
-                        <p className="text-xs text-slate-400 mt-0.5 truncate">
+                        <p
+                          className="caption mt-2"
+                          style={{ color: "var(--fg-muted)" }}
+                        >
                           {place.address}
                         </p>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
+                    <div className="shrink-0 text-right">
+                      <div
+                        className="font-display text-2xl tabular-nums leading-none"
+                        style={{ color: "var(--fg)", fontWeight: 500 }}
+                      >
+                        {place.mention_count}
+                      </div>
+                      <div className="dateline mt-1">
+                        {place.mention_count === 1 ? "mention" : "mentions"}
+                      </div>
                       {place.google_rating && (
-                        <span className="flex items-center gap-0.5 text-xs text-slate-500">
-                          <IconStar size={12} className="text-amber-400" /> {place.google_rating.toFixed(1)}
-                        </span>
+                        <div className="dateline mt-0.5">
+                          {place.google_rating.toFixed(1)}★
+                        </div>
                       )}
-                      <span className="flex items-center gap-1 text-xs text-[#ff6b35] font-bold bg-[#ff6b35]/10 px-2 py-1 rounded-full">
-                        {place.mention_count} <IconChat size={12} className="text-[#ff6b35]" />
-                      </span>
                     </div>
                   </div>
 
                   {/* Mentions */}
                   {posts.length > 0 && (
-                    <div className="border-t border-slate-100 px-5 py-3 space-y-2">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                        Mentions
-                      </p>
-                      {posts.map((post) => {
+                    <div className="mt-5 ml-[80px] space-y-3">
+                      {posts.slice(0, 3).map((post) => {
                         const isPub = isPublication(post.subreddit);
                         return (
-                        <a
-                          key={post.id}
-                          href={isPub ? post.permalink : `https://reddit.com${post.permalink}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-start gap-2.5 group"
-                        >
-                          <SentimentDot sentiment={post.sentiment} />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-slate-700 group-hover:text-[#ff6b35] transition-colors line-clamp-1">
-                              {post.title}
-                            </p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              {isPub ? (
-                                <span className="inline-flex items-center gap-0.5 text-[10px] px-1 py-0.5 bg-blue-50 text-blue-500 rounded font-medium">
-                                  {post.subreddit}
-                                </span>
-                              ) : (
-                                <span className="text-[10px] text-[#ff6b35]/80 font-medium">
-                                  r/{post.subreddit}
-                                </span>
-                              )}
-                              <span className="inline-flex items-center gap-0.5 text-[10px] text-slate-400">
-                                <IconUpArrow size={9} />{post.score}
-                              </span>
-                              <span className="text-[10px] text-slate-400">
-                                {post.num_comments} comments
-                              </span>
-                              <span className="text-[10px] text-slate-400 ml-auto">
-                                {formatDate(post.created_utc)}
-                              </span>
+                          <a
+                            key={post.id}
+                            href={isPub ? post.permalink : `https://reddit.com${post.permalink}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group flex items-baseline gap-3"
+                          >
+                            <span style={{ marginTop: 4 }}>
+                              <SentimentDot sentiment={post.sentiment} />
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p
+                                className="font-serif text-base leading-snug group-hover:text-[color:var(--brand)] transition-colors"
+                                style={{ color: "var(--fg)" }}
+                              >
+                                {post.title}
+                              </p>
+                              <p className="dateline mt-1">
+                                {isPub ? post.subreddit : `r/${post.subreddit}`} ·{" "}
+                                {post.score} pts · {formatDate(post.created_utc)}
+                              </p>
                             </div>
-                          </div>
-                          <IconExternalLink size={12} className="text-slate-300 group-hover:text-[#ff6b35] transition-colors shrink-0 mt-0.5" />
-                        </a>
+                            <span
+                              className="shrink-0"
+                              style={{ color: "var(--fg-faint)" }}
+                            >
+                              <IconExternalLink size={14} />
+                            </span>
+                          </a>
                         );
                       })}
                     </div>
                   )}
-                </div>
+                </article>
               );
             })}
           </div>
@@ -477,36 +512,39 @@ export default async function CollectionDetailPage({
         {totalPages > 1 && (
           <nav
             aria-label="Pagination"
-            className="mt-8 flex items-center justify-center gap-2 text-sm"
+            className="mt-12 flex items-baseline justify-center gap-6 text-sm pt-6"
+            style={{ borderTop: "1px solid var(--fg)" }}
           >
             <Link
               href={page > 1 ? qs({ page: page - 1 }) : "#"}
               aria-disabled={page === 1}
-              className={`px-3 py-1.5 rounded-full border ${
-                page === 1
-                  ? "text-slate-300 border-slate-100 pointer-events-none"
-                  : "text-slate-600 border-slate-200 hover:border-[#ff6b35] hover:text-[#ff6b35]"
-              }`}
+              className="font-display text-lg ink-underline transition-colors"
+              style={{
+                color: page === 1 ? "var(--fg-faint)" : "var(--fg)",
+                pointerEvents: page === 1 ? "none" : undefined,
+                fontWeight: 500,
+              }}
             >
-              ← Prev
+              ← Previous
             </Link>
-            <span className="text-xs text-slate-500 px-2">
+            <span className="dateline">
               Page {page} of {totalPages}
             </span>
             <Link
               href={page < totalPages ? qs({ page: page + 1 }) : "#"}
               aria-disabled={page === totalPages}
-              className={`px-3 py-1.5 rounded-full border ${
-                page === totalPages
-                  ? "text-slate-300 border-slate-100 pointer-events-none"
-                  : "text-slate-600 border-slate-200 hover:border-[#ff6b35] hover:text-[#ff6b35]"
-              }`}
+              className="font-display text-lg ink-underline transition-colors"
+              style={{
+                color: page === totalPages ? "var(--fg-faint)" : "var(--fg)",
+                pointerEvents: page === totalPages ? "none" : undefined,
+                fontWeight: 500,
+              }}
             >
               Next →
             </Link>
           </nav>
         )}
-      </div>
+      </article>
     </div>
   );
 }

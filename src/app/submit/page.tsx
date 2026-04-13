@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import TopBar from "@/components/ui/TopBar";
 
 interface Similar {
   id: number;
@@ -11,14 +12,14 @@ interface Similar {
 }
 
 const CATEGORIES = [
-  { value: "restaurant", label: "🍽️ Restaurant" },
-  { value: "bar", label: "🍺 Bar" },
-  { value: "cafe", label: "☕ Cafe" },
-  { value: "shop", label: "🛍️ Shop" },
-  { value: "park", label: "🌳 Park" },
-  { value: "gym", label: "🏋️ Gym" },
-  { value: "venue", label: "⭐ Venue" },
-  { value: "other", label: "📍 Other" },
+  { value: "restaurant", label: "Restaurant" },
+  { value: "bar", label: "Bar" },
+  { value: "cafe", label: "Café" },
+  { value: "shop", label: "Shop" },
+  { value: "park", label: "Park" },
+  { value: "gym", label: "Gym" },
+  { value: "venue", label: "Venue" },
+  { value: "other", label: "Other" },
 ];
 
 export default function SubmitPage() {
@@ -85,31 +86,55 @@ export default function SubmitPage() {
     }
   };
 
+  const inputStyle: React.CSSProperties = {
+    background: "var(--bg-elevated)",
+    color: "var(--fg)",
+    border: "1px solid var(--border)",
+    borderRadius: "var(--radius-sm)",
+    fontFamily: "var(--font-serif)",
+  };
+
   if (success) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 max-w-md w-full text-center">
-          <div className="text-5xl mb-4">📍</div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Pin Added!</h2>
-          <p className="text-slate-500 text-sm mb-1">
-            <span className="font-semibold text-[#ff6b35]">{success.name}</span> has been added to the map.
+      <div
+        className="min-h-screen flex items-center justify-center p-6"
+        style={{ background: "var(--bg)" }}
+      >
+        <TopBar title="Submit" />
+        <div className="max-w-lg w-full text-center pt-14 md:pt-0">
+          <p className="eyebrow mb-3" style={{ color: "var(--brand)" }}>
+            Filed
           </p>
-          <p className="text-slate-400 text-xs mb-6">It&apos;s now visible to everyone on BuzzMaps Toronto.</p>
-          <div className="flex flex-col gap-3">
+          <h2
+            className="font-display text-5xl md:text-6xl mb-4"
+            style={{ color: "var(--fg)", fontWeight: 500, lineHeight: 1 }}
+          >
+            On the map.
+          </h2>
+          <p
+            className="caption mb-10"
+            style={{ color: "var(--fg-muted)" }}
+          >
+            <span style={{ color: "var(--fg)" }}>{success.name}</span> is now
+            part of the BuzzMaps Toronto record.
+          </p>
+          <div className="flex flex-col items-center gap-4">
             <Link
-              href={`/?place=${encodeURIComponent(success.name)}`}
-              className="block w-full px-4 py-3 bg-gradient-to-r from-[#ff6b35] to-[#ea580c] text-white font-semibold rounded-xl text-sm hover:opacity-90 transition-opacity"
+              href={`/map?place=${encodeURIComponent(success.name)}`}
+              className="font-display text-2xl ink-underline"
+              style={{ color: "var(--brand)", fontWeight: 500 }}
             >
-              View on Map →
+              See it on the map →
             </Link>
             <button
               onClick={() => {
                 setSuccess(null);
                 setForm({ name: "", category: "restaurant", address: "", reason: "" });
               }}
-              className="block w-full px-4 py-3 bg-slate-100 text-slate-600 font-medium rounded-xl text-sm hover:bg-slate-200 transition-colors"
+              className="font-serif italic text-base hover:underline"
+              style={{ color: "var(--fg-muted)" }}
             >
-              Add Another Place
+              or add another
             </button>
           </div>
         </div>
@@ -118,149 +143,196 @@ export default function SubmitPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Top bar */}
-      <div className="fixed top-0 left-0 right-0 h-12 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-[1000] flex items-center px-4 gap-3">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#ff6b35] shrink-0" />
-          <div className="flex flex-col leading-none">
-            <span className="font-semibold text-sm tracking-tight bg-gradient-to-r from-[#ff6b35] to-[#f59e0b] bg-clip-text text-transparent leading-tight">BuzzMaps</span>
-            <span className="text-[10px] text-slate-400 leading-tight">Toronto</span>
+    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+      <TopBar title="Submit" />
+
+      <article className="pt-14 md:pt-16 pb-24 max-w-xl mx-auto px-6 md:px-10 page-enter">
+        <header
+          className="text-center pt-10 pb-8 mb-10"
+          style={{ borderBottom: "1px solid var(--fg)" }}
+        >
+          <p className="eyebrow mb-3" style={{ color: "var(--brand)" }}>
+            Letter to the Editor
+          </p>
+          <h1
+            className="font-display text-5xl md:text-6xl"
+            style={{ color: "var(--fg)", fontWeight: 500, lineHeight: 1 }}
+          >
+            Submit a place.
+          </h1>
+          <p
+            className="caption mt-4 max-w-md mx-auto"
+            style={{ color: "var(--fg-muted)" }}
+          >
+            Know a spot we should know about? File it here.
+          </p>
+        </header>
+
+        {error && (
+          <div
+            className="mb-6 p-4 text-sm"
+            style={{
+              background: "color-mix(in srgb, var(--sent-neg) 8%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--sent-neg) 25%, transparent)",
+              color: "var(--sent-neg)",
+              borderRadius: "var(--radius-sm)",
+            }}
+          >
+            {error}
           </div>
-        </Link>
-        <span className="text-slate-300 mx-1">›</span>
-        <span className="text-sm font-medium text-slate-600">Submit a Place</span>
-        <Link href="/" className="ml-auto text-sm text-slate-500 hover:text-slate-900 transition-colors">
-          ← Back to map
-        </Link>
-      </div>
+        )}
 
-      <div className="pt-20 pb-20 px-4 flex justify-center">
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 max-w-lg w-full">
-          <div className="mb-6">
-            <h1 className="text-xl font-bold text-slate-900 mb-1">Add a Place to BuzzMaps</h1>
-            <p className="text-sm text-slate-500">Know a great spot in Toronto? Share it with the community.</p>
-          </div>
-
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {/* Place name */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Place Name <span className="text-[#ff6b35]">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. Bar Raval, Cherry Street BBQ"
-                value={form.name}
-                onChange={(e) => {
-                  setForm({ ...form, name: e.target.value });
-                  setDismissedDupes(false);
-                }}
-                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35] transition-colors"
-              />
-              {similar.length > 0 && !dismissedDupes && (
-                <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
-                  <div className="flex items-start gap-2">
-                    <span>🤔</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-amber-900">
-                        Already on the map?
-                      </p>
-                      <p className="text-[11px] text-amber-800 mt-0.5">
-                        We found {similar.length} similar place
-                        {similar.length === 1 ? "" : "s"}. If one of these is
-                        yours, visit it instead of adding a duplicate.
-                      </p>
-                      <ul className="mt-2 space-y-1">
-                        {similar.map((m) => (
-                          <li key={m.id}>
-                            <Link
-                              href={`/place/${encodeURIComponent(m.name)}`}
-                              className="text-xs font-medium text-amber-900 underline"
-                            >
-                              {m.name}
-                            </Link>
-                            {m.address ? (
-                              <span className="text-[11px] text-amber-700">
-                                {" "}
-                                — {m.address}
-                              </span>
-                            ) : null}
-                          </li>
-                        ))}
-                      </ul>
-                      <button
-                        type="button"
-                        onClick={() => setDismissedDupes(true)}
-                        className="mt-2 text-[11px] font-semibold text-amber-900 underline"
-                      >
-                        None of these — add a new place
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Category</label>
-              <select
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 outline-none focus:border-[#ff6b35] transition-colors cursor-pointer"
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Address */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Address or Neighbourhood</label>
-              <input
-                type="text"
-                placeholder="e.g. 505 College St, or Kensington Market"
-                value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35] transition-colors"
-              />
-            </div>
-
-            {/* Reason */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Why do you recommend it?
-                <span className="font-normal text-slate-400 ml-1">({form.reason.length}/300)</span>
-              </label>
-              <textarea
-                placeholder="What makes this place worth visiting?"
-                value={form.reason}
-                maxLength={300}
-                rows={3}
-                onChange={(e) => setForm({ ...form, reason: e.target.value })}
-                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35] transition-colors resize-none"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || !form.name.trim()}
-              className="w-full px-4 py-3 bg-gradient-to-r from-[#ff6b35] to-[#ea580c] text-white font-semibold rounded-xl text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+        <form onSubmit={handleSubmit} className="flex flex-col gap-7">
+          {/* Place name */}
+          <label className="block">
+            <span
+              className="eyebrow block mb-2"
+              style={{ color: "var(--fg-muted)" }}
             >
-              {loading ? "Adding to map..." : "➕ Add to BuzzMaps"}
-            </button>
-          </form>
-        </div>
-      </div>
+              Place name <span style={{ color: "var(--brand)" }}>*</span>
+            </span>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Bar Raval, Cherry Street BBQ"
+              value={form.name}
+              onChange={(e) => {
+                setForm({ ...form, name: e.target.value });
+                setDismissedDupes(false);
+              }}
+              className="w-full px-4 py-3 text-base outline-none focus-ring"
+              style={inputStyle}
+            />
+            {similar.length > 0 && !dismissedDupes && (
+              <div
+                className="mt-3 p-4"
+                style={{
+                  background: "var(--bg-sunken)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-sm)",
+                }}
+              >
+                <p
+                  className="eyebrow mb-2"
+                  style={{ color: "var(--brand)" }}
+                >
+                  Already on file?
+                </p>
+                <p
+                  className="caption mb-3"
+                  style={{ color: "var(--fg-muted)" }}
+                >
+                  We found {similar.length} similar{" "}
+                  {similar.length === 1 ? "place" : "places"}.
+                </p>
+                <ul className="space-y-1.5 mb-3">
+                  {similar.map((m) => (
+                    <li
+                      key={m.id}
+                      className="font-serif text-sm"
+                      style={{ color: "var(--fg)" }}
+                    >
+                      <Link
+                        href={`/place/${encodeURIComponent(m.name)}`}
+                        className="ink-underline"
+                      >
+                        {m.name}
+                      </Link>
+                      {m.address && (
+                        <span style={{ color: "var(--fg-muted)" }}>
+                          {" "}— {m.address}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  onClick={() => setDismissedDupes(true)}
+                  className="font-serif text-sm italic underline"
+                  style={{ color: "var(--fg-muted)" }}
+                >
+                  None of these — add a new place
+                </button>
+              </div>
+            )}
+          </label>
+
+          {/* Category */}
+          <label className="block">
+            <span
+              className="eyebrow block mb-2"
+              style={{ color: "var(--fg-muted)" }}
+            >
+              Category
+            </span>
+            <select
+              value={form.category}
+              onChange={(e) => setForm({ ...form, category: e.target.value })}
+              className="w-full px-4 py-3 text-base outline-none focus-ring cursor-pointer"
+              style={inputStyle}
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {/* Address */}
+          <label className="block">
+            <span
+              className="eyebrow block mb-2"
+              style={{ color: "var(--fg-muted)" }}
+            >
+              Address or neighbourhood
+            </span>
+            <input
+              type="text"
+              placeholder="e.g. 505 College St, or Kensington Market"
+              value={form.address}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
+              className="w-full px-4 py-3 text-base outline-none focus-ring"
+              style={inputStyle}
+            />
+          </label>
+
+          {/* Reason */}
+          <label className="block">
+            <span
+              className="eyebrow block mb-2 flex items-baseline justify-between"
+              style={{ color: "var(--fg-muted)" }}
+            >
+              <span>Why do you recommend it?</span>
+              <span className="dateline">{form.reason.length}/300</span>
+            </span>
+            <textarea
+              placeholder="What makes this place worth visiting?"
+              value={form.reason}
+              maxLength={300}
+              rows={4}
+              onChange={(e) => setForm({ ...form, reason: e.target.value })}
+              className="w-full px-4 py-3 text-base outline-none focus-ring resize-none"
+              style={inputStyle}
+            />
+          </label>
+
+          <button
+            type="submit"
+            disabled={loading || !form.name.trim()}
+            className="w-full py-4 text-sm font-semibold press-down transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              background: "var(--ink)",
+              color: "var(--ink-inverse)",
+              borderRadius: "var(--radius-sm)",
+              letterSpacing: "0.04em",
+            }}
+          >
+            {loading ? "Filing…" : "FILE IT"}
+          </button>
+        </form>
+      </article>
     </div>
   );
 }

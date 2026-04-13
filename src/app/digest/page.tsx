@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import { getDb } from "@/lib/db";
-import { CATEGORY_EMOJI } from "@/lib/types";
-import type { PlaceCategory } from "@/lib/types";
 import DigestSubscribeForm from "@/components/DigestSubscribeForm";
 import TopBar from "@/components/ui/TopBar";
+import PlaceCard from "@/components/ui/PlaceCard";
+import type { PlaceCategory } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,7 @@ interface TopPlace {
   id: number;
   name: string;
   address: string;
-  category: string;
+  category: PlaceCategory;
   mention_count: number;
   google_rating: number | null;
   photo_url: string | null;
@@ -21,7 +21,7 @@ interface NewPlace {
   id: number;
   name: string;
   address: string;
-  category: string;
+  category: PlaceCategory;
   mention_count: number;
   first_seen_at: string | null;
 }
@@ -30,213 +30,213 @@ function formatDate(d: Date): string {
   return d.toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" });
 }
 
+function issueNumber(d: Date): string {
+  // Simple ISO-week-based issue number
+  const start = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const days = Math.floor((d.getTime() - start.getTime()) / 86400000);
+  const week = Math.ceil((days + start.getUTCDay() + 1) / 7);
+  return `Vol. 1 · No. ${week}`;
+}
+
 const now = new Date();
 const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-export default async function DigestPage() {
-  const sql = getDb();
+export default async function DispatchPage() {
+  let topPlaces: TopPlace[] = [];
+  let newPlaces: NewPlace[] = [];
 
-  const weekAgoEpoch = Math.floor(weekAgo.getTime() / 1000);
+  try {
+    const sql = getDb();
+    const weekAgoEpoch = Math.floor(weekAgo.getTime() / 1000);
 
-  const [topPlacesRaw, newPlacesRaw] = await Promise.all([
-    // Top 5 most-mentioned this week
-    sql`
-      SELECT
-        r.id, r.name, r.address, r.category, r.google_rating, r.photo_url,
-        COUNT(DISTINCT pr.post_id)::int as mention_count
-      FROM restaurants r
-      JOIN post_restaurants pr ON pr.restaurant_id = r.id
-      JOIN reddit_posts rp ON rp.id = pr.post_id
-      WHERE rp.created_utc > ${weekAgoEpoch}
-      GROUP BY r.id
-      ORDER BY mention_count DESC
-      LIMIT 5
-    ` as unknown as Promise<TopPlace[]>,
-    // Newest places added this week
-    sql`
-      SELECT id, name, address, category, first_seen_at,
-        (SELECT COUNT(*)::int FROM post_restaurants WHERE restaurant_id = r.id) as mention_count
-      FROM restaurants r
-      WHERE first_seen_at > ${weekAgo.toISOString()}
-      ORDER BY first_seen_at DESC
-      LIMIT 8
-    ` as unknown as Promise<NewPlace[]>,
-  ]);
+    const [topPlacesRaw, newPlacesRaw] = await Promise.all([
+      sql`
+        SELECT
+          r.id, r.name, r.address, r.category, r.google_rating, r.photo_url,
+          COUNT(DISTINCT pr.post_id)::int as mention_count
+        FROM restaurants r
+        JOIN post_restaurants pr ON pr.restaurant_id = r.id
+        JOIN reddit_posts rp ON rp.id = pr.post_id
+        WHERE rp.created_utc > ${weekAgoEpoch}
+        GROUP BY r.id
+        ORDER BY mention_count DESC
+        LIMIT 5
+      `,
+      sql`
+        SELECT id, name, address, category, first_seen_at,
+          (SELECT COUNT(*)::int FROM post_restaurants WHERE restaurant_id = r.id) as mention_count
+        FROM restaurants r
+        WHERE first_seen_at > ${weekAgo.toISOString()}
+        ORDER BY first_seen_at DESC
+        LIMIT 6
+      `,
+    ]);
 
-  const topPlaces = topPlacesRaw as TopPlace[];
-  const newPlaces = newPlacesRaw as NewPlace[];
+    topPlaces = topPlacesRaw as TopPlace[];
+    newPlaces = newPlacesRaw as NewPlace[];
+  } catch (err) {
+    console.error("[dispatch] failed to load:", err);
+  }
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
-      <TopBar title="📧 Weekly Digest" />
+      <TopBar title="Dispatch" />
 
-      <div className="pt-12 md:pt-14 pb-20 flex justify-center px-4">
-        {/* Email wrapper — max 600px centered white card */}
-        <div className="w-full max-w-[600px] bg-white rounded-2xl shadow-md overflow-hidden mt-4">
-          {/* Email header */}
+      <article className="pt-14 md:pt-16 pb-24 max-w-3xl mx-auto px-6 md:px-10 page-enter">
+        {/* Masthead */}
+        <header
+          className="text-center pt-12 pb-8 mb-12"
+          style={{ borderBottom: "1px solid var(--fg)" }}
+        >
           <div
-            style={{ background: "linear-gradient(135deg, #ff6b35 0%, #ea580c 100%)" }}
-            className="px-8 py-10 text-white"
+            className="flex items-baseline justify-between mb-8 pb-3"
+            style={{ borderBottom: "1px solid var(--fg)" }}
           >
-            <div className="flex items-center gap-2 mb-3 opacity-80">
-              <div className="w-2 h-2 rounded-full bg-white" />
-              <span className="text-sm font-semibold tracking-wide">BUZZMAPS WEEKLY</span>
-            </div>
-            <h1 className="text-3xl font-extrabold leading-tight mb-2">
-              🗺️ Toronto's Top Picks
-            </h1>
-            <p className="text-white/80 text-sm">
-              Week of {formatDate(weekAgo)} — {formatDate(now)}
-            </p>
+            <p className="dateline">{formatDate(weekAgo)} – {formatDate(now)}</p>
+            <p className="dateline hidden sm:block">{issueNumber(now)}</p>
           </div>
+          <p className="eyebrow mb-4" style={{ color: "var(--brand)" }}>
+            The Weekly Dispatch
+          </p>
+          <h1
+            className="font-display text-5xl sm:text-6xl md:text-7xl"
+            style={{ color: "var(--fg)", fontWeight: 500, lineHeight: 1 }}
+          >
+            What Toronto's been talking about.
+          </h1>
+          <p
+            className="caption mt-6 max-w-md mx-auto"
+            style={{ color: "var(--fg-muted)" }}
+          >
+            Every Monday, the city's most-mentioned places — pulled from Reddit
+            and the local press, ranked by buzz, delivered to your inbox.
+          </p>
+        </header>
 
-          {/* Email body */}
-          <div className="px-8 py-6">
-            <p className="text-slate-600 text-sm leading-relaxed mb-6">
-              Hey there 👋 Here's what Toronto was buzzing about this week — the most-mentioned spots from Reddit
-              and local publications, curated automatically by BuzzMaps.
+        {/* This week's most mentioned */}
+        <section className="mb-16">
+          <div
+            className="flex items-baseline justify-between pb-3 mb-6"
+            style={{ borderBottom: "1px solid var(--fg)" }}
+          >
+            <h2
+              className="font-display text-3xl"
+              style={{ color: "var(--fg)", fontWeight: 500 }}
+            >
+              This Week's Top Five
+            </h2>
+            <p className="dateline">By mentions</p>
+          </div>
+          {topPlaces.length === 0 ? (
+            <p
+              className="caption text-center py-12"
+              style={{ color: "var(--fg-muted)" }}
+            >
+              A quiet week. Check back Monday.
             </p>
-
-            {/* Section: Top picks */}
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="h-0.5 flex-1 bg-slate-100" />
-                <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap px-2">
-                  🔥 This Week's Most Mentioned
-                </h2>
-                <div className="h-0.5 flex-1 bg-slate-100" />
-              </div>
-
-              {topPlaces.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-6">No mentions this week yet. Check back soon!</p>
-              ) : (
-                <div className="space-y-4">
-                  {topPlaces.map((place, i) => (
-                    <div key={place.id} className="flex gap-4 items-start">
-                      {/* Rank */}
-                      <div className="shrink-0 w-8 h-8 rounded-full bg-[#ff6b35]/10 flex items-center justify-center">
-                        <span className="text-xs font-bold text-[#ff6b35]">{i + 1}</span>
-                      </div>
-                      {/* Photo */}
-                      {place.photo_url && (
-                        <img
-                          src={place.photo_url}
-                          alt={place.name}
-                          className="w-16 h-16 object-cover rounded-xl shrink-0"
-                        />
-                      )}
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-base">{CATEGORY_EMOJI[place.category as PlaceCategory] || "📍"}</span>
-                          <h3 className="font-bold text-slate-900 text-sm">{place.name}</h3>
-                        </div>
-                        {place.address && (
-                          <p className="text-xs text-slate-400 mt-0.5 truncate">{place.address}</p>
-                        )}
-                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                          <span className="text-xs font-semibold bg-[#ff6b35]/10 text-[#ff6b35] px-2 py-0.5 rounded-full">
-                            {place.mention_count} mention{place.mention_count !== 1 ? "s" : ""}
-                          </span>
-                          {place.google_rating && (
-                            <span className="text-xs text-slate-400">⭐ {place.google_rating.toFixed(1)}</span>
-                          )}
-                          <a
-                            href={`https://buzzmaps.vercel.app/place/${encodeURIComponent(place.name)}`}
-                            className="text-xs text-[#ff6b35] font-medium hover:underline"
-                          >
-                            View →
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+          ) : (
+            <div>
+              {topPlaces.map((place, i) => (
+                <PlaceCard
+                  key={place.id}
+                  place={place}
+                  variant="rank"
+                  rank={i + 1}
+                  stagger={i}
+                />
+              ))}
             </div>
+          )}
+        </section>
 
-            {/* Section: Newly added */}
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="h-0.5 flex-1 bg-slate-100" />
-                <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap px-2">
-                  ✨ Newly Added This Week
-                </h2>
-                <div className="h-0.5 flex-1 bg-slate-100" />
-              </div>
-
-              {newPlaces.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-4">No new places added this week.</p>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  {newPlaces.map((place) => (
-                    <a
-                      key={place.id}
-                      href={`https://buzzmaps.vercel.app/place/${encodeURIComponent(place.name)}`}
-                      className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2.5 hover:bg-[#ff6b35]/5 transition-colors no-underline"
+        {/* Newly added */}
+        {newPlaces.length > 0 && (
+          <section className="mb-16">
+            <div
+              className="flex items-baseline justify-between pb-3 mb-6"
+              style={{ borderBottom: "1px solid var(--fg)" }}
+            >
+              <h2
+                className="font-display text-3xl"
+                style={{ color: "var(--fg)", fontWeight: 500 }}
+              >
+                Newly Catalogued
+              </h2>
+              <p className="dateline">First seen this week</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+              {newPlaces.map((p, i) => (
+                <a
+                  key={p.id}
+                  href={`/place/${encodeURIComponent(p.name)}`}
+                  className="group block py-3"
+                  style={{ borderTop: "1px solid var(--border)" }}
+                >
+                  <p
+                    className="eyebrow"
+                    style={{ color: "var(--brand)" }}
+                  >
+                    {p.category}
+                  </p>
+                  <h3
+                    className="font-display text-xl mt-1 group-hover:text-[color:var(--brand)] transition-colors"
+                    style={{ color: "var(--fg)", fontWeight: 500 }}
+                  >
+                    {p.name}
+                  </h3>
+                  {p.address && (
+                    <p
+                      className="caption mt-1 truncate"
+                      style={{ color: "var(--fg-muted)" }}
                     >
-                      <span className="text-base shrink-0">{CATEGORY_EMOJI[place.category as PlaceCategory] || "📍"}</span>
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold text-slate-800 truncate">{place.name}</p>
-                        <p className="text-[10px] text-slate-400">{place.mention_count} mention{place.mention_count !== 1 ? "s" : ""}</p>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              )}
+                      {p.address}
+                    </p>
+                  )}
+                </a>
+              ))}
             </div>
+          </section>
+        )}
 
-            {/* Data sources note */}
-            <div className="bg-slate-50 rounded-xl p-4 mb-8">
-              <p className="text-xs text-slate-500 leading-relaxed">
-                <span className="font-semibold text-slate-700">📡 About our data:</span>{" "}
-                BuzzMaps tracks mentions of Toronto places across Reddit (r/toronto, r/askTO, and more),
-                BlogTO, Narcity, Toronto Life, NOW Magazine, and Toronto Star. Places are ranked by how
-                often they're mentioned — the more buzz, the higher they rank.
-              </p>
-            </div>
+        {/* Subscribe */}
+        <section
+          className="mt-20 text-center py-12 px-6"
+          style={{ borderTop: "1px solid var(--fg)", borderBottom: "1px solid var(--fg)" }}
+        >
+          <p className="eyebrow mb-3" style={{ color: "var(--brand)" }}>
+            Get it in your inbox
+          </p>
+          <h2
+            className="font-display text-4xl md:text-5xl mb-3"
+            style={{ color: "var(--fg)", fontWeight: 500, lineHeight: 1.05 }}
+          >
+            Subscribe to the Dispatch.
+          </h2>
+          <p
+            className="caption mb-8 max-w-sm mx-auto"
+            style={{ color: "var(--fg-muted)" }}
+          >
+            One email a week. Mondays. Easy to unsubscribe.
+          </p>
+          <Suspense
+            fallback={
+              <div
+                className="max-w-sm mx-auto h-12 rounded animate-pulse"
+                style={{ background: "var(--bg-sunken)" }}
+              />
+            }
+          >
+            <DigestSubscribeForm />
+          </Suspense>
+        </section>
 
-            {/* CTA button */}
-            <div className="text-center mb-8">
-              <a
-                href="https://buzzmaps.vercel.app"
-                className="inline-block px-6 py-3 rounded-xl font-bold text-sm text-white no-underline"
-                style={{ background: "linear-gradient(135deg, #ff6b35 0%, #ea580c 100%)" }}
-              >
-                🗺️ Explore BuzzMaps
-              </a>
-            </div>
-
-            {/* Divider */}
-            <div className="h-px bg-slate-100 mb-6" />
-
-            {/* Subscribe section */}
-            <div className="text-center">
-              <h3 className="font-bold text-slate-800 mb-1">📬 Get This Weekly</h3>
-              <p className="text-xs text-slate-500 mb-4">
-                Subscribe to get Toronto&apos;s top picks delivered to your inbox every Monday.
-              </p>
-              <Suspense
-                fallback={
-                  <div className="max-w-sm mx-auto h-10 rounded-lg bg-slate-100 animate-pulse" />
-                }
-              >
-                <DigestSubscribeForm />
-              </Suspense>
-            </div>
-          </div>
-
-          {/* Email footer */}
-          <div className="px-8 py-5 bg-slate-50 border-t border-slate-100 text-center">
-            <p className="text-xs text-slate-400">
-              © {now.getFullYear()} BuzzMaps · Toronto, Ontario ·{" "}
-              <a href="https://buzzmaps.vercel.app" className="text-[#ff6b35] hover:underline">
-                buzzmaps.vercel.app
-              </a>
-            </p>
-          </div>
-        </div>
-      </div>
+        {/* Colophon */}
+        <footer className="mt-16 pt-8 text-center" style={{ borderTop: "1px solid var(--border)" }}>
+          <p className="dateline">
+            BuzzMaps · Toronto · Sourced from Reddit, BlogTO, Toronto Life, NOW & Eater
+          </p>
+        </footer>
+      </article>
     </div>
   );
 }

@@ -3,16 +3,13 @@ import Logo from "./Logo";
 import BackLink from "./BackLink";
 
 /**
- * Consistent sticky page header used by all non-home routes.
- *
- * Left:   optional back link
- * Center: Logo · title
- * Right:  optional action slot
+ * Editorial mobile top bar (desktop uses SiteHeader).
+ * Back arrow · logo · serif section title.
  */
 export default function TopBar({
   title,
   back = "/",
-  backLabel = "Back to map",
+  backLabel = "Back",
   showBack = true,
   right,
 }: {
@@ -24,33 +21,33 @@ export default function TopBar({
 }) {
   return (
     <div
-      className="md:hidden fixed top-0 left-0 right-0 z-50 h-12 flex items-center px-3 sm:px-4 gap-3 border-b"
+      className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-4 gap-3"
       style={{
-        background: "color-mix(in srgb, var(--bg-elevated) 95%, transparent)",
-        backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
-        borderColor: "var(--border)",
+        background: "color-mix(in srgb, var(--bg) 95%, transparent)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+        borderBottom: "1px solid var(--border)",
       }}
     >
-      {showBack ? (
-        <BackLink href={back} label={backLabel} />
-      ) : (
-        <Logo />
-      )}
+      {showBack ? <BackLink href={back} label={backLabel} /> : <Logo size="sm" />}
 
       {showBack && (
         <>
           <span className="hidden sm:inline" style={{ color: "var(--fg-faint)" }}>·</span>
-          <Logo className="hidden sm:flex" />
+          <Logo size="sm" className="hidden sm:inline-flex" />
         </>
       )}
 
       {title && (
         <>
-          <span style={{ color: "var(--fg-faint)" }} aria-hidden="true">·</span>
           <span
-            className="text-sm font-semibold truncate"
-            style={{ color: "var(--fg)" }}
+            className="inline-block w-px h-3 ml-1"
+            style={{ background: "var(--fg-faint)" }}
+            aria-hidden="true"
+          />
+          <span
+            className="font-display text-[15px] truncate"
+            style={{ color: "var(--fg)", fontWeight: 500 }}
           >
             {title}
           </span>
@@ -63,10 +60,9 @@ export default function TopBar({
 }
 
 /**
- * Spacer to offset page content below the fixed top chrome.
- * Mobile TopBar is h-12 (48px); desktop SiteHeader is h-14 (56px).
- * Use this as the first child of the page container.
+ * Spacer that pushes content below the fixed top chrome.
+ * Mobile TopBar = 56px (h-14), desktop SiteHeader = 64px (h-16).
  */
 export function TopBarOffset() {
-  return <div className="h-12 md:h-14" aria-hidden="true" />;
+  return <div className="h-14 md:h-16" aria-hidden="true" />;
 }

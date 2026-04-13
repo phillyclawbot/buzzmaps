@@ -31,55 +31,65 @@ export default async function LoginPage({
 
   return (
     <main
-      className="min-h-screen flex items-center justify-center px-4 py-10"
+      className="min-h-screen flex items-center justify-center px-6 py-20"
       style={{ background: "var(--bg)" }}
     >
       <TopBar title="Sign in" />
-      <div className="app-card w-full max-w-md p-6 mt-16 md:mt-14">
-        <h1 className="text-xl font-bold" style={{ color: "var(--fg)" }}>
-          Sign in to BuzzMaps
+      <div className="w-full max-w-lg text-center pt-14 md:pt-0">
+        <p className="eyebrow mb-3" style={{ color: "var(--brand)" }}>
+          The Library
+        </p>
+        <h1
+          className="font-display text-5xl md:text-6xl mb-4"
+          style={{ color: "var(--fg)", fontWeight: 500, lineHeight: 1 }}
+        >
+          Welcome back.
         </h1>
-        <p className="text-sm mt-1" style={{ color: "var(--fg-muted)" }}>
+        <p
+          className="caption mb-10 max-w-sm mx-auto"
+          style={{ color: "var(--fg-muted)" }}
+        >
           We&apos;ll email you a one-time sign-in link. No password needed.
         </p>
 
         {error === "expired" && (
-          <div className="mt-4">
+          <div className="mb-4 max-w-sm mx-auto text-left">
             <FormError>That sign-in link is expired or already used. Request a new one.</FormError>
           </div>
         )}
         {error === "invalid" && (
-          <div className="mt-4">
+          <div className="mb-4 max-w-sm mx-auto text-left">
             <FormError>That link is invalid.</FormError>
           </div>
         )}
         {error === "server" && (
-          <div className="mt-4">
+          <div className="mb-4 max-w-sm mx-auto text-left">
             <FormError>Something went wrong. Please try again.</FormError>
           </div>
         )}
 
-        <Suspense
-          fallback={
-            <div
-              className="mt-6 h-10 rounded-lg animate-pulse"
-              style={{ background: "var(--bg-sunken)" }}
-            />
-          }
-        >
-          <LoginForm next={next} />
-        </Suspense>
+        <div className="max-w-sm mx-auto text-left">
+          <Suspense
+            fallback={
+              <div
+                className="h-12 rounded animate-pulse"
+                style={{ background: "var(--bg-sunken)" }}
+              />
+            }
+          >
+            <LoginForm next={next} />
+          </Suspense>
+        </div>
 
-        <p className="mt-6 text-xs" style={{ color: "var(--fg-subtle)" }}>
+        <p className="dateline mt-10">
           By signing in you agree to use BuzzMaps responsibly.{" "}
           <Link
             href="/"
             className="hover:underline"
             style={{ color: "var(--brand)" }}
           >
-            Back to map
+            Back to the feed
           </Link>
-          .
         </p>
       </div>
     </main>

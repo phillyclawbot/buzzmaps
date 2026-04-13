@@ -7,146 +7,104 @@ import Logo from "./ui/Logo";
 type NavLink = { href: string; label: string; match: (p: string) => boolean };
 
 const LINKS: NavLink[] = [
-  { href: "/", label: "Explore", match: (p) => p === "/" },
+  { href: "/", label: "Feed", match: (p) => p === "/" },
+  { href: "/map", label: "Map", match: (p) => p === "/map" },
   { href: "/collections", label: "Collections", match: (p) => p.startsWith("/collections") },
-  { href: "/digest", label: "Digest", match: (p) => p.startsWith("/digest") },
-  { href: "/stats", label: "Stats", match: (p) => p.startsWith("/stats") },
+  { href: "/digest", label: "Dispatch", match: (p) => p.startsWith("/digest") },
+  { href: "/stats", label: "Index", match: (p) => p.startsWith("/stats") },
   { href: "/about", label: "About", match: (p) => p.startsWith("/about") },
 ];
 
 /**
- * Desktop-only persistent header. Hidden on mobile (the BottomNav takes
- * over). Also hides itself on pages that already render a TopBar of their
- * own, to avoid a double header.
- *
- * Pages that render their own chrome (static routes like /about, /digest,
- * etc.) opt out by setting <body data-chrome="page">, but by default we
- * render the header on the home map and anywhere with an undecorated body.
+ * Editorial masthead: wordmark on left, understated inline nav, small
+ * actions on the right. No gradients, no pills — newspaper masthead energy.
+ * Desktop only; BottomNav covers mobile.
  */
 export default function SiteHeader() {
   const pathname = usePathname();
 
-  // Home ("/") renders its own app-specific chrome (view toggle, filters,
-  // map search). Don't stack a second header on top of it. Every other route
-  // gets the persistent site header on desktop.
-  if (pathname === "/") return null;
+  // The map route renders its own app-specific chrome (view toggles,
+  // filters, in-map search). Don't stack a second header on top.
+  if (pathname === "/map") return null;
 
   return (
     <header
-      className="hidden md:flex fixed top-0 left-0 right-0 z-[900] h-14 items-center gap-6 px-6 border-b"
+      className="hidden md:block fixed top-0 left-0 right-0 z-[900]"
       style={{
-        background: "color-mix(in srgb, var(--bg-elevated) 92%, transparent)",
+        background: "color-mix(in srgb, var(--bg) 92%, transparent)",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
-        borderColor: "var(--border)",
+        borderBottom: "1px solid var(--border)",
       }}
       aria-label="Primary"
     >
-      <Logo />
+      <div className="max-w-[1400px] mx-auto h-16 flex items-baseline gap-10 px-8">
+        <Logo size="md" />
 
-      <nav className="flex items-center gap-1">
-        {LINKS.map((l) => {
-          const active = l.match(pathname);
-          return (
-            <Link
-              key={l.href}
-              href={l.href}
-              prefetch
-              className="px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
-              style={{
-                color: active ? "var(--brand)" : "var(--fg-muted)",
-                background: active ? "var(--brand-tint)" : "transparent",
-              }}
-              aria-current={active ? "page" : undefined}
-            >
-              {l.label}
-            </Link>
-          );
-        })}
-      </nav>
+        <nav className="flex items-baseline gap-6">
+          {LINKS.map((l) => {
+            const active = l.match(pathname);
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                prefetch
+                className="text-sm transition-colors"
+                style={{
+                  color: active ? "var(--fg)" : "var(--fg-muted)",
+                  fontWeight: active ? 600 : 400,
+                  textDecoration: active ? "underline" : "none",
+                  textUnderlineOffset: "6px",
+                  textDecorationThickness: "1px",
+                  textDecorationColor: "var(--brand)",
+                }}
+                aria-current={active ? "page" : undefined}
+              >
+                {l.label}
+              </Link>
+            );
+          })}
+        </nav>
 
-      <div className="ml-auto flex items-center gap-2">
-        <Link
-          href="/search"
-          prefetch
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-colors focus-ring"
-          style={{
-            color: "var(--fg-muted)",
-            background: "var(--bg-sunken)",
-            border: "1px solid var(--border)",
-          }}
-          aria-label="Search"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+        <div className="ml-auto flex items-baseline gap-6">
+          <Link
+            href="/search"
+            prefetch
+            className="text-sm transition-colors"
+            style={{ color: "var(--fg-muted)" }}
+            aria-label="Search"
           >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <span className="hidden lg:inline">Search</span>
-        </Link>
+            Search
+          </Link>
 
-        <Link
-          href="/submit"
-          prefetch
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-90 focus-ring"
-          style={{
-            backgroundImage: "linear-gradient(135deg, var(--brand), var(--brand-hover))",
-            color: "var(--fg-inverse)",
-          }}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+          <Link
+            href="/submit"
+            prefetch
+            className="text-sm transition-colors"
+            style={{ color: "var(--fg-muted)" }}
           >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Submit
-        </Link>
+            Submit
+          </Link>
 
-        <Link
-          href="/account"
-          prefetch
-          className="inline-flex items-center justify-center w-9 h-9 rounded-full transition-colors focus-ring"
-          style={{
-            background: pathname.startsWith("/account") ? "var(--brand-tint)" : "var(--bg-sunken)",
-            color: pathname.startsWith("/account") ? "var(--brand)" : "var(--fg-muted)",
-            border: "1px solid var(--border)",
-          }}
-          aria-label="Account"
-          aria-current={pathname.startsWith("/account") ? "page" : undefined}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+          <span
+            className="inline-block w-px h-4"
+            style={{ background: "var(--border)", transform: "translateY(2px)" }}
             aria-hidden="true"
+          />
+
+          <Link
+            href="/account"
+            prefetch
+            className="text-sm transition-colors"
+            style={{
+              color: pathname.startsWith("/account") ? "var(--fg)" : "var(--fg-muted)",
+              fontWeight: pathname.startsWith("/account") ? 600 : 400,
+            }}
+            aria-label="Account"
           >
-            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
-        </Link>
+            Account
+          </Link>
+        </div>
       </div>
     </header>
   );
