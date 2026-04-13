@@ -194,6 +194,14 @@ body {
   border-color: var(--brand);
 }
 
+/* ───── Back link (used in TopBar) ───── */
+.back-link {
+  color: var(--fg-muted);
+}
+.back-link:hover {
+  color: var(--brand);
+}
+
 /* ───── Utility classes used widely ───── */
 .app-card {
   background: var(--bg-elevated);

@@ -10,10 +10,7 @@ export default function BackLink({
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-1.5 text-sm font-medium transition-colors press-down"
-      style={{ color: "var(--fg-muted)" }}
-      onMouseEnter={(e) => (e.currentTarget.style.color = "var(--brand)")}
-      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--fg-muted)")}
+      className="back-link inline-flex items-center gap-1.5 text-sm font-medium transition-colors press-down"
     >
       <svg
         width="16"
