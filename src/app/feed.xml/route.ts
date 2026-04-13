@@ -22,9 +22,12 @@ interface FeedRow {
 }
 
 export async function GET() {
-  const sql = getDb();
   let rows: FeedRow[] = [];
   try {
+    // getDb() throws if DATABASE_URL is unset. Keep it inside the try so
+    // the feed still renders (empty entries) at build time when Vercel
+    // prerenders without DB access.
+    const sql = getDb();
     rows = (await sql`
       SELECT r.name, r.address, r.category, r.first_seen_at,
         (SELECT COUNT(*)::int FROM post_restaurants WHERE restaurant_id = r.id) AS mention_count
