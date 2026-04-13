@@ -1,6 +1,8 @@
 import { getDb } from "@/lib/db";
 import Link from "next/link";
 import TopBar from "@/components/ui/TopBar";
+import PostSource from "@/components/ui/PostSource";
+import { decodeHtmlEntities } from "@/lib/post-source";
 
 export const dynamic = "force-dynamic";
 
@@ -429,16 +431,13 @@ export default async function StatsPage() {
                 style={{ borderBottom: "1px solid var(--border)" }}
               >
                 <p className="dateline mb-1">
-                  {post.subreddit.match(/^[a-zA-Z0-9_]+$/)
-                    ? `r/${post.subreddit}`
-                    : post.subreddit}{" "}
-                  · {formatDate(post.scraped_at)}
+                  <PostSource subreddit={post.subreddit} /> · {formatDate(post.scraped_at)}
                 </p>
                 <p
                   className="font-serif text-lg leading-snug"
                   style={{ color: "var(--fg)" }}
                 >
-                  {post.title}
+                  {decodeHtmlEntities(post.title)}
                 </p>
               </li>
             ))}

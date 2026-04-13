@@ -5,7 +5,8 @@ import { notFound } from "next/navigation";
 import type { PlaceCategory } from "@/lib/types";
 import { COLLECTIONS, getCollectionById } from "@/lib/collections";
 import type { CollectionQuery } from "@/lib/collections";
-import { isPublication } from "@/lib/constants";
+import { decodeHtmlEntities, getPostHref } from "@/lib/post-source";
+import PostSource from "@/components/ui/PostSource";
 import { CollectionIcon, CategoryIcon, IconStar, IconChat, IconMap, IconExternalLink, IconUpArrow } from "@/lib/icons";
 import JsonLd from "@/components/JsonLd";
 import TopBar from "@/components/ui/TopBar";
@@ -467,11 +468,10 @@ export default async function CollectionDetailPage({
                   {posts.length > 0 && (
                     <div className="mt-5 ml-[80px] space-y-3">
                       {posts.slice(0, 3).map((post) => {
-                        const isPub = isPublication(post.subreddit);
                         return (
                           <a
                             key={post.id}
-                            href={isPub ? post.permalink : `https://reddit.com${post.permalink}`}
+                            href={getPostHref(post.subreddit, post.permalink)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="group flex items-baseline gap-3"
@@ -484,10 +484,10 @@ export default async function CollectionDetailPage({
                                 className="font-serif text-base leading-snug group-hover:text-[color:var(--brand)] transition-colors"
                                 style={{ color: "var(--fg)" }}
                               >
-                                {post.title}
+                                {decodeHtmlEntities(post.title)}
                               </p>
                               <p className="dateline mt-1">
-                                {isPub ? post.subreddit : `r/${post.subreddit}`} ·{" "}
+                                <PostSource subreddit={post.subreddit} /> ·{" "}
                                 {post.score} pts · {formatDate(post.created_utc)}
                               </p>
                             </div>

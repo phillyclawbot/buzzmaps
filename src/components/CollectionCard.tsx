@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { CollectionPlaceRow } from "@/lib/types";
+import { CollectionIcon } from "@/lib/icons";
 
 interface CollectionCardProps {
   id: string;
@@ -31,19 +32,22 @@ export default function CollectionCard({
       style={{ ["--stagger" as string]: index } as React.CSSProperties}
     >
       <div
-        className="pb-2 mb-4"
+        className="flex items-baseline justify-between pb-2 mb-4"
         style={{ borderBottom: "1px solid var(--fg)" }}
       >
+        <span style={{ color: "var(--fg-muted)" }}>
+          <CollectionIcon id={id} size={18} />
+        </span>
         <p className="dateline">
           {places.length} {places.length === 1 ? "place" : "places"}
         </p>
       </div>
 
       <h2
-        className="font-display text-2xl md:text-3xl mb-3 ink-underline inline"
+        className="font-display text-2xl md:text-3xl mb-3"
         style={{ color: "var(--fg)", fontWeight: 500, lineHeight: 1.1 }}
       >
-        {title}
+        <span className="ink-underline">{title}</span>
       </h2>
 
       <p

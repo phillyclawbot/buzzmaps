@@ -3,7 +3,9 @@
 import { useState } from "react";
 import type { RedditPostWithPlaces, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
-import { SENTIMENT_COLORS, isPublication } from "@/lib/constants";
+import { SENTIMENT_COLORS } from "@/lib/constants";
+import { decodeHtmlEntities } from "@/lib/post-source";
+import PostSource from "@/components/ui/PostSource";
 import { formatTimeAgo } from "@/lib/utils";
 
 function SentimentDot({ sentiment }: { sentiment: string }) {
@@ -245,18 +247,10 @@ function SidebarContent({
               <div className="flex items-start gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-900 truncate">
-                    {post.title.slice(0, 80)}
+                    {decodeHtmlEntities(post.title).slice(0, 80)}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
-                    {isPublication(post.subreddit) ? (
-                      <span className="text-xs px-1.5 py-0.5 bg-blue-50 rounded text-blue-600">
-                        📰 {post.subreddit}
-                      </span>
-                    ) : (
-                      <span className="text-xs px-1.5 py-0.5 bg-[#ff6b35]/20 rounded text-[#ff6b35]">
-                        r/{post.subreddit}
-                      </span>
-                    )}
+                    <PostSource subreddit={post.subreddit} variant="tag" />
                     <span className="text-xs text-slate-500">
                       {post.score} pts
                     </span>

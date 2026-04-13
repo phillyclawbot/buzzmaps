@@ -16,7 +16,8 @@ import {
 import MarkerClusterGroup from "react-leaflet-cluster";
 import type { Place, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
-import { CATEGORY_COLORS, SENTIMENT_COLORS, isPublication, isTicketingSource } from "@/lib/constants";
+import { CATEGORY_COLORS, SENTIMENT_COLORS } from "@/lib/constants";
+import { decodeHtmlEntities, getPostHref, getPostSource } from "@/lib/post-source";
 import { formatTimeAgo } from "@/lib/utils";
 import { NEIGHBOURHOODS, NEIGHBOURHOOD_GEOJSON_MAP, getNeighbourhood, computeFeatureCentroid } from "@/lib/neighbourhoods";
 
@@ -634,10 +635,8 @@ export default memo(function MapView({
                       )}
                       {/* Source badge */}
                       {r.posts?.[0] && (
-                        <div style={{ marginTop: "4px" }}>
-                          <span style={{ fontSize: "10px", background: "#f3e8ff", color: "#7c3aed", padding: "2px 8px", borderRadius: "6px", fontWeight: 600 }}>
-                            🎟 via {r.posts[0].subreddit}
-                          </span>
+                        <div style={{ marginTop: "4px", fontSize: "10px", color: "#7c3aed", fontWeight: 600 }}>
+                          via {getPostSource(r.posts[0].subreddit).label}
                         </div>
                       )}
                     </div>
@@ -649,7 +648,7 @@ export default memo(function MapView({
                       {r.posts.map((p: { id: number; title: string; subreddit: string; score: number; sentiment: string; created_utc: number; permalink: string; mentions_in_thread?: number }) => (
                         <a
                           key={p.id}
-                          href={isPublication(p.subreddit) ? p.permalink : `https://reddit.com${p.permalink}`}
+                          href={getPostHref(p.subreddit, p.permalink)}
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{ display: "flex", alignItems: "flex-start", gap: "6px", padding: "5px 4px", textDecoration: "none", borderRadius: "6px", marginBottom: "2px" }}
@@ -661,17 +660,10 @@ export default memo(function MapView({
                           }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: "11px", color: "#334155", lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }}>
-                              {p.title}
+                              {decodeHtmlEntities(p.title)}
                             </div>
                             <div style={{ fontSize: "10px", color: "#94a3b8", marginTop: "2px" }}>
-                              {isTicketingSource(p.subreddit) ? (
-                                <span style={{ background: "#f3e8ff", color: "#7c3aed", padding: "1px 6px", borderRadius: "4px", fontWeight: 600, marginRight: "4px" }}>🎟 {p.subreddit}</span>
-                              ) : isPublication(p.subreddit) ? (
-                                <span style={{ background: "#eff6ff", color: "#3b82f6", padding: "1px 6px", borderRadius: "4px", marginRight: "4px" }}>{p.subreddit}</span>
-                              ) : (
-                                `r/${p.subreddit} · `
-                              )}
-                              {p.score} pts · {formatTimeAgo(p.created_utc)}
+                              {getPostSource(p.subreddit).label} · {p.score} pts · {formatTimeAgo(p.created_utc)}
                               {(p.mentions_in_thread ?? 1) > 1 ? ` · ${p.mentions_in_thread}x` : ""}
                             </div>
                           </div>

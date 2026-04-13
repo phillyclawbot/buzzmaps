@@ -5,7 +5,9 @@ import type { Place, PlaceCategory } from "@/lib/types";
 import { CATEGORY_EMOJI } from "@/lib/types";
 import { NEIGHBOURHOODS, filterByNeighbourhood, getNeighbourhood } from "@/lib/neighbourhoods";
 import CheckinButton from "@/components/CheckinButton";
-import { CATEGORY_COLORS, SENTIMENT_COLORS, isPublication, isTicketingSource } from "@/lib/constants";
+import { CATEGORY_COLORS, SENTIMENT_COLORS } from "@/lib/constants";
+import { decodeHtmlEntities, getPostHref } from "@/lib/post-source";
+import PostSource from "@/components/ui/PostSource";
 import { formatTimeAgo } from "@/lib/utils";
 import { CategoryIcon, IconStar, IconChat } from "@/lib/icons";
 
@@ -285,7 +287,7 @@ function PlaceCard({
               {posts.map((p) => (
                 <a
                   key={p.id}
-                  href={isPublication(p.subreddit) ? p.permalink : `https://reddit.com${p.permalink}`}
+                  href={getPostHref(p.subreddit, p.permalink)}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
@@ -296,15 +298,9 @@ function PlaceCard({
                     style={{ background: SENTIMENT_COLORS[p.sentiment] || SENTIMENT_COLORS.neutral }}
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="truncate leading-relaxed">{p.title}</p>
+                    <p className="truncate leading-relaxed">{decodeHtmlEntities(p.title)}</p>
                     <p className="text-slate-400 text-[10px]">
-                      {isTicketingSource(p.subreddit) ? (
-                        <span className="inline-block px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded text-[10px] mr-1 font-medium">🎟 {p.subreddit}</span>
-                      ) : isPublication(p.subreddit) ? (
-                        <span className="inline-block px-1 py-0.5 bg-blue-50 text-blue-500 rounded text-[10px] mr-1">{p.subreddit}</span>
-                      ) : (
-                        <span>r/{p.subreddit} · </span>
-                      )}
+                      <PostSource subreddit={p.subreddit} variant="tag" className="mr-1" />
                       {p.score} pts · {formatTimeAgo(p.created_utc)}
                       {(p.mentions_in_thread ?? 1) > 1 && (
                         <span className="ml-1 text-[#ff6b35]">· {p.mentions_in_thread}x mentioned</span>

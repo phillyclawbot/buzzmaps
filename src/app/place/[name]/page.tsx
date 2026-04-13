@@ -11,7 +11,8 @@ import ReportButton from "@/components/ReportButton";
 import SaveButton from "@/components/SaveButton";
 import JsonLd from "@/components/JsonLd";
 import PostFilterList from "@/components/PostFilterList";
-import { CATEGORY_GRADIENT, SENTIMENT_COLORS, SENTIMENT_LABELS, isPublication } from "@/lib/constants";
+import { CATEGORY_GRADIENT, SENTIMENT_COLORS, SENTIMENT_LABELS } from "@/lib/constants";
+import { decodeHtmlEntities, getPostHref } from "@/lib/post-source";
 import { haversineDistance } from "@/lib/utils";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
 import { getSession } from "@/lib/auth";
@@ -444,17 +445,20 @@ export default async function PlacePage({
                       <span className="text-xs text-slate-400 w-6 text-right shrink-0">{monthPosts.length}</span>
                     </div>
                     <div className="pl-0 space-y-0.5">
-                      {monthPosts.map((p) => (
-                        <a
-                          key={p.id}
-                          href={isPublication(p.subreddit) ? p.permalink : `https://reddit.com${p.permalink}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block text-xs text-slate-500 hover:text-[#ff6b35] transition-colors truncate pl-[7.5rem]"
-                        >
-                          {p.title.length > 72 ? p.title.slice(0, 72) + "…" : p.title}
-                        </a>
-                      ))}
+                      {monthPosts.map((p) => {
+                        const decoded = decodeHtmlEntities(p.title);
+                        return (
+                          <a
+                            key={p.id}
+                            href={getPostHref(p.subreddit, p.permalink)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block text-xs text-slate-500 hover:text-[#ff6b35] transition-colors truncate pl-[7.5rem]"
+                          >
+                            {decoded.length > 72 ? decoded.slice(0, 72) + "…" : decoded}
+                          </a>
+                        );
+                      })}
                     </div>
                   </div>
                 );

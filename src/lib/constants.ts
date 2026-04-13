@@ -45,22 +45,24 @@ export const CATEGORY_COLORS: Record<PlaceCategory, string> = {
   other: "#64748b",
 };
 
-// Shared category filter options used in the top bar and list view
+// Shared category filter options used in the top bar and list view.
+// Labels are plain text — chrome should render an icon via CategoryIcon
+// when a glyph is needed, not an emoji. Keep this list emoji-free.
 export const CATEGORY_FILTERS = [
   { label: "All", value: "all" },
-  { label: "\u{1F37D}\uFE0F Food", value: "restaurant" },
-  { label: "\u{1F37A} Bar", value: "bar" },
-  { label: "\u2615 Cafe", value: "cafe" },
-  { label: "\u{1F3B5} Club", value: "club" },
-  { label: "\u{1F3B5} Venues", value: "venue" },
-  { label: "\u{1F333} Parks", value: "park" },
-  { label: "\u{1F6CD}\uFE0F Shops", value: "shop" },
-  { label: "\u{1F4AA} Gym", value: "gym" },
-  { label: "\u{1F96C} Markets", value: "market" },
-  { label: "\u{1F3DB}\uFE0F Museums", value: "museum" },
-  { label: "\u{1F3AA} Events", value: "event" },
-  { label: "\u{1F3D7}\uFE0F Landmarks", value: "landmark" },
-  { label: "\u{1F3A1} Attractions", value: "attraction" },
+  { label: "Food", value: "restaurant" },
+  { label: "Bars", value: "bar" },
+  { label: "Cafés", value: "cafe" },
+  { label: "Clubs", value: "club" },
+  { label: "Venues", value: "venue" },
+  { label: "Parks", value: "park" },
+  { label: "Shops", value: "shop" },
+  { label: "Gyms", value: "gym" },
+  { label: "Markets", value: "market" },
+  { label: "Museums", value: "museum" },
+  { label: "Events", value: "event" },
+  { label: "Landmarks", value: "landmark" },
+  { label: "Attractions", value: "attraction" },
 ] as const;
 
 // Valid categories for database storage

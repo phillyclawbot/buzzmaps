@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { isPublication } from "@/lib/constants";
+import { decodeHtmlEntities, getPostHref } from "@/lib/post-source";
+import PostSource from "@/components/ui/PostSource";
 
 interface Post {
   id: number;
@@ -126,11 +127,7 @@ export default function PostFilterList({ posts }: { posts: Post[] }) {
           {filtered.map((post) => (
             <a
               key={post.id}
-              href={
-                isPublication(post.subreddit)
-                  ? post.permalink
-                  : `https://reddit.com${post.permalink}`
-              }
+              href={getPostHref(post.subreddit, post.permalink)}
               target="_blank"
               rel="noopener noreferrer"
               className="block bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:border-[#ff6b35]/60 hover:shadow-md transition-all group"
@@ -149,18 +146,10 @@ export default function PostFilterList({ posts }: { posts: Post[] }) {
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-900 group-hover:text-[#ff6b35] transition-colors line-clamp-2">
-                    {post.title}
+                    {decodeHtmlEntities(post.title)}
                   </p>
                   <div className="flex items-center flex-wrap gap-2 mt-2">
-                    {isPublication(post.subreddit) ? (
-                      <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">
-                        📰 {post.subreddit}
-                      </span>
-                    ) : (
-                      <span className="text-xs bg-[#ff6b35]/10 text-[#ff6b35] px-2 py-0.5 rounded-full font-medium">
-                        r/{post.subreddit}
-                      </span>
-                    )}
+                    <PostSource subreddit={post.subreddit} variant="tag" />
                     <SentimentBadge sentiment={post.sentiment} />
                     <span className="text-xs text-slate-400">
                       ↑ {post.score} pts

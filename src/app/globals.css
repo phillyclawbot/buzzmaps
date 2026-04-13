@@ -200,14 +200,19 @@ body {
   color: var(--fg-subtle);
 }
 
-/* Ink underline — for editorial links */
+/* Editorial underline — uses native text-decoration so it sits on the
+   baseline regardless of line-height, font-variation, or descenders. */
 .ink-underline {
-  background-image: linear-gradient(to bottom, transparent 62%, var(--ink) 62%, var(--ink) 68%, transparent 68%);
-  background-repeat: no-repeat;
-  transition: background-size 200ms ease;
+  text-decoration: underline;
+  text-decoration-color: var(--ink);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 5px;
+  text-decoration-skip-ink: auto;
+  transition: text-decoration-color 200ms ease, text-decoration-thickness 200ms ease;
 }
 .ink-underline:hover {
-  background-image: linear-gradient(to bottom, transparent 62%, var(--brand) 62%, var(--brand) 68%, transparent 68%);
+  text-decoration-color: var(--brand);
+  text-decoration-thickness: 2px;
 }
 
 /* Hairline divider */

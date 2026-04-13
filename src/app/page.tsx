@@ -4,6 +4,9 @@ import { getDb } from "@/lib/db";
 import { COLLECTIONS } from "@/lib/collections";
 import { CATEGORY_FILTERS } from "@/lib/constants";
 import PlaceCard from "@/components/ui/PlaceCard";
+import PostSource from "@/components/ui/PostSource";
+import { decodeHtmlEntities, getPostHref } from "@/lib/post-source";
+import { CollectionIcon } from "@/lib/icons";
 import type { PlaceCategory } from "@/lib/types";
 
 export const revalidate = 600; // 10 minutes
@@ -209,18 +212,23 @@ async function HomeContent() {
             <Link
               key={c.id}
               href={`/collections/${c.id}`}
-              className="group block animate-fade-in-up"
-              style={{ ["--stagger" as string]: i } as React.CSSProperties}
+              className="group block animate-fade-in-up pb-4"
+              style={
+                {
+                  ["--stagger" as string]: i,
+                  borderBottom: "1px solid var(--border)",
+                } as React.CSSProperties
+              }
             >
               <div
-                className="text-4xl md:text-5xl mb-3"
-                style={{ filter: "saturate(0.85)" }}
+                className="mb-4"
+                style={{ color: "var(--fg-muted)" }}
                 aria-hidden="true"
               >
-                {c.emoji}
+                <CollectionIcon id={c.id} size={28} />
               </div>
               <h3
-                className="font-display text-lg md:text-xl leading-tight"
+                className="font-display text-lg md:text-xl leading-tight group-hover:text-[color:var(--brand)] transition-colors"
                 style={{ color: "var(--fg)", fontWeight: 500 }}
               >
                 {c.title}
@@ -278,7 +286,7 @@ async function HomeContent() {
             >
               From the Wires
             </h2>
-            <p className="dateline">Latest mentions across r/toronto & friends</p>
+            <p className="dateline">Latest mentions across Reddit and the local press</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2">
             {posts.map((post, i) => (
@@ -300,16 +308,16 @@ async function HomeContent() {
                 </span>
                 <div className="flex-1 min-w-0">
                   <a
-                    href={`https://reddit.com${post.permalink}`}
+                    href={getPostHref(post.subreddit, post.permalink)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-serif text-base leading-snug hover:text-[color:var(--brand)] transition-colors block"
                     style={{ color: "var(--fg)" }}
                   >
-                    {post.title}
+                    {decodeHtmlEntities(post.title)}
                   </a>
                   <p className="dateline mt-1">
-                    r/{post.subreddit}
+                    <PostSource subreddit={post.subreddit} />
                     {post.place_name && (
                       <>
                         {" "}·{" "}
@@ -379,7 +387,7 @@ async function HomeContent() {
               className="font-display text-xl md:text-2xl ink-underline"
               style={{ color: "var(--fg)", fontWeight: 500 }}
             >
-              {c.label.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "").trim()}
+              {c.label}
             </Link>
           ))}
         </div>
