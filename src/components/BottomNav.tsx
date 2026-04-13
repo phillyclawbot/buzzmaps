@@ -2,18 +2,30 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import MoreMenu from "./MoreMenu";
 
 export default function BottomNav() {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const [moreOpen, setMoreOpen] = useState(false);
-
-  // Close the "more" sheet on route change
-  useEffect(() => {
+  // Track the pathname we opened the sheet on. If the pathname changes
+  // after the sheet opened, close it. Doing the comparison in render (not
+  // in an effect) avoids the cascading-render lint rule.
+  const [openedAt, setOpenedAt] = useState<string | null>(null);
+  if (moreOpen && openedAt !== null && openedAt !== pathname) {
     setMoreOpen(false);
-  }, [pathname]);
+    setOpenedAt(null);
+  }
+
+  const openMore = () => {
+    setOpenedAt(pathname);
+    setMoreOpen(true);
+  };
+  const closeMore = () => {
+    setMoreOpen(false);
+    setOpenedAt(null);
+  };
 
   const switchView = (target: "map" | "list") => {
     if (isHome) {
@@ -106,7 +118,7 @@ export default function BottomNav() {
 
         <button
           type="button"
-          onClick={() => setMoreOpen(true)}
+          onClick={openMore}
           className="flex-1 flex flex-col items-center justify-center gap-0.5 press-down"
           style={itemStyle(moreOpen)}
           aria-label="More"
@@ -122,7 +134,7 @@ export default function BottomNav() {
         </button>
       </nav>
 
-      <MoreMenu open={moreOpen} onClose={() => setMoreOpen(false)} />
+      <MoreMenu open={moreOpen} onClose={closeMore} />
     </>
   );
 }
