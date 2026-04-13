@@ -3,7 +3,7 @@ import { getDb } from "@/lib/db";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { PlaceCategory } from "@/lib/types";
-import { getCollectionById } from "@/lib/collections";
+import { COLLECTIONS, getCollectionById } from "@/lib/collections";
 import type { CollectionQuery } from "@/lib/collections";
 import { isPublication } from "@/lib/constants";
 import { CollectionIcon, CategoryIcon, IconStar, IconChat, IconMap, IconExternalLink, IconUpArrow } from "@/lib/icons";
@@ -211,7 +211,6 @@ const COLLECTION_SORTS: { id: CollectionSort; label: string }[] = [
 ];
 
 // Editorial issue numbers — purely cosmetic, lookup by collection id.
-import { COLLECTIONS } from "@/lib/collections";
 const COLLECTIONS_INDEX: Record<string, string> = Object.fromEntries(
   COLLECTIONS.map((c, i) => [c.id, String(i + 1).padStart(2, "0")])
 );

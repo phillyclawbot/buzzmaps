@@ -282,11 +282,8 @@ async function HomeContent() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2">
             {posts.map((post, i) => (
-              <a
+              <div
                 key={post.id}
-                href={`https://reddit.com${post.permalink}`}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="group flex items-baseline gap-4 py-3 animate-fade-in-up"
                 style={
                   {
@@ -302,12 +299,15 @@ async function HomeContent() {
                   {timeAgo(post.created_utc)}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p
-                    className="font-serif text-base leading-snug group-hover:text-[color:var(--brand)] transition-colors"
+                  <a
+                    href={`https://reddit.com${post.permalink}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-serif text-base leading-snug hover:text-[color:var(--brand)] transition-colors block"
                     style={{ color: "var(--fg)" }}
                   >
                     {post.title}
-                  </p>
+                  </a>
                   <p className="dateline mt-1">
                     r/{post.subreddit}
                     {post.place_name && (
@@ -315,8 +315,8 @@ async function HomeContent() {
                         {" "}·{" "}
                         <Link
                           href={`/place/${encodeURIComponent(post.place_name)}`}
-                          className="text-[color:var(--brand)] hover:underline"
-                          onClick={(e) => e.stopPropagation()}
+                          className="hover:underline"
+                          style={{ color: "var(--brand)" }}
                         >
                           {post.place_name}
                         </Link>
@@ -324,7 +324,7 @@ async function HomeContent() {
                     )}
                   </p>
                 </div>
-              </a>
+              </div>
             ))}
           </div>
         </section>
