@@ -37,7 +37,6 @@ function Home() {
     }
     return "map";
   });
-  const [menuOpen, setMenuOpen] = useState(false);
   const [filter, setFilter] = useState<{ since: string; sentiment: string; category: string }>({
     since: "all",
     sentiment: "all",
@@ -55,10 +54,6 @@ function Home() {
   const [nearMeRadius, setNearMeRadius] = useState(2);
   const [searchOpen, setSearchOpen] = useState(false);
   const [trendingCollapsed, setTrendingCollapsed] = useState(false);
-  const [submitOpen, setSubmitOpen] = useState(false);
-  const [submitForm, setSubmitForm] = useState({ name: "", category: "other", address: "", reason: "", eventDate: "", ticketUrl: "" });
-  const [submitState, setSubmitState] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [submitError, setSubmitError] = useState("");
   const mapSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const highlightedPlace = useRef<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -79,7 +74,6 @@ function Home() {
       if (e.key === "/") {
         e.preventDefault();
         setSearchOpen(true);
-        setMenuOpen(false);
         setTimeout(() => searchInputRef.current?.focus(), 0);
       } else if (e.key === "Escape") {
         setSearchQuery("");
@@ -315,13 +309,13 @@ function Home() {
         {view === "map" && (
           <div className="flex md:hidden items-center gap-2.5 ml-2 overflow-x-auto no-scrollbar shrink">
             {[
-              { label: "Food", color: "#E05D36" },
-              { label: "Bar", color: "#8B5CF6" },
-              { label: "Cafe", color: "#D97706" },
-              { label: "Park", color: "#22c55e" },
-              { label: "Shop", color: "#06b6d4" },
-              { label: "Venue", color: "#3B82F6" },
-              { label: "Event", color: "#d946ef" },
+              { label: "Food", color: CATEGORY_COLORS.restaurant },
+              { label: "Bar", color: CATEGORY_COLORS.bar },
+              { label: "Cafe", color: CATEGORY_COLORS.cafe },
+              { label: "Park", color: CATEGORY_COLORS.park },
+              { label: "Shop", color: CATEGORY_COLORS.shop },
+              { label: "Venue", color: CATEGORY_COLORS.venue },
+              { label: "Event", color: CATEGORY_COLORS.event },
             ].map((c) => (
               <span key={c.label} className="flex items-center gap-1 shrink-0">
                 <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
@@ -416,32 +410,6 @@ function Home() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35]"
           />
-        </div>
-      )}
-
-      {/* Mobile "More" dropdown panel */}
-      {menuOpen && (
-        <div className="fixed top-[92px] left-0 right-0 z-[998] bg-white/95 backdrop-blur-sm border-b border-slate-200 p-3 flex flex-col gap-3 md:hidden">
-          <div className="flex gap-1 flex-wrap">
-            {filterButtons.map((f) => (
-              <button
-                key={f.since}
-                onClick={() => setFilter((prev) => ({ ...prev, since: f.since }))}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
-                  filter.since === f.since
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-400 hover:text-slate-600 bg-slate-50"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <a href="/about" className="px-3 py-2 text-sm text-slate-600 hover:text-[#ff6b35] transition-colors rounded-lg hover:bg-slate-50">About</a>
-            <a href="/stats" className="px-3 py-2 text-sm text-slate-600 hover:text-[#ff6b35] transition-colors rounded-lg hover:bg-slate-50">📊 Stats</a>
-            <a href="/digest" className="px-3 py-2 text-sm text-slate-600 hover:text-[#ff6b35] transition-colors rounded-lg hover:bg-slate-50">📬 Digest</a>
-          </div>
         </div>
       )}
 
@@ -662,156 +630,35 @@ function Home() {
         />
       )}
 
-      {/* Submit a Place Button — hidden on mobile (bottom nav has Submit) */}
-      <button
-        onClick={() => { setSubmitOpen(true); setSubmitState("idle"); setSubmitError(""); setSubmitForm({ name: "", category: "other", address: "", reason: "", eventDate: "", ticketUrl: "" }); }}
-        className="fixed z-50 bg-white border border-slate-200 shadow-lg rounded-full px-4 py-2 text-sm font-semibold text-slate-700 hover:border-[#ff6b35] hover:text-[#ff6b35] transition-all hidden md:flex items-center gap-1.5"
-        style={{ bottom: "44px", right: "12px" }}
+      {/* Submit a Place FAB — desktop only (BottomNav covers mobile). Routes to /submit. */}
+      <Link
+        href="/submit"
+        prefetch
+        className="fixed z-50 shadow-lg rounded-full px-4 py-2 text-sm font-semibold transition-all hidden md:flex items-center gap-1.5 press-down hover:opacity-90"
+        style={{
+          bottom: "24px",
+          right: "24px",
+          backgroundImage:
+            "linear-gradient(135deg, var(--brand), var(--brand-hover))",
+          color: "var(--fg-inverse)",
+        }}
       >
-        ➕ Submit a Place
-      </button>
-
-      {/* Submit a Place Modal */}
-      {submitOpen && (
-        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md">
-            {submitState === "success" ? (
-              <div className="p-6 flex flex-col items-center gap-4">
-                <span className="text-4xl">✓</span>
-                <p className="text-base font-semibold text-slate-800">Added to the map!</p>
-                <p className="text-sm text-slate-500 text-center">Thanks for contributing to BuzzMaps Toronto.</p>
-                <button
-                  onClick={() => { setSubmitOpen(false); fetchData(true); }}
-                  className="px-6 py-2 bg-[#ff6b35] text-white text-sm font-semibold rounded-full hover:bg-[#ea580c] transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            ) : (
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-base font-bold text-slate-800">Submit a Place</h2>
-                  <button onClick={() => setSubmitOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors text-lg leading-none">&times;</button>
-                </div>
-                <div className="flex flex-col gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Place Name <span className="text-[#ff6b35]">*</span></label>
-                    <input
-                      type="text"
-                      value={submitForm.name}
-                      onChange={(e) => setSubmitForm((f) => ({ ...f, name: e.target.value }))}
-                      placeholder="e.g. Bar Raval"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-base md:text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Category</label>
-                    <select
-                      value={submitForm.category}
-                      onChange={(e) => setSubmitForm((f) => ({ ...f, category: e.target.value }))}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 outline-none focus:border-[#ff6b35] bg-white"
-                    >
-                      <option value="restaurant">🍽️ Restaurant</option>
-                      <option value="bar">🍺 Bar</option>
-                      <option value="cafe">☕ Cafe</option>
-                      <option value="shop">🛍️ Shop</option>
-                      <option value="park">🌳 Park</option>
-                      <option value="gym">🏋️ Gym</option>
-                      <option value="venue">🎵 Venue</option>
-                      <option value="museum">🏛️ Museum</option>
-                      <option value="event">🎪 Event</option>
-                      <option value="other">📍 Other</option>
-                    </select>
-                  </div>
-                  {submitForm.category === "event" && (
-                    <>
-                      <div>
-                        <label className="block text-xs font-medium text-slate-600 mb-1">Event Date</label>
-                        <input
-                          type="datetime-local"
-                          value={submitForm.eventDate}
-                          onChange={(e) => setSubmitForm((f) => ({ ...f, eventDate: e.target.value }))}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 outline-none focus:border-[#ff6b35] bg-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-slate-600 mb-1">Ticket URL <span className="text-slate-400">(optional)</span></label>
-                        <input
-                          type="url"
-                          value={submitForm.ticketUrl}
-                          onChange={(e) => setSubmitForm((f) => ({ ...f, ticketUrl: e.target.value }))}
-                          placeholder="https://..."
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35]"
-                        />
-                      </div>
-                    </>
-                  )}
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Address <span className="text-[#ff6b35]">*</span></label>
-                    <input
-                      type="text"
-                      value={submitForm.address}
-                      onChange={(e) => setSubmitForm((f) => ({ ...f, address: e.target.value }))}
-                      placeholder="e.g. 123 Queen St W, Toronto"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-base md:text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Why do you recommend it? <span className="text-slate-400">(optional)</span></label>
-                    <textarea
-                      value={submitForm.reason}
-                      onChange={(e) => setSubmitForm((f) => ({ ...f, reason: e.target.value }))}
-                      placeholder="Why do you recommend it?"
-                      maxLength={300}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35] resize-none"
-                    />
-                    <p className="text-[10px] text-slate-400 mt-0.5 text-right">{submitForm.reason.length}/300</p>
-                  </div>
-                  {submitError && (
-                    <p className="text-xs text-red-500">{submitError}</p>
-                  )}
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      onClick={() => setSubmitOpen(false)}
-                      className="flex-1 px-4 py-2 border border-slate-200 rounded-full text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      disabled={submitState === "loading" || !submitForm.name.trim() || !submitForm.address.trim()}
-                      onClick={async () => {
-                        setSubmitState("loading");
-                        setSubmitError("");
-                        try {
-                          const res = await fetch("/api/places/submit", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify(submitForm),
-                          });
-                          const data = await res.json();
-                          if (!res.ok) {
-                            setSubmitError(data.error || "Something went wrong");
-                            setSubmitState("error");
-                          } else {
-                            setSubmitState("success");
-                          }
-                        } catch {
-                          setSubmitError("Network error. Please try again.");
-                          setSubmitState("error");
-                        }
-                      }}
-                      className="flex-1 px-4 py-2 bg-[#ff6b35] text-white rounded-full text-sm font-semibold hover:bg-[#ea580c] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {submitState === "loading" ? "Submitting..." : "Submit"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        Submit a Place
+      </Link>
 
       {/* Inline error retry banner */}
       {fetchError && (

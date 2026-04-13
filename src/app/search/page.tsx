@@ -4,6 +4,9 @@ import { getDb } from "@/lib/db";
 import { CATEGORY_EMOJI } from "@/lib/types";
 import type { PlaceCategory } from "@/lib/types";
 import JsonLd from "@/components/JsonLd";
+import TopBar from "@/components/ui/TopBar";
+import PlaceCard from "@/components/ui/PlaceCard";
+import EmptyState from "@/components/ui/EmptyState";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
 import { VALID_CATEGORIES } from "@/lib/constants";
 
@@ -25,11 +28,6 @@ interface Row {
   price_level: number | null;
   photo_url: string | null;
   mention_count: number;
-}
-
-function priceBadge(level: number | null): string {
-  if (!level || level < 1) return "";
-  return "$".repeat(Math.min(level, 4));
 }
 
 export async function generateMetadata({
@@ -205,24 +203,17 @@ export default async function SearchPage({
     : null;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       {itemListLd ? <JsonLd data={itemListLd} /> : null}
 
-      <div className="fixed top-0 left-0 right-0 h-12 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-50 flex items-center px-4 gap-3">
-        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#ff6b35] shrink-0" />
-          <span className="font-semibold text-sm tracking-tight bg-gradient-to-r from-[#ff6b35] to-[#f59e0b] bg-clip-text text-transparent">
-            BuzzMaps
-          </span>
-        </Link>
-        <span className="text-slate-300">·</span>
-        <span className="text-sm font-semibold text-slate-700">🔎 Search</span>
-      </div>
+      <TopBar title="🔎 Search" />
 
-      <div className="pt-16 pb-20 max-w-4xl mx-auto px-4">
+      <div className="pt-12 md:pt-14 pb-20 max-w-4xl mx-auto px-4 py-6 page-enter">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Search Toronto</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-2xl font-bold" style={{ color: "var(--fg)" }}>
+            Search Toronto
+          </h1>
+          <p className="text-sm mt-1" style={{ color: "var(--fg-muted)" }}>
             Find places by name, address, neighbourhood, or cuisine.
           </p>
         </div>
@@ -239,12 +230,22 @@ export default async function SearchPage({
             defaultValue={q}
             maxLength={MAX_Q}
             placeholder="Search places, cuisines, neighbourhoods…"
-            className="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35] transition-colors"
+            className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none focus-ring"
+            style={{
+              background: "var(--bg-elevated)",
+              color: "var(--fg)",
+              border: "1px solid var(--border)",
+            }}
           />
           <select
             name="category"
             defaultValue={category ?? ""}
-            className="px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 outline-none focus:border-[#ff6b35]"
+            className="px-3 py-2.5 rounded-xl text-sm outline-none focus-ring"
+            style={{
+              background: "var(--bg-elevated)",
+              color: "var(--fg)",
+              border: "1px solid var(--border)",
+            }}
           >
             <option value="">All categories</option>
             {VALID_CATEGORIES.map((c) => (
@@ -256,7 +257,12 @@ export default async function SearchPage({
           </select>
           <button
             type="submit"
-            className="px-5 py-2.5 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-[#ff6b35] to-[#ea580c] hover:opacity-90"
+            className="px-5 py-2.5 rounded-xl font-semibold text-sm press-down hover:opacity-90 transition-opacity"
+            style={{
+              backgroundImage:
+                "linear-gradient(135deg, var(--brand), var(--brand-hover))",
+              color: "var(--fg-inverse)",
+            }}
           >
             Search
           </button>
@@ -264,112 +270,76 @@ export default async function SearchPage({
 
         {/* Sort control only when we have results */}
         {total > 0 && (
-          <div className="flex flex-wrap gap-1 bg-white border border-slate-200 rounded-full p-1 mb-5 w-fit">
+          <div
+            className="flex flex-wrap gap-1 rounded-full p-1 mb-5 w-fit"
+            style={{
+              background: "var(--bg-elevated)",
+              border: "1px solid var(--border)",
+            }}
+          >
             {(
               [
                 { id: "mentions", label: "Most mentioned" },
                 { id: "rating", label: "Top rated" },
                 { id: "alpha", label: "A–Z" },
               ] as const
-            ).map((s) => (
-              <Link
-                key={s.id}
-                href={qs({ sort: s.id === "mentions" ? null : s.id, page: null })}
-                scroll={false}
-                className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${
-                  sort === s.id
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-600 hover:bg-slate-100"
-                }`}
-              >
-                {s.label}
-              </Link>
-            ))}
+            ).map((s) => {
+              const active = sort === s.id;
+              return (
+                <Link
+                  key={s.id}
+                  href={qs({
+                    sort: s.id === "mentions" ? null : s.id,
+                    page: null,
+                  })}
+                  scroll={false}
+                  className="text-xs font-medium px-3 py-1 rounded-full transition-colors"
+                  style={{
+                    background: active ? "var(--fg)" : "transparent",
+                    color: active ? "var(--fg-inverse)" : "var(--fg-muted)",
+                  }}
+                >
+                  {s.label}
+                </Link>
+              );
+            })}
           </div>
         )}
 
         {!hasQuery ? (
-          <div className="text-sm text-slate-500">
+          <p className="text-sm" style={{ color: "var(--fg-muted)" }}>
             Type something above to search.
-          </div>
+          </p>
         ) : total === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-            <span className="text-4xl mb-3">🔍</span>
-            <p className="text-sm font-medium text-slate-500">
-              No places matched {q ? <>&ldquo;{q}&rdquo;</> : "that filter"}.
-            </p>
-            <Link
-              href="/submit"
-              className="mt-4 px-5 py-2 bg-[#ff6b35] text-white text-xs font-semibold rounded-lg hover:bg-[#ea580c] transition-colors"
-            >
-              ➕ Submit a place
-            </Link>
-          </div>
+          <EmptyState
+            title={`No matches${q ? ` for "${q}"` : ""}`}
+            message="Try different keywords, or submit a place we don't know about yet."
+            action={
+              <Link
+                href="/submit"
+                className="inline-block px-5 py-2 rounded-lg text-xs font-semibold press-down hover:opacity-90 transition-opacity"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(135deg, var(--brand), var(--brand-hover))",
+                  color: "var(--fg-inverse)",
+                }}
+              >
+                ➕ Submit a place
+              </Link>
+            }
+          />
         ) : (
           <>
-            <p className="text-xs text-slate-500 mb-3">
+            <p
+              className="text-xs mb-3"
+              style={{ color: "var(--fg-muted)" }}
+            >
               {total} result{total !== 1 ? "s" : ""}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {rows.map((place) => {
-                const emoji = CATEGORY_EMOJI[place.category] ?? "📍";
-                const price = priceBadge(place.price_level);
-                return (
-                  <Link
-                    key={place.id}
-                    href={`/place/${encodeURIComponent(place.name)}`}
-                    className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#ff6b35]/40 transition-all overflow-hidden"
-                  >
-                    {place.photo_url && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={place.photo_url}
-                        alt={place.name}
-                        className="w-full h-32 object-cover"
-                      />
-                    )}
-                    <div className="p-4">
-                      <div className="flex items-start gap-2">
-                        {!place.photo_url && (
-                          <span className="text-xl shrink-0">{emoji}</span>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-bold text-slate-900 truncate">
-                            {place.name}
-                          </h3>
-                          <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                            {emoji}{" "}
-                            {place.category.charAt(0).toUpperCase() +
-                              place.category.slice(1)}
-                            {place.cuisine_type ? ` · ${place.cuisine_type}` : ""}
-                          </p>
-                          {place.address && (
-                            <p className="text-xs text-slate-400 truncate mt-0.5">
-                              {place.address}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center flex-wrap gap-2 mt-2">
-                        <span className="text-xs font-semibold bg-[#ff6b35]/10 text-[#ff6b35] px-2 py-0.5 rounded-full">
-                          {place.mention_count} mention
-                          {place.mention_count !== 1 ? "s" : ""}
-                        </span>
-                        {place.google_rating !== null && (
-                          <span className="text-xs text-slate-500">
-                            ⭐ {place.google_rating.toFixed(1)}
-                          </span>
-                        )}
-                        {price && (
-                          <span className="text-xs text-slate-500 font-semibold">
-                            {price}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+              {rows.map((place, i) => (
+                <PlaceCard key={place.id} place={place} stagger={i} />
+              ))}
             </div>
 
             {totalPages > 1 && (
@@ -380,25 +350,31 @@ export default async function SearchPage({
                 <Link
                   href={page > 1 ? qs({ page: page - 1 }) : "#"}
                   aria-disabled={page === 1}
-                  className={`px-3 py-1.5 rounded-full border ${
-                    page === 1
-                      ? "text-slate-300 border-slate-100 pointer-events-none"
-                      : "text-slate-600 border-slate-200 hover:border-[#ff6b35] hover:text-[#ff6b35]"
-                  }`}
+                  className="px-3 py-1.5 rounded-full border transition-colors"
+                  style={{
+                    color: page === 1 ? "var(--fg-faint)" : "var(--fg-muted)",
+                    borderColor: "var(--border)",
+                    pointerEvents: page === 1 ? "none" : undefined,
+                  }}
                 >
                   ← Prev
                 </Link>
-                <span className="text-xs text-slate-500 px-2">
+                <span
+                  className="text-xs px-2"
+                  style={{ color: "var(--fg-muted)" }}
+                >
                   Page {page} of {totalPages}
                 </span>
                 <Link
                   href={page < totalPages ? qs({ page: page + 1 }) : "#"}
                   aria-disabled={page === totalPages}
-                  className={`px-3 py-1.5 rounded-full border ${
-                    page === totalPages
-                      ? "text-slate-300 border-slate-100 pointer-events-none"
-                      : "text-slate-600 border-slate-200 hover:border-[#ff6b35] hover:text-[#ff6b35]"
-                  }`}
+                  className="px-3 py-1.5 rounded-full border transition-colors"
+                  style={{
+                    color:
+                      page === totalPages ? "var(--fg-faint)" : "var(--fg-muted)",
+                    borderColor: "var(--border)",
+                    pointerEvents: page === totalPages ? "none" : undefined,
+                  }}
                 >
                   Next →
                 </Link>

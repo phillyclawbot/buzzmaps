@@ -8,6 +8,7 @@ import type { CollectionQuery } from "@/lib/collections";
 import { isPublication } from "@/lib/constants";
 import { CollectionIcon, CategoryIcon, IconStar, IconChat, IconMap, IconExternalLink, IconUpArrow } from "@/lib/icons";
 import JsonLd from "@/components/JsonLd";
+import TopBar from "@/components/ui/TopBar";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -291,39 +292,21 @@ export default async function CollectionDetailPage({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <JsonLd data={itemListLd} />
       <JsonLd data={breadcrumbLd} />
-      {/* Top bar */}
-      <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-10 h-12 flex items-center px-4 gap-3">
-        <Link
-          href="/collections"
-          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-[#ff6b35] transition-colors font-medium"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M19 12H5M12 5l-7 7 7 7" />
-          </svg>
-          Collections
-        </Link>
-        <div className="ml-auto flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#ff6b35]" />
-          <span className="font-semibold text-sm tracking-tight bg-gradient-to-r from-[#ff6b35] to-[#f59e0b] bg-clip-text text-transparent">
-            BuzzMaps
-          </span>
-        </div>
-      </div>
+
+      <TopBar back="/collections" backLabel="Collections" title={collection.title} />
 
       {/* Hero header */}
-      <div className="bg-gradient-to-br from-[#ff6b35]/10 to-[#f59e0b]/5 border-b border-slate-200">
+      <div
+        className="pt-12 md:pt-14 border-b"
+        style={{
+          background:
+            "linear-gradient(135deg, var(--brand-tint) 0%, color-mix(in srgb, var(--brand) 4%, transparent) 100%)",
+          borderColor: "var(--border)",
+        }}
+      >
         <div className="max-w-2xl mx-auto px-4 py-8">
           <div className="flex items-start gap-4">
             <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shadow-sm shrink-0">

@@ -5,6 +5,7 @@ import type { PlaceCategory } from "@/lib/types";
 import type { CollectionPlaceRow } from "@/lib/types";
 import CollectionCard from "@/components/CollectionCard";
 import JsonLd from "@/components/JsonLd";
+import TopBar from "@/components/ui/TopBar";
 import { COLLECTIONS } from "@/lib/collections";
 import type { CollectionQuery } from "@/lib/collections";
 import { IconGrid } from "@/lib/icons";
@@ -131,47 +132,28 @@ export default async function CollectionsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <JsonLd data={collectionsLd} />
-      {/* Top bar */}
-      <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-10 h-12 flex items-center px-4 gap-3">
-        <Link
-          href="/"
-          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-[#ff6b35] transition-colors font-medium"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M19 12H5M12 5l-7 7 7 7" />
-          </svg>
-          Back to map
-        </Link>
-        <div className="ml-auto flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#ff6b35]" />
-          <span className="font-semibold text-sm tracking-tight bg-gradient-to-r from-[#ff6b35] to-[#f59e0b] bg-clip-text text-transparent">
-            BuzzMaps
-          </span>
-        </div>
-      </div>
+      <TopBar title="Collections" />
 
-      <div className="max-w-4xl mx-auto px-4 py-8 pb-20 page-enter">
+      <div className="pt-12 md:pt-14 max-w-4xl mx-auto px-4 py-8 pb-20 page-enter">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#ff6b35] to-[#f59e0b] flex items-center justify-center shadow-sm">
-              <IconGrid size={18} className="text-white" />
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shadow-sm"
+              style={{
+                backgroundImage:
+                  "linear-gradient(135deg, var(--brand), var(--brand-hover))",
+                color: "var(--fg-inverse)",
+              }}
+            >
+              <IconGrid size={18} />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">
+            <h1 className="text-2xl font-bold" style={{ color: "var(--fg)" }}>
               Collections
             </h1>
           </div>
-          <p className="text-slate-500 text-sm">
+          <p className="text-sm" style={{ color: "var(--fg-muted)" }}>
             Curated lists of Toronto&apos;s best places, powered by Reddit
             buzz.
           </p>

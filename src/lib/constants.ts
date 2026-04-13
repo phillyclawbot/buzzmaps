@@ -14,11 +14,13 @@ export const TORONTO_CENTER = {
   lng: -79.3832,
 } as const;
 
-// Brand colors
+// Brand colors — mirror the CSS token values in globals.css (--brand / --brand-hover).
+// Component code should prefer `var(--brand)` in className/style; these hex literals
+// exist only for places that need a raw value (e.g. Leaflet pin SVGs, inline <svg fill>).
 export const BRAND_PRIMARY = "#ff6b35";
 export const BRAND_PRIMARY_DARK = "#ea580c";
 
-// Sentiment colors used across map pins, sidebar, and list view
+// Sentiment colors — mirror --sent-pos-fill / --sent-neu / --sent-neg in globals.css.
 export const SENTIMENT_COLORS: Record<string, string> = {
   positive: "#22c55e",
   negative: "#ef4444",

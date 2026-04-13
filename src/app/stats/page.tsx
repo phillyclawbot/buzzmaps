@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/db";
 import Link from "next/link";
+import TopBar from "@/components/ui/TopBar";
 
 export const dynamic = "force-dynamic";
 
@@ -135,20 +136,10 @@ export default async function StatsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Top bar */}
-      <div className="fixed top-0 left-0 right-0 h-12 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-50 flex items-center px-4 gap-3">
-        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#ff6b35] shrink-0" />
-          <span className="font-semibold text-sm tracking-tight bg-gradient-to-r from-[#ff6b35] to-[#f59e0b] bg-clip-text text-transparent">
-            BuzzMaps
-          </span>
-        </Link>
-        <span className="text-slate-300">·</span>
-        <span className="text-sm font-semibold text-slate-700">📊 Stats</span>
-      </div>
+    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+      <TopBar title="📊 Stats" />
 
-      <div className="pt-16 pb-20 max-w-4xl mx-auto px-4 page-enter">
+      <div className="pt-12 md:pt-14 pb-20 max-w-4xl mx-auto px-4 py-6 page-enter">
         <h1 className="text-2xl font-bold text-slate-900 mb-1">📊 BuzzMaps Stats</h1>
         <p className="text-sm text-slate-500 mb-6">Toronto places as tracked by BuzzMaps</p>
 

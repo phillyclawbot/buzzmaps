@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import { getDb } from "@/lib/db";
-import Link from "next/link";
 import { CATEGORY_EMOJI } from "@/lib/types";
 import type { PlaceCategory } from "@/lib/types";
 import DigestSubscribeForm from "@/components/DigestSubscribeForm";
+import TopBar from "@/components/ui/TopBar";
 
 export const dynamic = "force-dynamic";
 
@@ -67,20 +67,10 @@ export default async function DigestPage() {
   const newPlaces = newPlacesRaw as NewPlace[];
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Top bar */}
-      <div className="fixed top-0 left-0 right-0 h-12 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-50 flex items-center px-4 gap-3">
-        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#ff6b35] shrink-0" />
-          <span className="font-semibold text-sm tracking-tight bg-gradient-to-r from-[#ff6b35] to-[#f59e0b] bg-clip-text text-transparent">
-            BuzzMaps
-          </span>
-        </Link>
-        <span className="text-slate-300">·</span>
-        <span className="text-sm font-semibold text-slate-700">📧 Weekly Digest</span>
-      </div>
+    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+      <TopBar title="📧 Weekly Digest" />
 
-      <div className="pt-16 pb-20 flex justify-center px-4">
+      <div className="pt-12 md:pt-14 pb-20 flex justify-center px-4">
         {/* Email wrapper — max 600px centered white card */}
         <div className="w-full max-w-[600px] bg-white rounded-2xl shadow-md overflow-hidden mt-4">
           {/* Email header */}

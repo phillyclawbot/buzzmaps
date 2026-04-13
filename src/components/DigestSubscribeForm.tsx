@@ -70,14 +70,21 @@ export default function DigestSubscribeForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={status === "loading"}
-          className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-900 placeholder-slate-300 outline-none focus:border-[#ff6b35] transition-colors disabled:opacity-60"
+          className="flex-1 px-3 py-2 text-sm rounded-lg outline-none transition-colors disabled:opacity-60 focus-ring"
+          style={{
+            background: "var(--bg-elevated)",
+            color: "var(--fg)",
+            border: "1px solid var(--border)",
+          }}
         />
         <button
           type="submit"
           disabled={status === "loading" || !email.trim()}
-          className="px-4 py-2 text-sm font-semibold text-white rounded-lg disabled:opacity-60 disabled:cursor-not-allowed"
+          className="px-4 py-2 text-sm font-semibold rounded-lg disabled:opacity-60 disabled:cursor-not-allowed press-down hover:opacity-90 transition-opacity"
           style={{
-            background: "linear-gradient(135deg, #ff6b35 0%, #ea580c 100%)",
+            backgroundImage:
+              "linear-gradient(135deg, var(--brand), var(--brand-hover))",
+            color: "var(--fg-inverse)",
           }}
         >
           {status === "loading" ? "…" : "Subscribe"}
@@ -85,14 +92,15 @@ export default function DigestSubscribeForm() {
       </form>
       {message ? (
         <p
-          className={`text-[11px] mt-2 ${
-            status === "error" ? "text-red-500" : "text-slate-500"
-          }`}
+          className="text-[11px] mt-2"
+          style={{
+            color: status === "error" ? "var(--sent-neg)" : "var(--fg-muted)",
+          }}
         >
           {message}
         </p>
       ) : (
-        <p className="text-[10px] text-slate-400 mt-2">
+        <p className="text-[10px] mt-2" style={{ color: "var(--fg-subtle)" }}>
           Confirmation link sent to your inbox. One email per week, easy to
           unsubscribe.
         </p>
