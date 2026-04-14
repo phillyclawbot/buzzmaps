@@ -196,4 +196,22 @@ export async function runMigrations() {
       PRIMARY KEY (user_id, restaurant_id)
     )
   `;
+
+  // Phase 8: split saves into wishlist vs visited. Idempotent add; the
+  // default ensures every legacy row shows up under "Want to go".
+  await sql`
+    DO $$ BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'saved_places' AND column_name = 'status'
+      ) THEN
+        ALTER TABLE saved_places
+          ADD COLUMN status TEXT NOT NULL DEFAULT 'wishlist';
+      END IF;
+    END $$
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS saved_places_user_status_idx
+      ON saved_places(user_id, status)
+  `;
 }

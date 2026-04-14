@@ -2,25 +2,39 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import type { SavedStatus } from "@/lib/saved-status";
 
-// Renders a "Save" toggle. Expects the server component to have determined
-// whether the viewer is signed in and (if so) whether this place is saved.
-// If signed-out, the button becomes a link to /login.
+/**
+ * Editorial save control with three visual states:
+ *
+ *   null (unsaved)   → "Save"  ← primary action adds to wishlist
+ *   "wishlist"       → "Saved · Mark visited"
+ *                        primary (underlined) removes · secondary promotes
+ *   "visited"        → "Visited · Remove"
+ *                        primary shows state · secondary deletes
+ *
+ * Plain text, ink-underline hover, no pills, no emoji. Inline checkmark
+ * SVG for the Visited state.
+ *
+ * Signed-out users see a "Sign in to save" link pointing back at the
+ * current page.
+ */
 export default function SaveButton({
   placeId,
   signedIn,
-  initiallySaved,
+  initialStatus = null,
 }: {
   placeId: number;
   signedIn: boolean;
-  initiallySaved: boolean;
+  /** Current saved status from the server; null if not saved */
+  initialStatus?: SavedStatus | null;
 }) {
-  const [saved, setSaved] = useState(initiallySaved);
+  const [status, setStatus] = useState<SavedStatus | null>(initialStatus);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    setSaved(initiallySaved);
-  }, [initiallySaved]);
+    setStatus(initialStatus);
+  }, [initialStatus]);
 
   if (!signedIn) {
     return (
@@ -28,50 +42,132 @@ export default function SaveButton({
         href={`/login?next=${encodeURIComponent(
           typeof window !== "undefined" ? window.location.pathname : "/"
         )}`}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all border bg-white border-slate-200 text-slate-600 hover:border-[#ff6b35] hover:text-[#ff6b35]"
+        className="eyebrow ink-underline"
+        style={{ color: "var(--fg-muted)" }}
       >
-        <span>🔖</span>
-        <span>Sign in to save</span>
+        Sign in to save
       </Link>
     );
   }
 
-  const toggle = async () => {
+  const doPost = async (next: SavedStatus) => {
     if (busy) return;
     setBusy(true);
     try {
-      if (saved) {
-        const res = await fetch(`/api/saved?placeId=${placeId}`, {
-          method: "DELETE",
-        });
-        if (res.ok) setSaved(false);
-      } else {
-        const res = await fetch("/api/saved", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ placeId }),
-        });
-        if (res.ok) setSaved(true);
-      }
+      const res = await fetch("/api/saved", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ placeId, status: next }),
+      });
+      if (res.ok) setStatus(next);
     } finally {
       setBusy(false);
     }
   };
 
+  const doDelete = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/saved?placeId=${placeId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) setStatus(null);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // UNSAVED
+  if (status === null) {
+    return (
+      <button
+        type="button"
+        onClick={() => doPost("wishlist")}
+        disabled={busy}
+        aria-label="Save to wishlist"
+        className="eyebrow ink-underline press-down disabled:opacity-50"
+        style={{ color: "var(--fg-muted)" }}
+      >
+        {busy ? "Saving…" : "Save"}
+      </button>
+    );
+  }
+
+  // WISHLIST: primary removes, secondary promotes to visited
+  if (status === "wishlist") {
+    return (
+      <span className="inline-flex items-baseline gap-4">
+        <button
+          type="button"
+          onClick={doDelete}
+          disabled={busy}
+          aria-label="Remove from wishlist"
+          className="eyebrow ink-underline press-down disabled:opacity-50"
+          style={{ color: "var(--brand)" }}
+        >
+          Saved
+        </button>
+        <span
+          aria-hidden="true"
+          className="dateline"
+          style={{ color: "var(--fg-faint)" }}
+        >
+          ·
+        </span>
+        <button
+          type="button"
+          onClick={() => doPost("visited")}
+          disabled={busy}
+          aria-label="Mark as visited"
+          className="eyebrow ink-underline press-down disabled:opacity-50"
+          style={{ color: "var(--fg-muted)" }}
+        >
+          Mark visited
+        </button>
+      </span>
+    );
+  }
+
+  // VISITED: primary shows state, secondary removes
   return (
-    <button
-      type="button"
-      onClick={toggle}
-      disabled={busy}
-      aria-pressed={saved}
-      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all border ${
-        saved
-          ? "bg-[#ff6b35]/10 border-[#ff6b35]/40 text-[#ff6b35]"
-          : "bg-white border-slate-200 text-slate-600 hover:border-[#ff6b35] hover:text-[#ff6b35]"
-      } ${busy ? "opacity-60 cursor-wait" : ""}`}
-    >
-      <span>{saved ? "⭐" : "🔖"}</span>
-      <span>{saved ? "Saved" : "Save"}</span>
-    </button>
+    <span className="inline-flex items-baseline gap-4">
+      <span
+        className="eyebrow inline-flex items-center gap-1.5"
+        style={{ color: "var(--sent-pos)" }}
+      >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+        Visited
+      </span>
+      <span
+        aria-hidden="true"
+        className="dateline"
+        style={{ color: "var(--fg-faint)" }}
+      >
+        ·
+      </span>
+      <button
+        type="button"
+        onClick={doDelete}
+        disabled={busy}
+        aria-label="Remove from visited"
+        className="eyebrow ink-underline press-down disabled:opacity-50"
+        style={{ color: "var(--fg-muted)" }}
+      >
+        Remove
+      </button>
+    </span>
   );
 }

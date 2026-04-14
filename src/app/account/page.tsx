@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: `Your account — ${SITE_NAME}`,
-  description: "Manage your saved places on BuzzMaps.",
+  description: "Your wishlist and visited places on BuzzMaps.",
   alternates: { canonical: `${SITE_URL}/account` },
   robots: { index: false, follow: false },
 };
@@ -25,6 +25,8 @@ interface SavedRow {
   category: PlaceCategory;
   google_rating: number | null;
   photo_url: string | null;
+  status: "wishlist" | "visited";
+  created_at: string;
 }
 
 export default async function AccountPage() {
@@ -33,20 +35,25 @@ export default async function AccountPage() {
 
   const sql = getDb();
   const saved = (await sql`
-    SELECT r.id, r.name, r.address, r.category, r.google_rating, r.photo_url
+    SELECT r.id, r.name, r.address, r.category, r.google_rating, r.photo_url,
+           sp.status, sp.created_at
     FROM saved_places sp
     JOIN restaurants r ON r.id = sp.restaurant_id
     WHERE sp.user_id = ${user.id}
     ORDER BY sp.created_at DESC
   `) as SavedRow[];
 
+  const wishlist = saved.filter((s) => s.status !== "visited");
+  const visited = saved.filter((s) => s.status === "visited");
+
   return (
     <main className="min-h-screen" style={{ background: "var(--bg)" }}>
       <TopBar title="Account" />
 
       <article className="pt-14 md:pt-16 pb-24 max-w-3xl mx-auto px-6 md:px-10 page-enter">
+        {/* Header */}
         <div
-          className="flex items-end justify-between pb-6 mb-10"
+          className="flex items-end justify-between pb-6 mb-12"
           style={{ borderBottom: "1px solid var(--fg)" }}
         >
           <div>
@@ -57,7 +64,7 @@ export default async function AccountPage() {
               className="font-display text-5xl md:text-6xl"
               style={{ color: "var(--fg)", fontWeight: 500, lineHeight: 1 }}
             >
-              Your saves
+              Your shelves.
             </h1>
             <p className="caption mt-3" style={{ color: "var(--fg-muted)" }}>
               Signed in as{" "}
@@ -67,41 +74,81 @@ export default async function AccountPage() {
           <LogoutButton />
         </div>
 
-        <div className="flex items-baseline justify-between mb-8">
-          <p className="dateline">
-            {saved.length} {saved.length === 1 ? "place" : "places"}
-          </p>
-        </div>
-
-        {saved.length === 0 ? (
-          <div className="text-center py-20">
+        {/* Section: Want to go */}
+        <section className="mb-16">
+          <div
+            className="flex items-baseline justify-between pb-3 mb-8"
+            style={{ borderBottom: "1px solid var(--fg)" }}
+          >
             <h2
-              className="font-display text-3xl md:text-4xl mb-3"
+              className="font-display text-2xl md:text-3xl"
               style={{ color: "var(--fg)", fontWeight: 500 }}
             >
-              Nothing saved yet.
+              Want to go
             </h2>
+            <p className="dateline">
+              {wishlist.length} {wishlist.length === 1 ? "place" : "places"}
+            </p>
+          </div>
+
+          {wishlist.length === 0 ? (
+            <div className="py-12 text-center">
+              <p
+                className="font-serif italic text-lg mb-6"
+                style={{ color: "var(--fg-muted)" }}
+              >
+                Your wishlist is empty.
+              </p>
+              <Link
+                href="/"
+                className="font-display text-xl ink-underline"
+                style={{ color: "var(--brand)", fontWeight: 500 }}
+              >
+                Browse the feed →
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {wishlist.map((p, i) => (
+                <PlaceCard key={p.id} place={p} variant="row" stagger={i} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Section: Visited */}
+        <section>
+          <div
+            className="flex items-baseline justify-between pb-3 mb-8"
+            style={{ borderBottom: "1px solid var(--fg)" }}
+          >
+            <h2
+              className="font-display text-2xl md:text-3xl"
+              style={{ color: "var(--fg)", fontWeight: 500 }}
+            >
+              Visited
+            </h2>
+            <p className="dateline">
+              {visited.length} {visited.length === 1 ? "place" : "places"}
+            </p>
+          </div>
+
+          {visited.length === 0 ? (
             <p
-              className="caption max-w-sm mx-auto mb-8"
+              className="font-serif italic text-lg py-12 text-center"
               style={{ color: "var(--fg-muted)" }}
             >
-              Tap the heart on any place to keep it here.
+              Nothing marked visited yet. Use &ldquo;Mark visited&rdquo; on any
+              place page.
             </p>
-            <Link
-              href="/"
-              className="font-display text-xl ink-underline"
-              style={{ color: "var(--brand)", fontWeight: 500 }}
-            >
-              Start reading the feed →
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {saved.map((p, i) => (
-              <PlaceCard key={p.id} place={p} variant="row" stagger={i} />
-            ))}
-          </div>
-        )}
+          ) : (
+            <div className="space-y-8">
+              {visited.map((p, i) => (
+                <PlaceCard key={p.id} place={p} variant="row" stagger={i} />
+              ))}
+            </div>
+          )}
+        </section>
       </article>
     </main>
   );

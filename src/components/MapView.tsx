@@ -51,23 +51,6 @@ const PIN_COLORS: Record<PlaceCategory, string> = {
 };
 
 // Simple stroke icons for popup display (24x24 viewBox)
-const POPUP_ICON_PATH: Record<string, string> = {
-  restaurant: 'M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2M7 2v20M21 15V2a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3v7',
-  bar:        'M8 2h8l-3 7a3 3 0 01-2 0L8 2zm4 7v13m-3 0h6',
-  cafe:       'M17 8h1a4 4 0 010 8h-1M3 8h14v9a4 4 0 01-4 4H7a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3',
-  club:       'M9 18V5l12-2v13M6 15a3 3 0 100 6 3 3 0 000-6zM18 13a3 3 0 100 6 3 3 0 000-6z',
-  shop:       'M6 2L3 7v13a2 2 0 002 2h14a2 2 0 002-2V7l-3-5H6zM3 7h18M16 11a4 4 0 01-8 0',
-  park:       'M12 22V8M5 12l7-10 7 10H5zM7 17l5-7 5 7H7z',
-  gym:        'M6 5v14M18 5v14M6 12h12M2 8v8M22 8v8',
-  venue:      'M2 20h20M4 20V10M20 20V10M12 4L2 10h20L12 4zM8 14v4M12 14v4M16 14v4',
-  market:     'M9 21a1 1 0 100 2 1 1 0 000-2zM20 21a1 1 0 100 2 1 1 0 000-2zM1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6',
-  museum:     'M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6',
-  event:      'M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z',
-  landmark:   'M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6',
-  attraction: 'M12 2a10 10 0 110 20 10 10 0 010-20zm0 4a6 6 0 110 12 6 6 0 010-12zm0 4a2 2 0 110 4 2 2 0 010-4z',
-  other:      'M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0zM12 7a3 3 0 100 6 3 3 0 000-6z',
-};
-
 function createPinIcon(category: PlaceCategory, mentionCount: number, isRecent: boolean) {
   const color = PIN_COLORS[category] || PIN_COLORS.other;
   const showPulse = isRecent && mentionCount >= 2;
@@ -525,7 +508,6 @@ export default memo(function MapView({
           const category = r.category || "other";
           const mentionCount = Number(r.mention_count);
           const isRecent = Date.now() / 1000 - r.latest_mention < 86400;
-          const color = CATEGORY_COLORS[category] || CATEGORY_COLORS.other;
 
           return (
             <Marker
@@ -533,116 +515,182 @@ export default memo(function MapView({
               position={[r.lat, r.lng]}
               icon={createPinIcon(category, mentionCount, isRecent)}
             >
-              <Popup maxWidth={320} minWidth={250}>
-                <div style={{ fontFamily: "inherit", lineHeight: 1.4 }}>
-                  {/* Header with photo */}
-                  <div style={{
-                    borderRadius: "10px 10px 0 0",
-                    margin: "-4px -4px 0",
-                    overflow: "hidden",
-                  }}>
-                    {r.photo_url && (
-                      <a href={`/place/${encodeURIComponent(r.name)}`} style={{ display: "block", position: "relative" }}>
-                        <img
-                          src={r.photo_url}
-                          alt={r.name}
-                          style={{ width: "100%", height: "110px", objectFit: "cover", display: "block" }}
-                        />
-                        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "32px", background: "linear-gradient(to top, rgba(255,255,255,0.9), transparent)" }} />
-                      </a>
-                    )}
-                  </div>
+              <Popup maxWidth={340} minWidth={260}>
+                <div style={{ fontFamily: "var(--font-sans)", lineHeight: 1.4, color: "var(--fg)" }}>
+                  {/* Hero photo */}
+                  {r.photo_url && (
+                    <a
+                      href={`/place/${encodeURIComponent(r.name)}`}
+                      style={{ display: "block", margin: "-4px -4px 0" }}
+                    >
+                      <img
+                        src={r.photo_url}
+                        alt={r.name}
+                        style={{
+                          width: "100%",
+                          height: "120px",
+                          objectFit: "cover",
+                          display: "block",
+                          borderBottom: "1px solid var(--border)",
+                        }}
+                      />
+                    </a>
+                  )}
 
-                  {/* Title + stats */}
-                  <div style={{ padding: "10px 10px 0" }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: "8px", marginBottom: "6px" }}>
-                      <div style={{
-                        width: "28px", height: "28px", borderRadius: "8px", flexShrink: 0,
-                        background: `${color}12`, border: `1.5px solid ${color}30`,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                      }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d={POPUP_ICON_PATH[category] || POPUP_ICON_PATH.other} />
-                        </svg>
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: "14px", fontWeight: 700, color: "#1e293b", lineHeight: 1.2 }}>
-                          {r.name}
-                        </div>
-                        {r.cuisine_type && (
-                          <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}>{r.cuisine_type}</div>
-                        )}
-                      </div>
+                  {/* Title + eyebrow */}
+                  <div style={{ padding: "12px 14px 10px" }}>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-sans)",
+                        fontSize: "10px",
+                        fontWeight: 600,
+                        letterSpacing: "0.14em",
+                        textTransform: "uppercase",
+                        color: "var(--brand)",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      {String(category).toUpperCase()}
                       {isRecent && mentionCount >= 2 && (
-                        <span style={{
-                          fontSize: "9px", fontWeight: 700, background: color, color: "white",
-                          padding: "2px 7px", borderRadius: "999px", whiteSpace: "nowrap", flexShrink: 0,
-                        }}>Trending</span>
-                      )}
-                    </div>
-
-                    {/* Stats chips */}
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
-                      {r.google_rating && (
-                        <span style={{
-                          display: "inline-flex", alignItems: "center", gap: "3px",
-                          fontSize: "11px", fontWeight: 600, color: "#374151",
-                          background: "#fef9c3", padding: "2px 8px", borderRadius: "6px",
-                        }}>
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                          {r.google_rating.toFixed(1)}
+                        <span
+                          style={{
+                            fontFamily: "var(--font-serif)",
+                            fontStyle: "italic",
+                            fontWeight: 400,
+                            letterSpacing: "normal",
+                            textTransform: "none",
+                            color: "var(--fg-muted)",
+                            marginLeft: "6px",
+                          }}
+                        >
+                          , trending
                         </span>
                       )}
-                      <span style={{
-                        display: "inline-flex", alignItems: "center", gap: "3px",
-                        background: `${color}10`, color, fontWeight: 600, fontSize: "11px",
-                        padding: "2px 8px", borderRadius: "6px",
-                      }}>
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                        {r.mention_count} mention{Number(r.mention_count) !== 1 ? "s" : ""}
-                      </span>
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-serif)",
+                        fontSize: "20px",
+                        fontWeight: 500,
+                        color: "var(--fg)",
+                        lineHeight: 1.15,
+                        letterSpacing: "-0.01em",
+                      }}
+                    >
+                      {r.name}
+                    </div>
+                    {r.cuisine_type && (
+                      <div
+                        style={{
+                          fontFamily: "var(--font-serif)",
+                          fontStyle: "italic",
+                          fontSize: "13px",
+                          color: "var(--fg-muted)",
+                          marginTop: "3px",
+                        }}
+                      >
+                        {r.cuisine_type}
+                      </div>
+                    )}
+
+                    {/* Stats — mono dateline row */}
+                    <div
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "11px",
+                        letterSpacing: "0.04em",
+                        color: "var(--fg-subtle)",
+                        marginTop: "8px",
+                      }}
+                    >
+                      {r.google_rating ? `${r.google_rating.toFixed(1)}★` : ""}
+                      {r.google_rating ? " · " : ""}
+                      {r.mention_count} {Number(r.mention_count) !== 1 ? "mentions" : "mention"}
                     </div>
                   </div>
 
                   {/* Event metadata OR mentions list */}
                   {r.category === "event" ? (
-                    <div style={{ padding: "0 10px 8px", borderTop: "1px solid #f1f5f9", paddingTop: "8px" }}>
+                    <div
+                      style={{
+                        padding: "10px 14px",
+                        borderTop: "1px solid var(--border)",
+                      }}
+                    >
                       {r.metadata?.event_date && (
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "5px" }}>
-                          <span style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", minWidth: "44px" }}>Date</span>
-                          <span style={{ fontSize: "11px", color: "#334155", fontWeight: 600 }}>
-                            {new Date(r.metadata.event_date).toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-                          </span>
+                        <div
+                          style={{
+                            fontFamily: "var(--font-serif)",
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color: "var(--fg)",
+                            marginBottom: "2px",
+                          }}
+                        >
+                          {new Date(r.metadata.event_date).toLocaleDateString(
+                            "en-CA",
+                            {
+                              weekday: "long",
+                              month: "long",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            }
+                          )}
                         </div>
                       )}
                       {r.metadata?.venue_name && (
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "5px" }}>
-                          <span style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", minWidth: "44px" }}>Venue</span>
-                          <span style={{ fontSize: "11px", color: "#334155" }}>{r.metadata.venue_name}</span>
+                        <div
+                          style={{
+                            fontFamily: "var(--font-serif)",
+                            fontStyle: "italic",
+                            fontSize: "13px",
+                            color: "var(--fg-muted)",
+                          }}
+                        >
+                          {r.metadata.venue_name}
                         </div>
                       )}
-                      {r.metadata?.genre && (
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "5px" }}>
-                          <span style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", minWidth: "44px" }}>Genre</span>
-                          <span style={{ fontSize: "10px", background: "#f3e8ff", color: "#7c3aed", padding: "1px 7px", borderRadius: "999px", fontWeight: 600 }}>{r.metadata.genre}</span>
-                        </div>
-                      )}
-                      {r.metadata?.price_range && (
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "5px" }}>
-                          <span style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", minWidth: "44px" }}>Price</span>
-                          <span style={{ fontSize: "11px", color: "#334155" }}>{r.metadata.price_range}</span>
-                        </div>
-                      )}
-                      {/* Source badge */}
-                      {r.posts?.[0] && (
-                        <div style={{ marginTop: "4px", fontSize: "10px", color: "#7c3aed", fontWeight: 600 }}>
-                          via {getPostSource(r.posts[0].subreddit).label}
-                        </div>
-                      )}
+                      <div
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: "11px",
+                          color: "var(--fg-subtle)",
+                          marginTop: "6px",
+                          letterSpacing: "0.04em",
+                        }}
+                      >
+                        {r.metadata?.genre && <>{r.metadata.genre}</>}
+                        {r.metadata?.genre && r.metadata?.price_range && " · "}
+                        {r.metadata?.price_range && <>{r.metadata.price_range}</>}
+                        {r.posts?.[0] && (
+                          <>
+                            {(r.metadata?.genre || r.metadata?.price_range) && " · "}
+                            via {getPostSource(r.posts[0].subreddit).label}
+                          </>
+                        )}
+                      </div>
                     </div>
                   ) : r.posts?.length ? (
-                    <div style={{ maxHeight: "130px", overflowY: "auto", padding: "0 10px", marginBottom: "8px" }}>
-                      <div style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "5px", borderTop: "1px solid #f1f5f9", paddingTop: "8px" }}>
+                    <div
+                      style={{
+                        padding: "4px 14px 8px",
+                        borderTop: "1px solid var(--border)",
+                        maxHeight: "160px",
+                        overflowY: "auto",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontFamily: "var(--font-sans)",
+                          fontSize: "10px",
+                          fontWeight: 600,
+                          letterSpacing: "0.14em",
+                          textTransform: "uppercase",
+                          color: "var(--fg-subtle)",
+                          padding: "8px 0 6px",
+                        }}
+                      >
                         Mentions
                       </div>
                       {r.posts.map((p: { id: number; title: string; subreddit: string; score: number; sentiment: string; created_utc: number; permalink: string; mentions_in_thread?: number }) => (
@@ -651,90 +699,210 @@ export default memo(function MapView({
                           href={getPostHref(p.subreddit, p.permalink)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ display: "flex", alignItems: "flex-start", gap: "6px", padding: "5px 4px", textDecoration: "none", borderRadius: "6px", marginBottom: "2px" }}
+                          style={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: "8px",
+                            padding: "6px 0",
+                            textDecoration: "none",
+                            borderTop: "1px solid var(--border)",
+                          }}
                         >
-                          <span style={{
-                            display: "inline-block", width: "7px", height: "7px", borderRadius: "50%",
-                            marginTop: "4px", flexShrink: 0,
-                            background: SENTIMENT_COLORS[p.sentiment] || SENTIMENT_COLORS.neutral,
-                          }} />
+                          <span
+                            style={{
+                              display: "inline-block",
+                              width: "7px",
+                              height: "7px",
+                              borderRadius: "50%",
+                              marginTop: "6px",
+                              flexShrink: 0,
+                              background:
+                                SENTIMENT_COLORS[p.sentiment] ||
+                                SENTIMENT_COLORS.neutral,
+                            }}
+                          />
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: "11px", color: "#334155", lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }}>
+                            <div
+                              style={{
+                                fontFamily: "var(--font-serif)",
+                                fontSize: "13px",
+                                color: "var(--fg)",
+                                lineHeight: 1.35,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                display: "-webkit-box",
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: "vertical",
+                              }}
+                            >
                               {decodeHtmlEntities(p.title)}
                             </div>
-                            <div style={{ fontSize: "10px", color: "#94a3b8", marginTop: "2px" }}>
-                              {getPostSource(p.subreddit).label} · {p.score} pts · {formatTimeAgo(p.created_utc)}
-                              {(p.mentions_in_thread ?? 1) > 1 ? ` · ${p.mentions_in_thread}x` : ""}
+                            <div
+                              style={{
+                                fontFamily: "var(--font-mono)",
+                                fontSize: "10px",
+                                color: "var(--fg-subtle)",
+                                marginTop: "3px",
+                                letterSpacing: "0.04em",
+                              }}
+                            >
+                              {getPostSource(p.subreddit).label} · {p.score} pts ·{" "}
+                              {formatTimeAgo(p.created_utc)}
+                              {(p.mentions_in_thread ?? 1) > 1
+                                ? ` · ${p.mentions_in_thread}×`
+                                : ""}
                             </div>
                           </div>
                         </a>
                       ))}
                     </div>
                   ) : (
-                    <div style={{ fontSize: "11px", color: "#94a3b8", textAlign: "center", padding: "10px", borderTop: "1px solid #f1f5f9", margin: "0 10px 8px" }}>
+                    <div
+                      style={{
+                        padding: "12px 14px",
+                        borderTop: "1px solid var(--border)",
+                        fontFamily: "var(--font-serif)",
+                        fontStyle: "italic",
+                        fontSize: "13px",
+                        color: "var(--fg-muted)",
+                        textAlign: "center",
+                      }}
+                    >
                       No mentions yet
                     </div>
                   )}
 
-                  {/* Upcoming Events at this venue */}
-                  {r.category !== "event" && (venueEvents.get(r.id)?.length ?? 0) > 0 && (
-                    <div style={{ padding: "0 10px 8px", borderTop: "1px solid #f1f5f9", paddingTop: "8px" }}>
-                      <div style={{ fontSize: "10px", fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "6px" }}>
-                        🎟 Upcoming Events ({venueEvents.get(r.id)!.length})
-                      </div>
-                      {venueEvents.get(r.id)!.slice(0, 4).map((ev) => (
-                        <div key={ev.id} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "4px 0", borderBottom: "1px solid #f8fafc" }}>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: "11px", fontWeight: 600, color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {ev.name}
+                  {/* Upcoming events at this venue */}
+                  {r.category !== "event" &&
+                    (venueEvents.get(r.id)?.length ?? 0) > 0 && (
+                      <div
+                        style={{
+                          padding: "4px 14px 8px",
+                          borderTop: "1px solid var(--border)",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontFamily: "var(--font-sans)",
+                            fontSize: "10px",
+                            fontWeight: 600,
+                            letterSpacing: "0.14em",
+                            textTransform: "uppercase",
+                            color: "var(--brand)",
+                            padding: "8px 0 6px",
+                          }}
+                        >
+                          Upcoming ({venueEvents.get(r.id)!.length})
+                        </div>
+                        {venueEvents.get(r.id)!.slice(0, 4).map((ev) => (
+                          <div
+                            key={ev.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "baseline",
+                              gap: "10px",
+                              padding: "6px 0",
+                              borderTop: "1px solid var(--border)",
+                            }}
+                          >
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div
+                                style={{
+                                  fontFamily: "var(--font-serif)",
+                                  fontSize: "13px",
+                                  color: "var(--fg)",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {ev.name}
+                              </div>
+                              <div
+                                style={{
+                                  fontFamily: "var(--font-mono)",
+                                  fontSize: "10px",
+                                  color: "var(--fg-subtle)",
+                                  marginTop: "2px",
+                                  letterSpacing: "0.04em",
+                                }}
+                              >
+                                {ev.metadata?.event_date
+                                  ? new Date(
+                                      ev.metadata.event_date
+                                    ).toLocaleDateString("en-CA", {
+                                      weekday: "short",
+                                      month: "short",
+                                      day: "numeric",
+                                    })
+                                  : ""}
+                                {ev.metadata?.genre ? ` · ${ev.metadata.genre}` : ""}
+                              </div>
                             </div>
-                            <div style={{ fontSize: "10px", color: "#94a3b8", marginTop: "1px" }}>
-                              {ev.metadata?.event_date
-                                ? new Date(ev.metadata.event_date).toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric" })
-                                : ""}
-                              {ev.metadata?.genre ? ` · ${ev.metadata.genre}` : ""}
-                            </div>
+                            {ev.metadata?.ticket_url && (
+                              <a
+                                href={ev.metadata.ticket_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  flexShrink: 0,
+                                  fontFamily: "var(--font-sans)",
+                                  fontSize: "10px",
+                                  fontWeight: 600,
+                                  letterSpacing: "0.12em",
+                                  textTransform: "uppercase",
+                                  color: "var(--brand)",
+                                  textDecoration: "underline",
+                                  textUnderlineOffset: "3px",
+                                }}
+                              >
+                                Tickets →
+                              </a>
+                            )}
                           </div>
-                          {ev.metadata?.ticket_url && (
-                            <a
-                              href={ev.metadata.ticket_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                flexShrink: 0, fontSize: "9px", fontWeight: 700,
-                                background: "linear-gradient(135deg, #7c3aed, #9333ea)",
-                                color: "white", padding: "3px 7px", borderRadius: "6px",
-                                textDecoration: "none", whiteSpace: "nowrap",
-                              }}
-                            >
-                              Tickets
-                            </a>
-                          )}
-                        </div>
-                      ))}
-                      {(venueEvents.get(r.id)?.length ?? 0) > 4 && (
-                        <div style={{ fontSize: "10px", color: "#94a3b8", textAlign: "center", paddingTop: "4px" }}>
-                          +{(venueEvents.get(r.id)?.length ?? 0) - 4} more events
-                        </div>
-                      )}
-                    </div>
-                  )}
+                        ))}
+                        {(venueEvents.get(r.id)?.length ?? 0) > 4 && (
+                          <div
+                            style={{
+                              fontFamily: "var(--font-mono)",
+                              fontSize: "10px",
+                              color: "var(--fg-subtle)",
+                              paddingTop: "4px",
+                              letterSpacing: "0.04em",
+                            }}
+                          >
+                            + {(venueEvents.get(r.id)?.length ?? 0) - 4} more
+                          </div>
+                        )}
+                      </div>
+                    )}
 
-                  {/* Action buttons */}
-                  <div style={{ display: "flex", gap: "6px", padding: "0 10px 10px", borderTop: "1px solid #f1f5f9", paddingTop: "10px" }}>
+                  {/* Hairline footer: actions */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      padding: "10px 14px",
+                      borderTop: "1px solid var(--fg)",
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                    }}
+                  >
                     {r.category === "event" && r.metadata?.ticket_url ? (
                       <a
                         href={r.metadata.ticket_url}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{
-                          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px",
-                          padding: "7px 8px",
-                          background: "linear-gradient(135deg, #7c3aed, #9333ea)", border: "none", borderRadius: "8px",
-                          color: "white", fontWeight: 700, fontSize: "11px", textDecoration: "none",
+                          color: "var(--fg-muted)",
+                          textDecoration: "underline",
+                          textUnderlineOffset: "4px",
                         }}
                       >
-                        🎟 Get Tickets
+                        Tickets →
                       </a>
                     ) : (
                       <a
@@ -742,27 +910,23 @@ export default memo(function MapView({
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{
-                          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px",
-                          padding: "7px 8px",
-                          background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px",
-                          color: "#475569", fontWeight: 600, fontSize: "11px", textDecoration: "none",
+                          color: "var(--fg-muted)",
+                          textDecoration: "underline",
+                          textUnderlineOffset: "4px",
                         }}
                       >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-                        Directions
+                        Directions →
                       </a>
                     )}
                     <a
                       href={`/place/${encodeURIComponent(r.name)}`}
                       style={{
-                        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px",
-                        padding: "7px 8px",
-                        background: `${color}10`, border: `1px solid ${color}30`, borderRadius: "8px",
-                        color, fontWeight: 700, fontSize: "11px", textDecoration: "none",
+                        color: "var(--brand)",
+                        textDecoration: "underline",
+                        textUnderlineOffset: "4px",
                       }}
                     >
-                      Details
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                      Read →
                     </a>
                   </div>
                 </div>

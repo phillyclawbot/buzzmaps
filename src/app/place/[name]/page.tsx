@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { getDb } from "@/lib/db";
-import { CATEGORY_EMOJI } from "@/lib/types";
 import type { PlaceCategory } from "@/lib/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -11,11 +10,15 @@ import ReportButton from "@/components/ReportButton";
 import SaveButton from "@/components/SaveButton";
 import JsonLd from "@/components/JsonLd";
 import PostFilterList from "@/components/PostFilterList";
-import { CATEGORY_GRADIENT, SENTIMENT_COLORS, SENTIMENT_LABELS } from "@/lib/constants";
+import TopBar from "@/components/ui/TopBar";
+import PlaceCard from "@/components/ui/PlaceCard";
+import { SENTIMENT_COLORS, SENTIMENT_LABELS } from "@/lib/constants";
 import { decodeHtmlEntities, getPostHref } from "@/lib/post-source";
 import { haversineDistance } from "@/lib/utils";
+import { getNeighbourhood, neighbourhoodSlug } from "@/lib/neighbourhoods";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
 import { getSession } from "@/lib/auth";
+import { isSavedStatus, type SavedStatus } from "@/lib/saved-status";
 
 export async function generateMetadata({
   params,
@@ -48,12 +51,9 @@ export async function generateMetadata({
 
   const place = rows[0];
   const title = `${place.name} — ${SITE_NAME} Toronto`;
-  const cuisineOrCat = place.cuisine_type || place.category || "place";
-  const mentions = place.mention_count
-    ? `Mentioned ${place.mention_count} time${place.mention_count === 1 ? "" : "s"} on Reddit and local blogs. `
-    : "";
-  const description = `${place.name}${place.address ? ` — ${place.address}` : ""}. ${mentions}Discover what Toronto is saying about this ${cuisineOrCat}.`;
-
+  const description = place.address
+    ? `${place.name} at ${place.address} — ${place.mention_count} Toronto mentions on Reddit and the local press.`
+    : `${place.name} — ${place.mention_count} Toronto mentions on Reddit and the local press.`;
   const canonical = `${SITE_URL}/place/${encodeURIComponent(place.name)}`;
   return {
     title,
@@ -64,7 +64,7 @@ export async function generateMetadata({
       description,
       url: canonical,
       type: "article",
-      images: place.photo_url ? [{ url: place.photo_url }] : undefined,
+      images: place.photo_url ? [place.photo_url] : undefined,
     },
     twitter: {
       card: "summary_large_image",
@@ -88,7 +88,7 @@ export default async function PlacePage({
     SELECT
       r.id, r.name, r.place_id, r.address, r.lat, r.lng,
       r.google_rating, r.google_reviews_count, r.cuisine_type, r.price_level,
-      r.category, r.metadata,
+      r.photo_url, r.category, r.metadata,
       COUNT(DISTINCT pr.post_id) as mention_count,
       COALESCE(json_agg(json_build_object(
         'id', rp.id,
@@ -119,6 +119,8 @@ export default async function PlacePage({
     google_rating: number | null;
     google_reviews_count: number | null;
     cuisine_type: string | null;
+    price_level: number | null;
+    photo_url: string | null;
     category: PlaceCategory;
     metadata: Record<string, string | undefined> | null;
     mention_count: number;
@@ -134,10 +136,10 @@ export default async function PlacePage({
     }[];
   };
 
-  // Related places nearby
-  const nearby = await sql`
-    SELECT r.name, r.category, COUNT(DISTINCT pr.post_id)::int as mention_count,
-           r.google_rating, r.lat, r.lng, r.photo_url
+  // Nearby places
+  const nearby = (await sql`
+    SELECT r.id, r.name, r.category, r.address, r.google_rating, r.photo_url, r.lat, r.lng,
+           COUNT(DISTINCT pr.post_id)::int as mention_count
     FROM restaurants r
     LEFT JOIN post_restaurants pr ON pr.restaurant_id = r.id
     WHERE ABS(r.lat - ${place.lat}) < 0.01
@@ -145,14 +147,22 @@ export default async function PlacePage({
       AND r.name != ${place.name}
     GROUP BY r.id
     ORDER BY mention_count DESC
-    LIMIT 5
-  `;
+    LIMIT 6
+  `) as {
+    id: number;
+    name: string;
+    category: PlaceCategory;
+    address: string | null;
+    google_rating: number | null;
+    photo_url: string | null;
+    lat: number;
+    lng: number;
+    mention_count: number;
+  }[];
 
-  const emoji = CATEGORY_EMOJI[place.category] || "📍";
   const posts = place.posts ?? [];
-  const gradient = CATEGORY_GRADIENT[place.category] || CATEGORY_GRADIENT.other;
 
-  // Group posts by month for timeline
+  // Month timeline
   const monthGroups = posts.reduce((acc, post) => {
     const d = new Date(post.created_utc * 1000);
     const key = d.toLocaleDateString("en-CA", { year: "numeric", month: "long" });
@@ -174,18 +184,26 @@ export default async function PlacePage({
     { positive: 0, neutral: 0, negative: 0 }
   );
 
-  // Viewer session (for saved-places state). Runs in parallel with the main
-  // fetch — keeps signed-out users just as fast.
+  // Viewer session for saved-places state.
   const session = await getSession();
-  let initiallySaved = false;
+  let initialStatus: SavedStatus | null = null;
   if (session) {
     const savedRows = (await sql`
-      SELECT 1 FROM saved_places
+      SELECT status FROM saved_places
       WHERE user_id = ${session.id} AND restaurant_id = ${place.id}
       LIMIT 1
-    `) as { "?column?": number }[];
-    initiallySaved = savedRows.length > 0;
+    `) as { status: string }[];
+    if (savedRows.length > 0) {
+      initialStatus = isSavedStatus(savedRows[0].status)
+        ? (savedRows[0].status as SavedStatus)
+        : "wishlist";
+    }
   }
+
+  const hood = getNeighbourhood(place.lat, place.lng);
+  const priceTier = place.price_level
+    ? "$".repeat(Math.min(place.price_level, 4))
+    : null;
 
   const placeUrl = `${SITE_URL}/place/${encodeURIComponent(place.name)}`;
   const jsonLd = {
@@ -222,7 +240,7 @@ export default async function PlacePage({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Map", item: SITE_URL },
+      { "@type": "ListItem", position: 1, name: "Feed", item: SITE_URL },
       {
         "@type": "ListItem",
         position: 2,
@@ -234,280 +252,504 @@ export default async function PlacePage({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <JsonLd data={jsonLd} />
       <JsonLd data={breadcrumbLd} />
-      {/* Top bar */}
-      <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-10 h-12 flex items-center px-4 gap-3">
-        <Link
-          href="/"
-          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-[#ff6b35] transition-colors font-medium"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5M12 5l-7 7 7 7" />
-          </svg>
-          Back to map
-        </Link>
-        <div className="ml-auto flex items-center gap-2">
-          <ShareButton name={place.name} />
-          <div className="w-2.5 h-2.5 rounded-full bg-[#ff6b35]" />
-          <span className="font-semibold text-sm tracking-tight bg-gradient-to-r from-[#ff6b35] to-[#f59e0b] bg-clip-text text-transparent">
-            BuzzMaps
-          </span>
-        </div>
-      </div>
+      <TopBar title={place.name} />
 
-      {/* Gradient header strip */}
-      <div className={`bg-gradient-to-r ${gradient} px-6 py-5`}>
-        <div className="max-w-2xl mx-auto flex items-center gap-4">
-          <span className="text-5xl leading-none drop-shadow-sm">{emoji}</span>
-          <div>
-            <h1 className="text-2xl font-bold text-white leading-tight drop-shadow-sm">{place.name}</h1>
-            {place.cuisine_type && (
-              <p className="text-sm text-white/80 font-medium mt-0.5">{place.cuisine_type}</p>
-            )}
-            {place.address && (
-              <p className="text-sm text-white/70 mt-0.5">{place.address}</p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-2xl mx-auto px-4 py-6 pb-20 page-enter">
-        {/* Save + check-in + report */}
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <SaveButton
-            placeId={place.id}
-            signedIn={!!session}
-            initiallySaved={initiallySaved}
-          />
-          <CheckinButton placeId={place.id} />
-          <ReportButton placeId={place.id} />
-        </div>
-
-        {/* Stats card */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-4">
-          <div className="flex flex-wrap gap-4">
-            {place.google_rating !== null && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-lg">⭐</span>
-                <div>
-                  <div className="text-base font-bold text-slate-900">{place.google_rating.toFixed(1)}</div>
-                  {place.google_reviews_count && (
-                    <div className="text-xs text-slate-400">{place.google_reviews_count.toLocaleString()} reviews</div>
-                  )}
-                </div>
-              </div>
-            )}
-            <div className="flex items-center gap-1.5">
-              <span className="text-lg">💬</span>
-              <div>
-                <div className="text-base font-bold text-slate-900">{place.mention_count}</div>
-                <div className="text-xs text-slate-400">Reddit mentions</div>
-              </div>
+      <article className="pt-14 md:pt-16 pb-24 page-enter">
+        {/* HERO */}
+        <header className="max-w-5xl mx-auto px-6 md:px-10 pt-8 md:pt-12">
+          {place.photo_url && (
+            <div
+              className="relative w-full overflow-hidden mb-8"
+              style={{
+                aspectRatio: "16 / 9",
+                background: "var(--bg-sunken)",
+                borderRadius: "var(--radius-md)",
+                border: "1px solid var(--border)",
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={place.photo_url}
+                alt={place.name}
+                className="w-full h-full object-cover"
+              />
             </div>
-            {posts.length > 0 && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-lg">📊</span>
-                <div className="min-w-[120px]">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    {(["positive", "neutral", "negative"] as const).map((s) => (
-                      <span key={s} className="text-[11px] font-medium flex items-center gap-1">
-                        <span className="inline-block w-2 h-2 rounded-full" style={{ background: SENTIMENT_COLORS[s] }} />
-                        {SENTIMENT_LABELS[s]} {sentimentCounts[s]}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex h-2 rounded-full overflow-hidden bg-slate-100">
-                    {sentimentCounts.positive > 0 && (
-                      <div className="h-full" style={{ width: `${(sentimentCounts.positive / posts.length) * 100}%`, background: SENTIMENT_COLORS.positive }} />
-                    )}
-                    {sentimentCounts.neutral > 0 && (
-                      <div className="h-full" style={{ width: `${(sentimentCounts.neutral / posts.length) * 100}%`, background: SENTIMENT_COLORS.neutral }} />
-                    )}
-                    {sentimentCounts.negative > 0 && (
-                      <div className="h-full" style={{ width: `${(sentimentCounts.negative / posts.length) * 100}%`, background: SENTIMENT_COLORS.negative }} />
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+          )}
 
-        {/* Entity metadata (events, landmarks, etc.) */}
-        {place.metadata && Object.keys(place.metadata).length > 0 && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-4">
-            <div className="flex flex-wrap gap-3">
-              {place.metadata.event_date && (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-lg">📅</span>
-                  <div>
-                    <div className="text-sm font-bold text-slate-900">{place.metadata.event_date}</div>
-                    {place.metadata.event_end_date && (
-                      <div className="text-xs text-slate-400">to {place.metadata.event_end_date}</div>
-                    )}
-                  </div>
-                </div>
-              )}
-              {place.metadata.hours && (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-lg">🕐</span>
-                  <div>
-                    <div className="text-sm font-bold text-slate-900">{place.metadata.hours}</div>
-                    <div className="text-xs text-slate-400">Hours</div>
-                  </div>
-                </div>
-              )}
-              {place.metadata.admission_fee && (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-lg">🎟️</span>
-                  <div>
-                    <div className="text-sm font-bold text-slate-900">{place.metadata.admission_fee}</div>
-                    <div className="text-xs text-slate-400">Admission</div>
-                  </div>
-                </div>
-              )}
-              {place.metadata.genre && (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-lg">🎭</span>
-                  <div>
-                    <div className="text-sm font-bold text-slate-900">{place.metadata.genre}</div>
-                    <div className="text-xs text-slate-400">Genre</div>
-                  </div>
-                </div>
-              )}
-              {place.metadata.price_range && (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-lg">💰</span>
-                  <div>
-                    <div className="text-sm font-bold text-slate-900">{place.metadata.price_range}</div>
-                    <div className="text-xs text-slate-400">Price Range</div>
-                  </div>
-                </div>
-              )}
-              {place.metadata.ticket_url && (
+          <p className="eyebrow mb-3" style={{ color: "var(--brand)" }}>
+            {String(place.category).toUpperCase()}
+            {hood && (
+              <span
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontStyle: "italic",
+                  fontWeight: 400,
+                  letterSpacing: "normal",
+                  textTransform: "none",
+                  color: "var(--fg-muted)",
+                  marginLeft: 8,
+                }}
+              >
+                in {hood}
+              </span>
+            )}
+          </p>
+
+          <h1
+            className="font-display text-5xl sm:text-6xl md:text-7xl"
+            style={{ color: "var(--fg)", fontWeight: 500, lineHeight: 0.98 }}
+          >
+            {place.name}.
+          </h1>
+
+          {place.cuisine_type && (
+            <p
+              className="caption mt-4 text-lg"
+              style={{ color: "var(--fg-muted)" }}
+            >
+              {place.cuisine_type}
+            </p>
+          )}
+
+          {place.address && (
+            <p
+              className="font-serif italic text-base mt-2"
+              style={{ color: "var(--fg-muted)" }}
+            >
+              {place.address}
+            </p>
+          )}
+
+          {/* Meta rail */}
+          <div
+            className="flex flex-wrap items-baseline gap-x-5 gap-y-2 mt-6 pt-5 pb-5"
+            style={{
+              borderTop: "1px solid var(--border)",
+              borderBottom: "1px solid var(--border)",
+            }}
+          >
+            {place.google_rating !== null && (
+              <span className="dateline">
+                {place.google_rating.toFixed(1)}★
+                {place.google_reviews_count && (
+                  <span style={{ color: "var(--fg-faint)" }}>
+                    {" "}({place.google_reviews_count.toLocaleString()})
+                  </span>
+                )}
+              </span>
+            )}
+            <span className="dateline">
+              {place.mention_count}{" "}
+              {place.mention_count === 1 ? "mention" : "mentions"}
+            </span>
+            {priceTier && <span className="dateline">{priceTier}</span>}
+            {hood && (
+              <Link
+                href={`/neighbourhood/${neighbourhoodSlug(hood)}`}
+                className="dateline ink-underline"
+              >
+                {hood} →
+              </Link>
+            )}
+            <Link
+              href={`/category/${place.category}`}
+              className="dateline ink-underline capitalize"
+            >
+              More {place.category} →
+            </Link>
+          </div>
+
+          {/* Action row */}
+          <div
+            className="flex flex-wrap items-baseline gap-x-6 gap-y-3 pt-5 pb-2"
+            data-print-hide
+          >
+            <SaveButton
+              placeId={place.id}
+              signedIn={!!session}
+              initialStatus={initialStatus}
+            />
+            <span style={{ color: "var(--fg-faint)" }}>·</span>
+            <CheckinButton placeId={place.id} />
+            <span style={{ color: "var(--fg-faint)" }}>·</span>
+            <ShareButton name={place.name} />
+            <span style={{ color: "var(--fg-faint)" }}>·</span>
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="eyebrow ink-underline"
+              style={{ color: "var(--fg-muted)" }}
+            >
+              Directions →
+            </a>
+            {place.metadata?.ticket_url && (
+              <>
+                <span style={{ color: "var(--fg-faint)" }}>·</span>
                 <a
                   href={place.metadata.ticket_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-full text-sm font-medium hover:bg-purple-100 transition-colors"
+                  className="eyebrow ink-underline"
+                  style={{ color: "var(--brand)" }}
                 >
-                  🎫 Get Tickets
+                  Tickets →
                 </a>
-              )}
-              {place.metadata.website && (
+              </>
+            )}
+            {place.metadata?.website && (
+              <>
+                <span style={{ color: "var(--fg-faint)" }}>·</span>
                 <a
                   href={place.metadata.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium hover:bg-blue-100 transition-colors"
+                  className="eyebrow ink-underline"
+                  style={{ color: "var(--fg-muted)" }}
                 >
-                  🌐 Website
+                  Website →
                 </a>
-              )}
-            </div>
+              </>
+            )}
+            <span style={{ color: "var(--fg-faint)" }}>·</span>
+            <ReportButton placeId={place.id} />
           </div>
-        )}
+        </header>
 
-        {/* Map embed */}
-        <div className="mb-4">
-          <PlaceMapWrapper lat={place.lat} lng={place.lng} name={place.name} category={place.category} />
-          <a
-            href={`https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl text-sm font-medium hover:bg-blue-100 transition-colors"
+        {/* Event-specific detail */}
+        {place.metadata &&
+          (place.metadata.event_date ||
+            place.metadata.hours ||
+            place.metadata.admission_fee ||
+            place.metadata.genre ||
+            place.metadata.price_range) && (
+            <section className="max-w-5xl mx-auto px-6 md:px-10 mt-10">
+              <p className="eyebrow mb-4">Particulars</p>
+              <dl
+                className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-5 pt-5"
+                style={{ borderTop: "1px solid var(--fg)" }}
+              >
+                {place.metadata.event_date && (
+                  <div>
+                    <dt className="dateline mb-1">Date</dt>
+                    <dd
+                      className="font-serif text-base"
+                      style={{ color: "var(--fg)" }}
+                    >
+                      {place.metadata.event_date}
+                      {place.metadata.event_end_date && (
+                        <span style={{ color: "var(--fg-muted)" }}>
+                          {" "}→ {place.metadata.event_end_date}
+                        </span>
+                      )}
+                    </dd>
+                  </div>
+                )}
+                {place.metadata.hours && (
+                  <div>
+                    <dt className="dateline mb-1">Hours</dt>
+                    <dd
+                      className="font-serif text-base"
+                      style={{ color: "var(--fg)" }}
+                    >
+                      {place.metadata.hours}
+                    </dd>
+                  </div>
+                )}
+                {place.metadata.admission_fee && (
+                  <div>
+                    <dt className="dateline mb-1">Admission</dt>
+                    <dd
+                      className="font-serif text-base"
+                      style={{ color: "var(--fg)" }}
+                    >
+                      {place.metadata.admission_fee}
+                    </dd>
+                  </div>
+                )}
+                {place.metadata.genre && (
+                  <div>
+                    <dt className="dateline mb-1">Genre</dt>
+                    <dd
+                      className="font-serif text-base"
+                      style={{ color: "var(--fg)" }}
+                    >
+                      {place.metadata.genre}
+                    </dd>
+                  </div>
+                )}
+                {place.metadata.price_range && (
+                  <div>
+                    <dt className="dateline mb-1">Price</dt>
+                    <dd
+                      className="font-serif text-base"
+                      style={{ color: "var(--fg)" }}
+                    >
+                      {place.metadata.price_range}
+                    </dd>
+                  </div>
+                )}
+                {place.metadata.venue_name && (
+                  <div>
+                    <dt className="dateline mb-1">Venue</dt>
+                    <dd
+                      className="font-serif text-base"
+                      style={{ color: "var(--fg)" }}
+                    >
+                      {place.metadata.venue_name}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            </section>
+          )}
+
+        {/* MAP */}
+        <section
+          className="max-w-5xl mx-auto px-6 md:px-10 mt-16"
+          data-print-hide
+        >
+          <div
+            className="flex items-baseline justify-between pb-3 mb-6"
+            style={{ borderBottom: "1px solid var(--fg)" }}
           >
-            🧭 Get Directions
-          </a>
-        </div>
-
-        {/* Buzz over time timeline */}
-        {sortedMonths.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider px-1 mb-3">
-              📈 Buzz over time
+            <h2
+              className="font-display text-2xl md:text-3xl"
+              style={{ color: "var(--fg)", fontWeight: 500 }}
+            >
+              Where it is
             </h2>
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-4">
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="dateline ink-underline"
+            >
+              Directions →
+            </a>
+          </div>
+          <div
+            style={{
+              height: 260,
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-sm)",
+              overflow: "hidden",
+            }}
+          >
+            <PlaceMapWrapper
+              lat={place.lat}
+              lng={place.lng}
+              name={place.name}
+              category={place.category}
+            />
+          </div>
+        </section>
+
+        {/* BUZZ OVER TIME */}
+        {sortedMonths.length > 0 && (
+          <section className="max-w-5xl mx-auto px-6 md:px-10 mt-16">
+            <div
+              className="flex items-baseline justify-between pb-3 mb-6"
+              style={{ borderBottom: "1px solid var(--fg)" }}
+            >
+              <h2
+                className="font-display text-2xl md:text-3xl"
+                style={{ color: "var(--fg)", fontWeight: 500 }}
+              >
+                Buzz over time
+              </h2>
+              <p className="dateline">
+                {posts.length} posts ·{" "}
+                {Math.round(
+                  (sentimentCounts.positive / Math.max(1, posts.length)) * 100
+                )}
+                % positive
+              </p>
+            </div>
+
+            {/* Sentiment bar */}
+            {posts.length > 0 && (
+              <div className="mb-10">
+                <div
+                  className="flex h-1.5 overflow-hidden"
+                  style={{ borderRadius: 1 }}
+                >
+                  {(["positive", "neutral", "negative"] as const).map((s) => {
+                    const pct = (sentimentCounts[s] / posts.length) * 100;
+                    if (pct === 0) return null;
+                    return (
+                      <div
+                        key={s}
+                        style={{
+                          width: `${pct}%`,
+                          background: SENTIMENT_COLORS[s],
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="flex flex-wrap gap-x-5 mt-3">
+                  {(["positive", "neutral", "negative"] as const).map((s) => (
+                    <span
+                      key={s}
+                      className="dateline"
+                      style={{ color: "var(--fg-muted)" }}
+                    >
+                      <span
+                        className="inline-block w-2 h-2 rounded-full mr-1.5"
+                        style={{
+                          background: SENTIMENT_COLORS[s],
+                          verticalAlign: "middle",
+                        }}
+                      />
+                      {SENTIMENT_LABELS[s]} {sentimentCounts[s]}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Monthly timeline */}
+            <div className="space-y-6">
               {sortedMonths.map(([month, monthPosts]) => {
-                const barWidth = Math.round((monthPosts.length / maxMonthCount) * 100);
+                const barWidth = Math.round(
+                  (monthPosts.length / maxMonthCount) * 100
+                );
                 return (
                   <div key={month}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-semibold text-slate-600 w-28 shrink-0">{month}</span>
-                      <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div className="flex items-baseline gap-4 mb-2">
+                      <span
+                        className="dateline shrink-0"
+                        style={{ width: 128, color: "var(--fg-muted)" }}
+                      >
+                        {month}
+                      </span>
+                      <div
+                        className="flex-1 h-px"
+                        style={{ background: "var(--border)" }}
+                      >
                         <div
-                          className="h-2 rounded-full bg-gradient-to-r from-[#ff6b35] to-[#f59e0b]"
-                          style={{ width: `${barWidth}%` }}
+                          className="h-1 -translate-y-0.5"
+                          style={{
+                            width: `${barWidth}%`,
+                            background: "var(--fg)",
+                          }}
                         />
                       </div>
-                      <span className="text-xs text-slate-400 w-6 text-right shrink-0">{monthPosts.length}</span>
+                      <span
+                        className="font-display tabular-nums shrink-0"
+                        style={{
+                          color: "var(--fg)",
+                          fontWeight: 500,
+                          fontSize: 16,
+                        }}
+                      >
+                        {monthPosts.length}
+                      </span>
                     </div>
-                    <div className="pl-0 space-y-0.5">
+                    <ul className="pl-[128px] space-y-1">
                       {monthPosts.map((p) => {
                         const decoded = decodeHtmlEntities(p.title);
                         return (
-                          <a
-                            key={p.id}
-                            href={getPostHref(p.subreddit, p.permalink)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block text-xs text-slate-500 hover:text-[#ff6b35] transition-colors truncate pl-[7.5rem]"
-                          >
-                            {decoded.length > 72 ? decoded.slice(0, 72) + "…" : decoded}
-                          </a>
+                          <li key={p.id}>
+                            <a
+                              href={getPostHref(p.subreddit, p.permalink)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-serif text-sm truncate block transition-colors hover:text-[color:var(--brand)]"
+                              style={{ color: "var(--fg-muted)" }}
+                            >
+                              {decoded.length > 80
+                                ? decoded.slice(0, 80) + "…"
+                                : decoded}
+                            </a>
+                          </li>
                         );
                       })}
-                    </div>
+                    </ul>
                   </div>
                 );
               })}
             </div>
-          </div>
+          </section>
         )}
 
-        {/* Reddit posts with sentiment + timeframe filtering */}
-        <PostFilterList posts={posts} />
+        {/* WHAT LOCALS SAID */}
+        {posts.length > 0 && (
+          <section className="max-w-5xl mx-auto px-6 md:px-10 mt-16">
+            <div
+              className="flex items-baseline justify-between pb-3 mb-6"
+              style={{ borderBottom: "1px solid var(--fg)" }}
+            >
+              <h2
+                className="font-display text-2xl md:text-3xl"
+                style={{ color: "var(--fg)", fontWeight: 500 }}
+              >
+                What locals said
+              </h2>
+              <p className="dateline">Filter by sentiment & timeframe</p>
+            </div>
+            <PostFilterList posts={posts} />
+          </section>
+        )}
 
-        {/* Related places nearby */}
+        {/* NEARBY */}
         {nearby.length > 0 && (
-          <div>
-            <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider px-1 mb-3">
-              📍 Nearby Places
-            </h2>
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm divide-y divide-slate-100 overflow-hidden">
-              {(nearby as { name: string; category: PlaceCategory; mention_count: number; google_rating: number | null; lat: number; lng: number; photo_url: string | null }[]).map((r) => {
-                const dist = haversineDistance(place.lat, place.lng, r.lat, r.lng);
-                const distLabel = dist < 1000 ? `${Math.round(dist)}m away` : `${(dist / 1000).toFixed(1)}km away`;
+          <section className="max-w-5xl mx-auto px-6 md:px-10 mt-16">
+            <div
+              className="flex items-baseline justify-between pb-3 mb-8"
+              style={{ borderBottom: "1px solid var(--fg)" }}
+            >
+              <h2
+                className="font-display text-2xl md:text-3xl"
+                style={{ color: "var(--fg)", fontWeight: 500 }}
+              >
+                Nearby
+              </h2>
+              <p className="dateline">Within a few blocks</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+              {nearby.map((r, i) => {
+                const dist = haversineDistance(
+                  place.lat,
+                  place.lng,
+                  r.lat,
+                  r.lng
+                );
+                const distLabel =
+                  dist < 1000
+                    ? `${Math.round(dist)}m away`
+                    : `${(dist / 1000).toFixed(1)}km away`;
                 return (
-                  <Link
-                    key={r.name}
-                    href={`/place/${encodeURIComponent(r.name)}`}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors group"
-                  >
-                    {r.photo_url ? (
-                      <img src={r.photo_url} alt={r.name} className="w-10 h-10 rounded-lg object-cover shrink-0" />
-                    ) : (
-                      <span className="text-xl leading-none shrink-0">{CATEGORY_EMOJI[r.category] || "📍"}</span>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium text-slate-800 group-hover:text-[#ff6b35] transition-colors block truncate">{r.name}</span>
-                      <span className="text-[10px] text-slate-400">{CATEGORY_EMOJI[r.category] || "📍"} {r.category} · {distLabel}{r.google_rating ? ` · ⭐ ${r.google_rating.toFixed(1)}` : ""}</span>
-                    </div>
-                    <span className="text-xs text-[#ff6b35] font-semibold bg-[#ff6b35]/10 px-2 py-0.5 rounded-full shrink-0">
-                      {r.mention_count} 💬
-                    </span>
-                    <svg className="text-slate-300 group-hover:text-[#ff6b35] transition-colors shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 18l6-6-6-6" />
-                    </svg>
-                  </Link>
+                  <PlaceCard
+                    key={r.id}
+                    place={r}
+                    variant="story"
+                    stagger={i}
+                    caption={distLabel}
+                  />
                 );
               })}
             </div>
-          </div>
+          </section>
         )}
-      </div>
+
+        {/* Colophon */}
+        <footer
+          className="max-w-5xl mx-auto px-6 md:px-10 mt-20 pt-6"
+          style={{ borderTop: "1px solid var(--border)" }}
+        >
+          <p className="dateline">
+            BuzzMaps · {place.mention_count}{" "}
+            {place.mention_count === 1 ? "mention" : "mentions"} across Reddit
+            and the local press. Facts may change — check the place directly
+            before visiting.
+          </p>
+        </footer>
+      </article>
     </div>
   );
 }
