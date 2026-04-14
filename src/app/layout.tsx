@@ -3,6 +3,9 @@ import { Geist, Geist_Mono, Fraunces } from "next/font/google";
 import BottomNav from "@/components/BottomNav";
 import SiteHeader from "@/components/SiteHeader";
 import Analytics from "@/components/Analytics";
+import CommandPalette from "@/components/CommandPalette";
+import ShortcutsHelp from "@/components/ShortcutsHelp";
+import RecentPlaceTracker from "@/components/RecentPlaceTracker";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 import "./globals.css";
 
@@ -74,6 +77,9 @@ export default function RootLayout({
         <SiteHeader />
         {children}
         <BottomNav />
+        <CommandPalette />
+        <ShortcutsHelp />
+        <RecentPlaceTracker />
         <Analytics />
       </body>
     </html>

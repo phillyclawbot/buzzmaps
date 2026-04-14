@@ -3,8 +3,10 @@ import { Suspense } from "react";
 import { getDb } from "@/lib/db";
 import { COLLECTIONS } from "@/lib/collections";
 import { CATEGORY_FILTERS } from "@/lib/constants";
+import { NEIGHBOURHOODS, neighbourhoodSlug } from "@/lib/neighbourhoods";
 import PlaceCard from "@/components/ui/PlaceCard";
 import PostSource from "@/components/ui/PostSource";
+import RandomPlaceLink from "@/components/RandomPlaceLink";
 import { decodeHtmlEntities, getPostHref } from "@/lib/post-source";
 import { CollectionIcon } from "@/lib/icons";
 import type { PlaceCategory } from "@/lib/types";
@@ -393,7 +395,40 @@ async function HomeContent() {
         </div>
       </section>
 
-      {/* MAP CTA */}
+      {/* NEIGHBOURHOODS DIRECTORY */}
+      <section className="max-w-[1400px] mx-auto px-6 md:px-12 pt-12 md:pt-16">
+        <div
+          className="flex items-baseline justify-between pb-3 mb-6"
+          style={{ borderBottom: "1px solid var(--fg)" }}
+        >
+          <h2
+            className="font-display text-2xl md:text-3xl"
+            style={{ color: "var(--fg)", fontWeight: 500 }}
+          >
+            By Neighbourhood
+          </h2>
+          <Link
+            href="/neighbourhoods"
+            className="dateline hover:text-[color:var(--brand)] transition-colors"
+          >
+            Atlas →
+          </Link>
+        </div>
+        <div className="flex flex-wrap gap-x-5 gap-y-3">
+          {NEIGHBOURHOODS.slice(0, 20).map((n) => (
+            <Link
+              key={n.name}
+              href={`/neighbourhood/${neighbourhoodSlug(n.name)}`}
+              className="font-serif text-lg md:text-xl ink-underline"
+              style={{ color: "var(--fg)" }}
+            >
+              {n.name}
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* MAP + RANDOM CTA BAND */}
       <section className="max-w-[1400px] mx-auto px-6 md:px-12 pt-16 md:pt-24">
         <div
           className="text-center py-12 md:py-16"
@@ -424,6 +459,26 @@ async function HomeContent() {
             Every place we've found, plotted across the city. Filter, search,
             cluster — and find the closest spot to you.
           </p>
+          <div
+            className="mt-8 pt-6 flex flex-col sm:flex-row items-center justify-center gap-x-8 gap-y-3"
+            style={{ borderTop: "1px solid var(--border)" }}
+          >
+            <RandomPlaceLink />
+            <span className="dateline" style={{ color: "var(--fg-subtle)" }}>
+              or press{" "}
+              <kbd
+                className="font-mono px-1.5 py-0.5 text-[11px]"
+                style={{
+                  background: "var(--bg-sunken)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 4,
+                }}
+              >
+                ⌘K
+              </kbd>{" "}
+              to search anything
+            </span>
+          </div>
         </div>
       </section>
 

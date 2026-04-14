@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db";
 import { SITE_URL } from "@/lib/site";
 import { VALID_CATEGORIES } from "@/lib/constants";
 import { COLLECTIONS } from "@/lib/collections";
+import { NEIGHBOURHOODS, neighbourhoodSlug } from "@/lib/neighbourhoods";
 
 // Revalidate the sitemap daily so new places get indexed without requiring a deploy.
 export const revalidate = 86400;
@@ -14,7 +15,9 @@ const STATIC_ROUTES: Array<{
 }> = [
   { path: "/", changeFrequency: "daily", priority: 1.0 },
   { path: "/map", changeFrequency: "daily", priority: 0.95 },
+  { path: "/events", changeFrequency: "daily", priority: 0.9 },
   { path: "/collections", changeFrequency: "daily", priority: 0.9 },
+  { path: "/neighbourhoods", changeFrequency: "weekly", priority: 0.85 },
   { path: "/digest", changeFrequency: "weekly", priority: 0.8 },
   { path: "/stats", changeFrequency: "daily", priority: 0.5 },
   { path: "/about", changeFrequency: "monthly", priority: 0.4 },
@@ -46,6 +49,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
+  const neighbourhoodEntries: MetadataRoute.Sitemap = NEIGHBOURHOODS.map(
+    (n) => ({
+      url: `${SITE_URL}/neighbourhood/${neighbourhoodSlug(n.name)}`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.75,
+    })
+  );
+
   let placeEntries: MetadataRoute.Sitemap = [];
   try {
     const sql = getDb();
@@ -71,6 +83,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...staticEntries,
     ...categoryEntries,
     ...collectionEntries,
+    ...neighbourhoodEntries,
     ...placeEntries,
   ];
 }

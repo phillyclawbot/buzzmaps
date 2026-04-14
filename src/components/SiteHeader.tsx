@@ -9,9 +9,18 @@ type NavLink = { href: string; label: string; match: (p: string) => boolean };
 const LINKS: NavLink[] = [
   { href: "/", label: "Feed", match: (p) => p === "/" },
   { href: "/map", label: "Map", match: (p) => p === "/map" },
-  { href: "/collections", label: "Collections", match: (p) => p.startsWith("/collections") },
+  { href: "/events", label: "Events", match: (p) => p.startsWith("/events") },
+  {
+    href: "/collections",
+    label: "Collections",
+    match: (p) => p.startsWith("/collections"),
+  },
+  {
+    href: "/neighbourhoods",
+    label: "Atlas",
+    match: (p) => p.startsWith("/neighbourhood"),
+  },
   { href: "/digest", label: "Dispatch", match: (p) => p.startsWith("/digest") },
-  { href: "/stats", label: "Index", match: (p) => p.startsWith("/stats") },
   { href: "/about", label: "About", match: (p) => p.startsWith("/about") },
 ];
 
@@ -66,21 +75,35 @@ export default function SiteHeader() {
           })}
         </nav>
 
-        <div className="ml-auto flex items-baseline gap-6">
+        <div className="ml-auto flex items-baseline gap-5">
           <Link
             href="/search"
             prefetch
-            className="text-sm transition-colors"
+            className="inline-flex items-baseline gap-2 text-sm transition-colors hover:text-[color:var(--fg)]"
             style={{ color: "var(--fg-muted)" }}
             aria-label="Search"
+            title="Search (⌘K opens palette)"
           >
-            Search
+            <span>Search</span>
+            <kbd
+              className="font-mono px-1 py-0.5 text-[10px]"
+              style={{
+                background: "var(--bg-sunken)",
+                color: "var(--fg-subtle)",
+                border: "1px solid var(--border)",
+                borderRadius: 3,
+                lineHeight: 1,
+              }}
+              aria-hidden="true"
+            >
+              ⌘K
+            </kbd>
           </Link>
 
           <Link
             href="/submit"
             prefetch
-            className="text-sm transition-colors"
+            className="text-sm transition-colors hover:text-[color:var(--fg)]"
             style={{ color: "var(--fg-muted)" }}
           >
             Submit

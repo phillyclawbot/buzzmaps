@@ -464,3 +464,82 @@ body {
     transform: none !important;
   }
 }
+
+/* ─────────────────────────────────────────────
+   Print styles — strip chrome, let the editorial
+   content breathe as if on newsprint.
+   ───────────────────────────────────────────── */
+@media print {
+  :root {
+    --bg: #ffffff;
+    --bg-elevated: #ffffff;
+    --bg-sunken: #ffffff;
+    --fg: #000000;
+    --fg-muted: #333333;
+    --fg-subtle: #555555;
+    --border: #dddddd;
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+  }
+
+  /* Hide all persistent chrome and interactive UI */
+  header,
+  nav,
+  footer,
+  [role="dialog"],
+  [data-print-hide],
+  .leaflet-container {
+    display: none !important;
+  }
+
+  /* Articles fill the page, no fixed widths */
+  article,
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+  }
+
+  /* Keep paragraphs together, widow-aware */
+  h1, h2, h3, h4 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+  p, li, article {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Don't let images blow past the page edge */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  a {
+    color: #000000 !important;
+    text-decoration: underline;
+  }
+
+  /* Expose link URLs next to the anchor text */
+  a[href^="http"]::after,
+  a[href^="/"]::after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    color: #666;
+  }
+  /* But don't expose fragment/internal links */
+  a[href^="#"]::after,
+  a[href^="javascript:"]::after {
+    content: "";
+  }
+}

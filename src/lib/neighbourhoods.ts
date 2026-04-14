@@ -260,3 +260,20 @@ export function filterByNeighbourhood<T extends { lat: number; lng: number }>(
       item.lng <= n.maxLng
   );
 }
+
+/** URL-safe slug for a neighbourhood name. "St. Lawrence Market" → "st-lawrence-market" */
+export function neighbourhoodSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/['’.]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** Lookup by slug. Returns null when the slug doesn't match any known hood. */
+export function getNeighbourhoodBySlug(slug: string): Neighbourhood | null {
+  const want = slug.toLowerCase();
+  return (
+    NEIGHBOURHOODS.find((n) => neighbourhoodSlug(n.name) === want) ?? null
+  );
+}
