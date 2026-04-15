@@ -1,220 +1,103 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+  Suspense,
+} from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import Sidebar from "@/components/Sidebar";
-import ListView from "@/components/ListView";
-import type { Place, RedditPostWithPlaces, Stats, PlaceCategory } from "@/lib/types";
-import { CATEGORY_EMOJI } from "@/lib/types";
-import { CATEGORY_FILTERS, CATEGORY_COLORS } from "@/lib/constants";
-import { formatLastScraped, haversineDistance } from "@/lib/utils";
+import type { Place, PlaceCategory } from "@/lib/types";
+import { CATEGORY_FILTERS, VALID_CATEGORIES } from "@/lib/constants";
+import { haversineDistance } from "@/lib/utils";
 
+// MapView is client-only (Leaflet needs window). Dynamic import with no SSR.
 const MapView = dynamic(() => import("@/components/MapView"), {
   ssr: false,
   loading: () => (
-    <div className="h-full w-full bg-white flex items-center justify-center">
-      <div className="text-slate-500 text-sm">Loading map...</div>
+    <div
+      className="h-full w-full flex items-center justify-center"
+      style={{ background: "var(--bg-sunken)" }}
+    >
+      <p className="caption" style={{ color: "var(--fg-muted)" }}>
+        Loading map…
+      </p>
     </div>
   ),
 });
 
-function Home() {
+type Category = (typeof VALID_CATEGORIES)[number] | "all";
+
+function MapPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Initial category from URL, so /map?category=bar deep-links
+  const urlCategory = searchParams.get("category");
+  const initialCategory: Category =
+    urlCategory && (VALID_CATEGORIES as readonly string[]).includes(urlCategory)
+      ? (urlCategory as Category)
+      : "all";
+
   const [places, setPlaces] = useState<Place[]>([]);
-  const [posts, setPosts] = useState<RedditPostWithPlaces[]>([]);
-  const [stats, setStats] = useState<Stats>({ places: 0, posts: 0, last_scraped: null });
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [flyTo, setFlyTo] = useState<[number, number] | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState(false);
-  const searchParamsRaw = useSearchParams();
-  const [view, setView] = useState<"map" | "list">(() => {
-    if (typeof window !== "undefined") {
-      return new URLSearchParams(window.location.search).get("view") === "list" ? "list" : "map";
-    }
-    return "map";
-  });
-  const [filter, setFilter] = useState<{ since: string; sentiment: string; category: string }>({
-    since: "all",
-    sentiment: "all",
-    category: "all",
-  });
-  const [mapSearch, setMapSearch] = useState("");
-  const [mapSearchInput, setMapSearchInput] = useState("");
-  const [mapSearchSuggestions, setMapSearchSuggestions] = useState<Place[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const searchContainerRef = useRef<HTMLDivElement>(null);
-  const [showLegend, setShowLegend] = useState(false);
-  const [thisWeekOnly, setThisWeekOnly] = useState(false);
+  const [category, setCategory] = useState<Category>(initialCategory);
+  const [flyTo, setFlyTo] = useState<[number, number] | null>(null);
   const [nearMeActive, setNearMeActive] = useState(false);
   const [nearMeCoords, setNearMeCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [nearMeRadius, setNearMeRadius] = useState(2);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [trendingCollapsed, setTrendingCollapsed] = useState(false);
-  const mapSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const highlightedPlace = useRef<string | null>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const router = useRouter();
 
-  // Listen for view switch from BottomNav
-  useEffect(() => {
-    const handler = (e: Event) => setView((e as CustomEvent).detail);
-    window.addEventListener("buzzmaps:setview", handler);
-    return () => window.removeEventListener("buzzmaps:setview", handler);
-  }, []);
-
-  // Keyboard shortcut: "/" opens search, Escape clears/closes
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement).tagName.toLowerCase();
-      if (tag === "input" || tag === "textarea") return;
-      if (e.key === "/") {
-        e.preventDefault();
-        setSearchOpen(true);
-        setTimeout(() => searchInputRef.current?.focus(), 0);
-      } else if (e.key === "Escape") {
-        setSearchQuery("");
-        setSearchOpen(false);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
-  const handleMapSearchChange = (val: string) => {
-    setMapSearchInput(val);
-    if (mapSearchTimerRef.current) clearTimeout(mapSearchTimerRef.current);
-    mapSearchTimerRef.current = setTimeout(() => setMapSearch(val), 300);
-    if (val.trim().length >= 1) {
-      const q = val.toLowerCase();
-      const suggestions = places
-        .filter((r) => r.name.toLowerCase().includes(q))
-        .slice(0, 6);
-      setMapSearchSuggestions(suggestions);
-      setShowSuggestions(true);
-    } else {
-      setMapSearchSuggestions([]);
-      setShowSuggestions(false);
-    }
-  };
-
-  const handleSuggestionClick = (r: Place) => {
-    handleFlyTo(r.lat, r.lng);
-    setMapSearchInput("");
-    setMapSearch("");
-    setShowSuggestions(false);
-    setMapSearchSuggestions([]);
-  };
-
-  const sevenDaysAgo = useMemo(() => Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000), []);
-
-  const trendingNow = useMemo(() => places.filter(r => r.latest_mention > Date.now()/1000 - 7*86400).sort((a,b) => b.mention_count - a.mention_count).slice(0, 5), [places]);
-
-  const { venueEvents, linkedEventIds } = useMemo(() => {
-    const venueEvents = new Map<number, typeof places[0][]>();
-    const linkedEventIds = new Set<number>();
-    const events = places.filter(p => p.category === "event");
-    const nonEvents = places.filter(p => p.category !== "event");
-    for (const ev of events) {
-      let closest: typeof places[0] | null = null;
-      let minDist = Infinity;
-      for (const v of nonEvents) {
-        const d = haversineDistance(ev.lat, ev.lng, v.lat, v.lng);
-        if (d < 200 && d < minDist) { minDist = d; closest = v; }
-      }
-      if (closest) {
-        linkedEventIds.add(ev.id);
-        const arr = venueEvents.get(closest.id) ?? [];
-        arr.push(ev);
-        venueEvents.set(closest.id, arr);
-      }
-    }
-    // Sort events by date ascending
-    for (const [, evs] of venueEvents) {
-      evs.sort((a, b) => {
-        const da = a.metadata?.event_date ?? "";
-        const db = b.metadata?.event_date ?? "";
-        return da < db ? -1 : da > db ? 1 : 0;
-      });
-    }
-    return { venueEvents, linkedEventIds };
-  }, [places]);
-
-  const filteredPlaces = useMemo(() => {
-    let items = places;
-    if (mapSearch) {
-      const q = mapSearch.toLowerCase();
-      items = items.filter(
-        (r) =>
-          r.name.toLowerCase().includes(q) ||
-          r.address.toLowerCase().includes(q)
-      );
-    }
-    if (thisWeekOnly) {
-      items = items.filter((r) => r.latest_mention >= sevenDaysAgo);
-    }
-    if (nearMeActive && nearMeCoords) {
-      const { lat, lng } = nearMeCoords;
-      items = items.filter((r) => {
-        return haversineDistance(lat, lng, r.lat, r.lng) <= nearMeRadius * 1000;
-      });
-    }
-    // Hide venue-linked events from map; when Events-only mode linkedEventIds is empty so all pass through
-    items = items.filter(p => p.category !== "event" || !linkedEventIds.has(p.id));
-    return items;
-  }, [places, mapSearch, thisWeekOnly, sevenDaysAgo, nearMeActive, nearMeCoords, nearMeRadius, linkedEventIds]);
-
-  const fetchData = useCallback(async (background = false) => {
-    if (!background) setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (filter.since !== "all") params.set("since", filter.since);
-      if (filter.sentiment !== "all") params.set("sentiment", filter.sentiment);
-      if (filter.category !== "all") params.set("category", filter.category);
-      params.set("limit", "2000");
-
-      const [rRes, pRes, sRes] = await Promise.all([
-        fetch(`/api/places?${params}`),
-        fetch("/api/posts"),
-        fetch("/api/stats"),
-      ]);
-      const [rData, pData, sData] = await Promise.all([
-        rRes.json(),
-        pRes.json(),
-        sRes.json(),
-      ]);
-
-      if (Array.isArray(rData)) setPlaces(rData);
-      if (Array.isArray(pData)) setPosts(pData);
-      if (sData.places !== undefined) setStats(sData);
-      setFetchError(false);
-
-      if (background) {
-        setToast("Updated ✓");
-        setTimeout(() => setToast(null), 2000);
-      }
-    } catch (err) {
-      console.error("Failed to fetch data:", err);
-      if (!background) {
+  // Fetch whenever the category changes — the API filters server-side.
+  const fetchData = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (category !== "all") params.set("category", category);
+        params.set("limit", "2000");
+        const res = await fetch(`/api/places?${params}`, { signal });
+        const data = await res.json();
+        if (Array.isArray(data)) setPlaces(data);
+        setFetchError(false);
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
+        console.error("[map] fetch failed:", err);
         setFetchError(true);
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      if (!background) setLoading(false);
-    }
-  }, [filter]);
+    },
+    [category]
+  );
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(() => fetchData(true), 5 * 60 * 1000);
-    return () => clearInterval(interval);
+    const ctrl = new AbortController();
+    fetchData(ctrl.signal);
+    return () => ctrl.abort();
   }, [fetchData]);
 
-  // URL-based place highlighting
+  // Reflect category changes in the URL without a page reload
   useEffect(() => {
-    const placeName = searchParamsRaw.get("place");
+    const current = new URLSearchParams(window.location.search);
+    if (category === "all") current.delete("category");
+    else current.set("category", category);
+    const qs = current.toString();
+    const nextUrl = qs ? `/map?${qs}` : "/map";
+    if (window.location.pathname + window.location.search !== nextUrl) {
+      window.history.replaceState({}, "", nextUrl);
+    }
+  }, [category]);
+
+  // Handle ?place=Foo — fly to the pin once places are loaded
+  useEffect(() => {
+    const placeName = searchParams.get("place");
     if (!placeName || places.length === 0) return;
     if (highlightedPlace.current === placeName) return;
     highlightedPlace.current = placeName;
@@ -222,479 +105,302 @@ function Home() {
       (r) => r.name.toLowerCase() === placeName.toLowerCase()
     );
     if (found) {
-      handleFlyTo(found.lat, found.lng);
-      router.replace("/", { scroll: false });
+      setFlyTo([found.lat, found.lng]);
+      setTimeout(() => setFlyTo(null), 100);
+      router.replace("/map", { scroll: false });
     }
-  }, [searchParamsRaw, places]);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchParams, places, router]);
 
-  const handleFlyTo = useCallback((lat: number, lng: number) => {
-    setFlyTo([lat, lng]);
-    setTimeout(() => setFlyTo(null), 100);
-  }, []);
+  // Filter: category is DB-filtered; near-me is client-side
+  const filteredPlaces = useMemo(() => {
+    let items = places;
+    if (nearMeActive && nearMeCoords) {
+      const { lat, lng } = nearMeCoords;
+      items = items.filter(
+        (p) => haversineDistance(lat, lng, p.lat, p.lng) <= nearMeRadius * 1000
+      );
+    }
+    return items;
+  }, [places, nearMeActive, nearMeCoords, nearMeRadius]);
 
-  const handleViewOnMap = useCallback((lat: number, lng: number) => {
-    setFlyTo([lat, lng]);
-    setTimeout(() => setFlyTo(null), 100);
-    setView("map");
-  }, []);
-
-  const handleNearMeToggle = useCallback((coords: { lat: number; lng: number } | null) => {
-    setNearMeCoords(coords);
-    setNearMeActive(coords !== null);
-  }, []);
-
-  const filterButtons: { label: string; since: string }[] = [
-    { label: "All Time", since: "all" },
-    { label: "24h", since: "24h" },
-    { label: "7d", since: "7d" },
-    { label: "30d", since: "30d" },
-  ];
-
-  const thisWeekChip = (
-    <button
-      onClick={() => setThisWeekOnly((v) => !v)}
-      className="shrink-0 transition-all"
-      style={{
-        padding: "6px 16px",
-        height: "36px",
-        borderRadius: "20px",
-        fontSize: "12px",
-        fontWeight: thisWeekOnly ? 600 : 500,
-        border: thisWeekOnly ? "none" : "1px solid #e2e8f0",
-        background: thisWeekOnly ? "#1e293b" : "white",
-        color: thisWeekOnly ? "white" : "#64748b",
-        cursor: "pointer",
-      }}
-    >
-      This Week
-    </button>
+  const handleNearMeToggle = useCallback(
+    (coords: { lat: number; lng: number } | null) => {
+      setNearMeCoords(coords);
+      setNearMeActive(coords !== null);
+    },
+    []
   );
 
   return (
-    <div className={`h-full w-full relative ${view === "map" ? "overflow-hidden" : ""}`}>
-      {/* Top bar */}
-      <div className="fixed top-0 left-0 right-0 h-12 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-[1000] flex items-center px-4 gap-2">
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#ff6b35]" />
-          <span className="font-semibold text-sm tracking-tight bg-gradient-to-r from-[#ff6b35] to-[#f59e0b] bg-clip-text text-transparent">BuzzMaps</span>
-        </div>
-
-        {/* View toggle — desktop only */}
-        <div className="hidden md:flex bg-slate-100 rounded-lg overflow-hidden ml-2 p-0.5 shrink-0">
-          <button
-            onClick={() => setView("map")}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-              view === "map" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            Map
-          </button>
-          <button
-            onClick={() => setView("list")}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-              view === "list" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            List
-          </button>
-          <Link
-            href="/collections"
-            className="px-3 py-1 rounded-md text-xs font-semibold transition-all text-slate-400 hover:text-slate-600"
-          >
-            Collections
-          </Link>
-        </div>
-
-        {/* Mobile legend — only in map view */}
-        {view === "map" && (
-          <div className="flex md:hidden items-center gap-2.5 ml-2 overflow-x-auto no-scrollbar shrink">
-            {[
-              { label: "Food", color: CATEGORY_COLORS.restaurant },
-              { label: "Bar", color: CATEGORY_COLORS.bar },
-              { label: "Cafe", color: CATEGORY_COLORS.cafe },
-              { label: "Park", color: CATEGORY_COLORS.park },
-              { label: "Shop", color: CATEGORY_COLORS.shop },
-              { label: "Venue", color: CATEGORY_COLORS.venue },
-              { label: "Event", color: CATEGORY_COLORS.event },
-            ].map((c) => (
-              <span key={c.label} className="flex items-center gap-1 shrink-0">
-                <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
-                <span className="text-[10px] text-slate-500 font-medium">{c.label}</span>
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Search input — always visible */}
-        <input
-          ref={searchInputRef}
-          type="text"
-          placeholder="Search places..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="ml-2 flex-1 max-w-xs px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35] focus:ring-1 focus:ring-[#ff6b35]/20"
-        />
-
-        {/* Desktop time filters */}
-        <div className="hidden md:flex gap-0.5 ml-2">
-          {filterButtons.map((f) => (
-            <button
-              key={f.since}
-              onClick={() => setFilter((prev) => ({ ...prev, since: f.since }))}
-              className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
-                filter.since === f.since
-                  ? "bg-slate-900 text-white"
-                  : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Desktop nav links */}
-        <div className="hidden md:flex ml-auto gap-1 items-center">
-          <a href="/about" className="px-2 py-1 text-xs text-slate-400 hover:text-[#ff6b35] transition-colors">About</a>
-        </div>
-
-        {/* Mobile: clear search button — only show when there's a query */}
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery("")}
-            className="md:hidden ml-1 p-1.5 text-slate-400 hover:text-slate-600 shrink-0"
-            aria-label="Clear search"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        )}
-      </div>
-
-      {/* Category filter bar — map view + desktop list */}
-      <div className={`fixed top-12 left-0 right-0 h-11 bg-white/95 backdrop-blur-sm border-b border-slate-100 z-[999] flex items-center px-3 gap-1.5 overflow-x-auto no-scrollbar ${view === "list" ? "hidden md:flex" : ""}`}>
-        {CATEGORY_FILTERS.map((c) => {
-          const isActive = filter.category === c.value;
-          return (
-            <button
-              key={c.value}
-              onClick={() => setFilter((prev) => ({ ...prev, category: c.value }))}
-              className="shrink-0 transition-all"
-              style={{
-                padding: "6px 16px",
-                height: "36px",
-                borderRadius: "20px",
-                fontSize: "12px",
-                fontWeight: isActive ? 600 : 500,
-                border: isActive ? "none" : "1px solid #e2e8f0",
-                background: isActive ? "#1e293b" : "white",
-                color: isActive ? "white" : "#64748b",
-                cursor: "pointer",
-              }}
-            >
-              {c.label}
-            </button>
-          );
-        })}
-        <div className="shrink-0 border-l border-slate-200 pl-1.5 ml-0.5">{thisWeekChip}</div>
-      </div>
-
-      {/* Mobile search panel */}
-      {searchOpen && (
-        <div className="fixed top-[92px] left-0 right-0 z-[998] bg-white/95 backdrop-blur-sm border-b border-slate-200 p-3 md:hidden">
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Search places..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35]"
-          />
-        </div>
-      )}
-
-      {/* Active filter chips — only on map view to avoid blocking list search */}
-      {view === "map" && (filter.category !== "all" || filter.since !== "all" || filter.sentiment !== "all" || searchQuery) && (
-        <div className="fixed top-[92px] left-0 right-0 z-[597] px-3 py-1.5 flex items-center gap-2 overflow-x-auto no-scrollbar bg-white/80 backdrop-blur-sm border-b border-slate-100" style={{ top: "92px" }}>
-          <span className="text-[10px] text-slate-400 shrink-0">Showing {filteredPlaces.length} of {places.length} places</span>
-          <div className="flex gap-1.5 ml-auto">
-            {filter.category !== "all" && (
-              <button
-                onClick={() => setFilter((prev) => ({ ...prev, category: "all" }))}
-                className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-[#ff6b35]/10 text-[#ff6b35] text-[11px] font-medium rounded-full hover:bg-[#ff6b35]/20 transition-colors"
-              >
-                {CATEGORY_EMOJI[filter.category as PlaceCategory] || ""} {filter.category}
-                <span className="ml-0.5">&times;</span>
-              </button>
-            )}
-            {filter.since !== "all" && (
-              <button
-                onClick={() => setFilter((prev) => ({ ...prev, since: "all" }))}
-                className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-600 text-[11px] font-medium rounded-full hover:bg-slate-200 transition-colors"
-              >
-                {filter.since}
-                <span className="ml-0.5">&times;</span>
-              </button>
-            )}
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-600 text-[11px] font-medium rounded-full hover:bg-slate-200 transition-colors"
-              >
-                &ldquo;{searchQuery.slice(0, 20)}{searchQuery.length > 20 ? "..." : ""}&rdquo;
-                <span className="ml-0.5">&times;</span>
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {view === "map" && trendingNow.length > 0 && !trendingCollapsed && (
-        <div
-          className="fixed z-[600] pointer-events-auto"
-          style={{ bottom: "80px", left: "50%", transform: "translateX(-50%)", maxWidth: "90vw", width: "340px" }}
-        >
-          <div style={{
-            background: "white",
-            borderRadius: "16px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-            padding: "12px 16px",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
-              <span style={{ fontSize: "11px", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Trending this week</span>
-              <button onClick={() => setTrendingCollapsed(true)} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px", color: "#94a3b8", fontSize: "16px", lineHeight: 1 }}>&times;</button>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              {trendingNow.map(r => (
-                <button key={r.id} onClick={() => handleFlyTo(r.lat, r.lng)}
-                  style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 8px", borderRadius: "10px", border: "none", background: "transparent", cursor: "pointer", textAlign: "left", transition: "background 0.15s" }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#f8fafc"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
-                >
-                  <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: CATEGORY_COLORS[r.category as PlaceCategory] || "#ff6b35", flexShrink: 0 }} />
-                  <span style={{ fontSize: "13px", fontWeight: 600, color: "#1e293b", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
-                  <span style={{ fontSize: "11px", color: "#94a3b8", flexShrink: 0 }}>{r.mention_count} mentions</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {view === "map" ? (
-        <>
-          <Sidebar
-            posts={posts}
-            isOpen={sidebarOpen}
-            onToggle={() => setSidebarOpen(!sidebarOpen)}
-            onFlyTo={handleFlyTo}
-            totalRestaurants={stats.places}
-            totalPosts={stats.posts}
-          />
-          <div className="h-full w-full pt-[92px] pb-14 md:pb-8 relative">
-            {/* Top edge fade */}
-            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "40px", background: "linear-gradient(to bottom, rgba(255,255,255,0.6) 0%, transparent 100%)", pointerEvents: "none", zIndex: 500 }} />
-            {/* Floating search */}
-            <div ref={searchContainerRef} style={{ position: "absolute", top: "8px", left: "50%", transform: "translateX(-50%)", zIndex: 600, width: "280px" }}>
-              <input
-                type="text"
-                placeholder="🔍 Search places..."
-                value={mapSearchInput}
-                onChange={(e) => handleMapSearchChange(e.target.value)}
-                onFocus={() => { if (mapSearchSuggestions.length > 0) setShowSuggestions(true); }}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                style={{
-                  background: "rgba(255,255,255,0.85)",
-                  backdropFilter: "blur(12px)",
-                  WebkitBackdropFilter: "blur(12px)",
-                  borderRadius: showSuggestions && mapSearchSuggestions.length > 0 ? "16px 16px 0 0" : "9999px",
-                  boxShadow: "0 2px 16px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.6)",
-                  padding: "8px 16px",
-                  width: "100%",
-                  border: "1px solid rgba(226,232,240,0.8)",
-                  borderBottom: showSuggestions && mapSearchSuggestions.length > 0 ? "1px solid #f1f5f9" : "1px solid rgba(226,232,240,0.8)",
-                  fontSize: "16px",
-                  color: "#0f172a",
-                  outline: "none",
-                  boxSizing: "border-box",
-                }}
-              />
-              {showSuggestions && mapSearchSuggestions.length > 0 && (
-                <div style={{
-                  position: "absolute",
-                  top: "100%",
-                  left: 0,
-                  right: 0,
-                  background: "white",
-                  borderRadius: "0 0 16px 16px",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
-                  border: "1px solid #e2e8f0",
-                  borderTop: "none",
-                  zIndex: 700,
-                  maxHeight: "256px",
-                  overflowY: "auto",
-                }}>
-                  {mapSearchSuggestions.map((r) => (
-                    <div
-                      key={r.id}
-                      onMouseDown={() => handleSuggestionClick(r)}
-                      style={{
-                        padding: "8px 16px",
-                        cursor: "pointer",
-                        fontSize: "14px",
-                        color: "#334155",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                      }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "#f8fafc"; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "white"; }}
-                    >
-                      <span style={{ fontSize: "16px" }}>{CATEGORY_EMOJI[r.category as PlaceCategory] || "📍"}</span>
-                      <span style={{ flex: 1, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
-                      {r.address && <span style={{ fontSize: "11px", color: "#94a3b8" }}>{r.address.split(",")[0]}</span>}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Category legend toggle */}
-            <div style={{ position: "absolute", bottom: "32px", right: "12px", zIndex: 500 }}>
-              <button
-                onClick={() => setShowLegend((v) => !v)}
-                style={{
-                  background: "white",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "8px",
-                  padding: "6px 10px",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-                  color: "#334155",
-                }}
-              >
-                🏷️ Legend
-              </button>
-              {showLegend && (
-                <div style={{
-                  position: "absolute",
-                  bottom: "38px",
-                  right: 0,
-                  background: "white",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "12px",
-                  padding: "10px 14px",
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-                  minWidth: "160px",
-                }}>
-                  <div style={{ fontSize: "11px", fontWeight: 700, color: "#64748b", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Categories</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 12px" }}>
-                    {([
-                      ["restaurant", "🍽️", "Restaurant"],
-                      ["bar", "🍺", "Bar"],
-                      ["cafe", "☕", "Cafe"],
-                      ["club", "🎵", "Club"],
-                      ["shop", "🛍️", "Shop"],
-                      ["park", "🌳", "Park"],
-                      ["gym", "🏋️", "Gym"],
-                      ["venue", "⭐", "Venue"],
-                      ["market", "🏪", "Market"],
-                      ["museum", "🏛️", "Museum"],
-                      ["other", "📍", "Other"],
-                    ] as [string, string, string][]).map(([cat, emoji, label]) => (
-                      <div key={cat} style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "12px", color: "#334155" }}>
-                        <span>{emoji}</span>
-                        <span>{label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-<MapView places={filteredPlaces} flyTo={flyTo} nearMeActive={nearMeActive} nearMeRadius={nearMeRadius} onNearMeToggle={handleNearMeToggle} onRadiusChange={setNearMeRadius} nearMeCount={filteredPlaces.length} venueEvents={venueEvents} />
-          </div>
-        </>
-      ) : (
-        <ListView
-          places={places}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          loading={loading}
-          activeCategory={filter.category}
-          onViewOnMap={handleViewOnMap}
-          venueEvents={venueEvents}
-          linkedEventIds={linkedEventIds}
-        />
-      )}
-
-      {/* Submit a Place FAB — desktop only (BottomNav covers mobile). Routes to /submit. */}
-      <Link
-        href="/submit"
-        prefetch
-        className="fixed z-50 shadow-lg rounded-full px-4 py-2 text-sm font-semibold transition-all hidden md:flex items-center gap-1.5 press-down hover:opacity-90"
+    <div
+      className="h-full w-full relative overflow-hidden"
+      style={{ background: "var(--bg)" }}
+    >
+      {/* ─── Slim top chrome ─── */}
+      <div
+        className="absolute top-0 left-0 right-0 z-[800]"
         style={{
-          bottom: "24px",
-          right: "24px",
-          backgroundImage:
-            "linear-gradient(135deg, var(--brand), var(--brand-hover))",
-          color: "var(--fg-inverse)",
+          background:
+            "color-mix(in srgb, var(--bg) 92%, transparent)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          borderBottom: "1px solid var(--border)",
         }}
       >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-        Submit a Place
-      </Link>
-
-      {/* Inline error retry banner */}
-      {fetchError && (
-        <div className="fixed top-[92px] left-1/2 -translate-x-1/2 z-[2000] bg-red-50 border border-red-200 text-red-700 text-xs font-medium px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 mt-2">
-          <span>Something went wrong loading data.</span>
-          <button
-            onClick={() => { setFetchError(false); fetchData(); }}
-            className="px-2 py-0.5 bg-red-100 hover:bg-red-200 rounded-md font-semibold transition-colors"
+        {/* Row 1: back link · wordmark · search hint */}
+        <div className="h-12 flex items-center gap-4 px-4 md:px-6">
+          <Link
+            href="/"
+            className="eyebrow ink-underline inline-flex items-center gap-1.5"
+            style={{ color: "var(--fg-muted)" }}
+            aria-label="Back to feed"
           >
-            Retry
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M19 12H5M12 5l-7 7 7 7" />
+            </svg>
+            <span className="hidden sm:inline">Feed</span>
+          </Link>
+
+          <span
+            aria-hidden="true"
+            className="hidden sm:inline"
+            style={{ color: "var(--fg-faint)" }}
+          >
+            ·
+          </span>
+
+          <span
+            className="hidden sm:inline font-display tracking-tight"
+            style={{ color: "var(--fg)", fontWeight: 500, fontSize: 14 }}
+          >
+            Map
+          </span>
+
+          <p
+            className="hidden md:block dateline truncate ml-auto"
+            style={{ color: "var(--fg-subtle)" }}
+          >
+            {loading
+              ? "Loading…"
+              : fetchError
+              ? "Couldn't load places"
+              : `${filteredPlaces.length.toLocaleString()} ${
+                  filteredPlaces.length === 1 ? "place" : "places"
+                }`}
+          </p>
+
+          <button
+            type="button"
+            className="ml-auto md:ml-4 inline-flex items-center gap-2 press-down"
+            style={{ color: "var(--fg-muted)" }}
+            onClick={() => {
+              // Dispatch a synthetic keystroke so CommandPalette (in layout) opens.
+              const ev = new KeyboardEvent("keydown", {
+                key: "k",
+                metaKey: true,
+                bubbles: true,
+              });
+              window.dispatchEvent(ev);
+            }}
+            aria-label="Open command palette (Cmd+K)"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <span className="eyebrow hidden sm:inline">Search</span>
+            <kbd
+              className="font-mono px-1.5 py-0.5 text-[10px] hidden md:inline"
+              style={{
+                background: "var(--bg-sunken)",
+                color: "var(--fg-subtle)",
+                border: "1px solid var(--border)",
+                borderRadius: 3,
+                lineHeight: 1,
+              }}
+              aria-hidden="true"
+            >
+              ⌘K
+            </kbd>
           </button>
         </div>
-      )}
 
-      {/* Toast notification */}
-      {toast && (
-        <div className="fixed bottom-14 left-1/2 -translate-x-1/2 z-[2000] bg-slate-800 text-white text-xs font-medium px-4 py-2 rounded-full shadow-lg pointer-events-none">
-          {toast}
+        {/* Row 2: category pill rail */}
+        <div
+          className="flex items-center gap-1 overflow-x-auto no-scrollbar px-4 md:px-6 py-2"
+          style={{ borderTop: "1px solid var(--border)" }}
+          role="tablist"
+          aria-label="Filter by category"
+        >
+          {CATEGORY_FILTERS.map((opt) => {
+            const active = category === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setCategory(opt.value as Category)}
+                className="shrink-0 press-down transition-colors"
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 999,
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  letterSpacing: "0.02em",
+                  border: "1px solid",
+                  borderColor: active ? "var(--fg)" : "var(--border)",
+                  background: active ? "var(--fg)" : "transparent",
+                  color: active ? "var(--fg-inverse)" : "var(--fg-muted)",
+                }}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ─── Map canvas ─── */}
+      <div
+        className="absolute left-0 right-0"
+        style={{
+          top: "calc(48px + 44px)", // top bar + pill row
+          bottom: "0",
+          // Mobile BottomNav takes the bottom 60px + safe-area; pad so the
+          // NearMe FAB stays above it.
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        }}
+      >
+        <style>{`
+          @media (max-width: 767px) {
+            .mv-canvas { bottom: 60px !important; }
+          }
+        `}</style>
+        <div className="mv-canvas absolute inset-0">
+          <MapView
+            places={filteredPlaces}
+            flyTo={flyTo}
+            onNearMeToggle={handleNearMeToggle}
+            nearMeActive={nearMeActive}
+            nearMeRadius={nearMeRadius}
+            onRadiusChange={setNearMeRadius}
+            nearMeCount={filteredPlaces.length}
+          />
+        </div>
+      </div>
+
+      {/* Error toast */}
+      {fetchError && (
+        <div
+          className="absolute top-[104px] left-1/2 -translate-x-1/2 z-[900] animate-sheet-in"
+          style={{
+            background: "var(--bg-elevated)",
+            border: "1px solid var(--sent-neg)",
+            borderRadius: "var(--radius-sm)",
+            padding: "10px 14px",
+            boxShadow: "var(--shadow-md)",
+          }}
+          role="alert"
+        >
+          <p
+            className="dateline inline-flex items-center gap-3"
+            style={{ color: "var(--sent-neg)" }}
+          >
+            Couldn&apos;t load the map data
+            <button
+              type="button"
+              onClick={() => fetchData()}
+              className="eyebrow ink-underline"
+              style={{ color: "var(--fg-muted)" }}
+            >
+              Retry →
+            </button>
+          </p>
         </div>
       )}
 
-      {/* Bottom bar — hidden on mobile where bottom nav is shown */}
-      <div className="fixed bottom-0 left-0 right-0 h-8 bg-white/95 backdrop-blur-sm border-t border-slate-200 z-[1000] hidden md:flex items-center px-4 text-xs text-slate-500">
-        <span>🗺️ <span className="text-[#ff6b35] font-medium">{stats.places}</span> places · 💬 <span className="text-[#ff6b35] font-medium">{stats.posts}</span> posts · Updated {formatLastScraped(stats.last_scraped)}</span>
-        <a href="/stats" className="ml-auto text-slate-500 hover:text-[#ff6b35] transition-colors">📊 Stats</a>
-      </div>
-
-      {/* Mobile bottom navigation is handled by BottomNav in layout.tsx */}
+      {/* Empty state — no pins for this filter */}
+      {!loading && !fetchError && filteredPlaces.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[400]">
+          <div
+            className="pointer-events-auto text-center px-6 py-5"
+            style={{
+              background: "var(--bg-elevated)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-md)",
+              boxShadow: "var(--shadow-md)",
+              maxWidth: 320,
+            }}
+          >
+            <p
+              className="eyebrow mb-2"
+              style={{ color: "var(--fg-subtle)" }}
+            >
+              Nothing here
+            </p>
+            <h2
+              className="font-display text-xl mb-3"
+              style={{ color: "var(--fg)", fontWeight: 500 }}
+            >
+              {nearMeActive
+                ? `No ${category === "all" ? "places" : category} within ${nearMeRadius}km.`
+                : `No ${category === "all" ? "places" : category} to show.`}
+            </h2>
+            <button
+              type="button"
+              onClick={() => {
+                setCategory("all");
+                if (nearMeActive) handleNearMeToggle(null);
+              }}
+              className="eyebrow ink-underline"
+              style={{ color: "var(--brand)" }}
+            >
+              Clear filters →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function Page() {
   return (
-    <Suspense fallback={<div className="h-full w-full bg-white flex items-center justify-center"><div className="text-slate-500 text-sm">Loading...</div></div>}>
-      <Home />
+    <Suspense
+      fallback={
+        <div
+          className="h-full w-full flex items-center justify-center"
+          style={{ background: "var(--bg)" }}
+        >
+          <p className="caption" style={{ color: "var(--fg-muted)" }}>
+            Loading map…
+          </p>
+        </div>
+      }
+    >
+      <MapPage />
     </Suspense>
   );
 }
