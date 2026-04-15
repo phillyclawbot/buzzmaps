@@ -22,14 +22,11 @@ import { getNeighbourhood } from "@/lib/neighbourhoods";
 // ─────────────────────────────────────────────────────────
 // Tile provider: CARTO Positron — minimal light basemap.
 // Free for non-commercial / fair use; attributed below.
-// Dark mode swap handled via `prefers-color-scheme` on a
-// second <TileLayer> (Leaflet picks the one that matches).
+// Site is light-only, so only one tile layer.
 // ─────────────────────────────────────────────────────────
 
-const TILE_LIGHT =
+const TILE_URL =
   "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
-const TILE_DARK =
-  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
 const TILE_ATTR =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
@@ -161,22 +158,6 @@ function ZoomTracker({ onZoom }: { onZoom: (z: number) => void }) {
   return null;
 }
 
-// Dark-mode detection without SSR hydration mismatch. Listens for
-// prefers-color-scheme changes and re-renders the TileLayer key so
-// Leaflet swaps tiles cleanly.
-function useIsDark(): boolean {
-  const [isDark, setIsDark] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    setIsDark(mq.matches);
-    const onChange = (e: MediaQueryListEvent) => setIsDark(e.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-  return isDark;
-}
-
 export default memo(function MapView({
   places,
   flyTo,
@@ -200,7 +181,6 @@ export default memo(function MapView({
   const userMarkerRef = useRef<L.Marker | null>(null);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [, setZoom] = useState(13);
-  const isDark = useIsDark();
 
   // Deduplicate places with the same name — keep highest mention count
   const dedupedPlaces = useMemo(() => {
@@ -359,11 +339,9 @@ export default memo(function MapView({
         zoomControl={false}
         ref={mapRef}
       >
-        {/* Tile layer keys force Leaflet to swap cleanly when dark mode toggles. */}
         <TileLayer
-          key={isDark ? "dark" : "light"}
           attribution={TILE_ATTR}
-          url={isDark ? TILE_DARK : TILE_LIGHT}
+          url={TILE_URL}
           subdomains={["a", "b", "c", "d"]}
         />
 

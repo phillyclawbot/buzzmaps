@@ -22,6 +22,11 @@ interface FeedRow {
   photo_url: string | null;
   mention_count: number;
   latest_mention: number;
+  preview_title: string | null;
+  preview_subreddit: string | null;
+  preview_score: number | null;
+  preview_created_utc: number | null;
+  trend: number[] | null;
 }
 
 interface FeedPostRow {
@@ -44,24 +49,77 @@ async function fetchFeedData() {
     const sql = getDb();
     const sevenDays = Math.floor(Date.now() / 1000) - 7 * 86400;
 
+    const twelveWeeks = Math.floor(Date.now() / 1000) - 12 * 7 * 86400;
     const [t, r, p] = await Promise.all([
+      // Trending this week — each row also carries its top post (highest
+      // score, most recent) as a preview and a 12-week histogram for the
+      // sparkline.
       sql`
         SELECT r.id, r.name, r.address, r.category, r.google_rating, r.photo_url,
           COUNT(DISTINCT pr.post_id)::int as mention_count,
-          MAX(rp.created_utc)::bigint as latest_mention
+          MAX(rp.created_utc)::bigint as latest_mention,
+          (
+            SELECT rp2.title FROM reddit_posts rp2
+            JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+            WHERE pr2.restaurant_id = r.id
+            ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+            LIMIT 1
+          ) as preview_title,
+          (
+            SELECT rp2.subreddit FROM reddit_posts rp2
+            JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+            WHERE pr2.restaurant_id = r.id
+            ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+            LIMIT 1
+          ) as preview_subreddit,
+          (
+            SELECT rp2.score FROM reddit_posts rp2
+            JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+            WHERE pr2.restaurant_id = r.id
+            ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+            LIMIT 1
+          )::int as preview_score,
+          (
+            SELECT rp2.created_utc FROM reddit_posts rp2
+            JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+            WHERE pr2.restaurant_id = r.id
+            ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+            LIMIT 1
+          )::bigint as preview_created_utc,
+          (
+            SELECT COALESCE(
+              array_agg(cnt ORDER BY week_start),
+              ARRAY[]::int[]
+            )
+            FROM (
+              SELECT date_trunc('week', to_timestamp(rp3.created_utc))::date AS week_start,
+                     COUNT(*)::int AS cnt
+              FROM reddit_posts rp3
+              JOIN post_restaurants pr3 ON pr3.post_id = rp3.id
+              WHERE pr3.restaurant_id = r.id
+                AND rp3.created_utc > ${twelveWeeks}
+              GROUP BY week_start
+              ORDER BY week_start
+            ) buckets
+          ) as trend
         FROM restaurants r
         JOIN post_restaurants pr ON pr.restaurant_id = r.id
         JOIN reddit_posts rp ON rp.id = pr.post_id
         WHERE rp.created_utc > ${sevenDays}
-          AND r.photo_url IS NOT NULL
         GROUP BY r.id
         ORDER BY mention_count DESC, latest_mention DESC
         LIMIT 9
       `,
+      // Newly added this week — simpler, just place info.
       sql`
         SELECT id, name, address, category, google_rating, photo_url,
           (SELECT COUNT(*)::int FROM post_restaurants WHERE restaurant_id = r.id) as mention_count,
-          0 as latest_mention
+          0 as latest_mention,
+          NULL::text as preview_title,
+          NULL::text as preview_subreddit,
+          NULL::int as preview_score,
+          NULL::bigint as preview_created_utc,
+          NULL::int[] as trend
         FROM restaurants r
         WHERE first_seen_at IS NOT NULL
         ORDER BY first_seen_at DESC
@@ -94,6 +152,32 @@ function timeAgo(utc: number): string {
   if (s < 3600) return `${Math.max(1, Math.floor(s / 60))}m ago`;
   if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
   return `${Math.floor(s / 86400)}d ago`;
+}
+
+/**
+ * Shape a raw FeedRow from the DB into the PlaceCardData that PlaceCard
+ * expects, folding preview_* columns into a single `preview` object.
+ */
+function toCardData(r: FeedRow) {
+  return {
+    id: r.id,
+    name: r.name,
+    address: r.address,
+    category: r.category,
+    photo_url: r.photo_url,
+    mention_count: r.mention_count,
+    google_rating: r.google_rating,
+    preview:
+      r.preview_title && r.preview_subreddit
+        ? {
+            title: r.preview_title,
+            subreddit: r.preview_subreddit,
+            score: r.preview_score ?? undefined,
+            created_utc: r.preview_created_utc ?? undefined,
+          }
+        : null,
+    trend: r.trend ?? null,
+  };
 }
 
 function todayString(): string {
@@ -170,7 +254,7 @@ async function HomeContent() {
               See all trending →
             </Link>
           </div>
-          <PlaceCard place={hero} variant="feature" />
+          <PlaceCard place={toCardData(hero)} variant="feature" />
         </section>
       ) : (
         <FallbackHero />
@@ -184,7 +268,12 @@ async function HomeContent() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
             {featured.map((p, i) => (
-              <PlaceCard key={p.id} place={p} variant="story" stagger={i} />
+              <PlaceCard
+                key={p.id}
+                place={toCardData(p)}
+                variant="story"
+                stagger={i}
+              />
             ))}
           </div>
         </section>
@@ -265,7 +354,7 @@ async function HomeContent() {
             {moreTrending.map((p, i) => (
               <PlaceCard
                 key={p.id}
-                place={p}
+                place={toCardData(p)}
                 variant="rank"
                 rank={i + 4}
                 stagger={i}
@@ -362,7 +451,12 @@ async function HomeContent() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
             {recentlyAdded.slice(0, 6).map((p, i) => (
-              <PlaceCard key={p.id} place={p} variant="story" stagger={i} />
+              <PlaceCard
+                key={p.id}
+                place={toCardData(p)}
+                variant="story"
+                stagger={i}
+              />
             ))}
           </div>
         </section>

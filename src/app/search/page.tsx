@@ -28,6 +28,36 @@ interface Row {
   price_level: number | null;
   photo_url: string | null;
   mention_count: number;
+  preview_title: string | null;
+  preview_subreddit: string | null;
+  preview_score: number | null;
+  preview_created_utc: number | null;
+}
+
+/**
+ * Fold preview_* columns into a `preview` object for PlaceCard.
+ */
+function toCardData(r: Row) {
+  return {
+    id: r.id,
+    name: r.name,
+    address: r.address,
+    category: r.category,
+    photo_url: r.photo_url,
+    mention_count: r.mention_count,
+    google_rating: r.google_rating,
+    cuisine_type: r.cuisine_type,
+    price_level: r.price_level,
+    preview:
+      r.preview_title && r.preview_subreddit
+        ? {
+            title: r.preview_title,
+            subreddit: r.preview_subreddit,
+            score: r.preview_score ?? undefined,
+            created_utc: r.preview_created_utc ?? undefined,
+          }
+        : null,
+  };
 }
 
 export async function generateMetadata({
@@ -119,7 +149,35 @@ export default async function SearchPage({
         rows = (await sql`
           SELECT r.id, r.name, r.address, r.category, r.google_rating,
                  r.google_reviews_count, r.cuisine_type, r.price_level, r.photo_url,
-                 COUNT(DISTINCT pr.post_id)::int AS mention_count
+                 COUNT(DISTINCT pr.post_id)::int AS mention_count,
+                 (
+                   SELECT rp2.title FROM reddit_posts rp2
+                   JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+                   WHERE pr2.restaurant_id = r.id
+                   ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+                   LIMIT 1
+                 ) AS preview_title,
+                 (
+                   SELECT rp2.subreddit FROM reddit_posts rp2
+                   JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+                   WHERE pr2.restaurant_id = r.id
+                   ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+                   LIMIT 1
+                 ) AS preview_subreddit,
+                 (
+                   SELECT rp2.score FROM reddit_posts rp2
+                   JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+                   WHERE pr2.restaurant_id = r.id
+                   ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+                   LIMIT 1
+                 )::int AS preview_score,
+                 (
+                   SELECT rp2.created_utc FROM reddit_posts rp2
+                   JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+                   WHERE pr2.restaurant_id = r.id
+                   ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+                   LIMIT 1
+                 )::bigint AS preview_created_utc
           FROM restaurants r
           LEFT JOIN post_restaurants pr ON pr.restaurant_id = r.id
           WHERE r.category = ${category}
@@ -133,7 +191,35 @@ export default async function SearchPage({
         rows = (await sql`
           SELECT r.id, r.name, r.address, r.category, r.google_rating,
                  r.google_reviews_count, r.cuisine_type, r.price_level, r.photo_url,
-                 COUNT(DISTINCT pr.post_id)::int AS mention_count
+                 COUNT(DISTINCT pr.post_id)::int AS mention_count,
+                 (
+                   SELECT rp2.title FROM reddit_posts rp2
+                   JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+                   WHERE pr2.restaurant_id = r.id
+                   ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+                   LIMIT 1
+                 ) AS preview_title,
+                 (
+                   SELECT rp2.subreddit FROM reddit_posts rp2
+                   JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+                   WHERE pr2.restaurant_id = r.id
+                   ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+                   LIMIT 1
+                 ) AS preview_subreddit,
+                 (
+                   SELECT rp2.score FROM reddit_posts rp2
+                   JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+                   WHERE pr2.restaurant_id = r.id
+                   ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+                   LIMIT 1
+                 )::int AS preview_score,
+                 (
+                   SELECT rp2.created_utc FROM reddit_posts rp2
+                   JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+                   WHERE pr2.restaurant_id = r.id
+                   ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+                   LIMIT 1
+                 )::bigint AS preview_created_utc
           FROM restaurants r
           LEFT JOIN post_restaurants pr ON pr.restaurant_id = r.id
           WHERE r.name ILIKE ${like} OR COALESCE(r.address, '') ILIKE ${like}
@@ -146,7 +232,35 @@ export default async function SearchPage({
         rows = (await sql`
           SELECT r.id, r.name, r.address, r.category, r.google_rating,
                  r.google_reviews_count, r.cuisine_type, r.price_level, r.photo_url,
-                 COUNT(DISTINCT pr.post_id)::int AS mention_count
+                 COUNT(DISTINCT pr.post_id)::int AS mention_count,
+                 (
+                   SELECT rp2.title FROM reddit_posts rp2
+                   JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+                   WHERE pr2.restaurant_id = r.id
+                   ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+                   LIMIT 1
+                 ) AS preview_title,
+                 (
+                   SELECT rp2.subreddit FROM reddit_posts rp2
+                   JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+                   WHERE pr2.restaurant_id = r.id
+                   ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+                   LIMIT 1
+                 ) AS preview_subreddit,
+                 (
+                   SELECT rp2.score FROM reddit_posts rp2
+                   JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+                   WHERE pr2.restaurant_id = r.id
+                   ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+                   LIMIT 1
+                 )::int AS preview_score,
+                 (
+                   SELECT rp2.created_utc FROM reddit_posts rp2
+                   JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+                   WHERE pr2.restaurant_id = r.id
+                   ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+                   LIMIT 1
+                 )::bigint AS preview_created_utc
           FROM restaurants r
           LEFT JOIN post_restaurants pr ON pr.restaurant_id = r.id
           WHERE r.category = ${category}
@@ -363,7 +477,11 @@ export default async function SearchPage({
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
               {rows.map((place, i) => (
-                <PlaceCard key={place.id} place={place} stagger={i} />
+                <PlaceCard
+                  key={place.id}
+                  place={toCardData(place)}
+                  stagger={i}
+                />
               ))}
             </div>
 

@@ -8,6 +8,10 @@
    ───────────────────────────────────────────────────────── */
 
 :root {
+  /* Explicit light-only color scheme so browser chrome (scrollbars,
+     native form controls) doesn't go dark on systems that prefer dark. */
+  color-scheme: light;
+
   /* ─── Surfaces — warm, newsprint-like ─── */
   --bg: #faf7f2;              /* off-white, warm */
   --bg-elevated: #ffffff;     /* cards */
@@ -72,48 +76,12 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #14110d;              /* warm near-black */
-    --bg-elevated: #1e1a14;
-    --bg-sunken: #0e0b08;
-    --surface-hover: #2a251c;
-
-    --fg: #f2ede2;
-    --fg-muted: #a89e8d;
-    --fg-subtle: #7a7063;
-    --fg-faint: #4a4238;
-    --fg-inverse: #14110d;
-
-    --border: #2a251c;
-    --border-strong: #3d3628;
-
-    --brand: #ff7a48;
-    --brand-hover: #d94e1f;
-    --brand-tint: rgba(255, 122, 72, 0.14);
-    --brand-tint-strong: rgba(255, 122, 72, 0.28);
-
-    --accent-2: #7a9a82;
-    --accent-2-tint: rgba(122, 154, 130, 0.14);
-
-    --ink: #f2ede2;
-    --ink-inverse: #14110d;
-
-    --sent-pos: #6aaa7a;
-    --sent-pos-fill: #4a8a5a;
-    --sent-neu: #e0a040;
-    --sent-neg: #e07050;
-
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.40);
-    --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.50);
-    --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.60);
+    /* Dark mode intentionally disabled — BuzzMaps is light-only, matches
+       the editorial / newsprint aesthetic. Leaving this empty block so
+       future additions have an obvious home; the browser will just
+       inherit the default :root values above. */
+    color-scheme: light;
   }
-}
-
-/* Opt-in manual override: <html data-theme="light|dark"> wins over system */
-[data-theme="dark"] {
-  color-scheme: dark;
-}
-[data-theme="light"] {
-  color-scheme: light;
 }
 
 @theme inline {

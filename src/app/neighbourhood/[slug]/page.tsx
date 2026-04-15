@@ -48,6 +48,31 @@ interface Row {
   google_rating: number | null;
   mention_count: number;
   latest_mention: number;
+  preview_title: string | null;
+  preview_subreddit: string | null;
+  preview_score: number | null;
+  preview_created_utc: number | null;
+}
+
+function toCardData(r: Row) {
+  return {
+    id: r.id,
+    name: r.name,
+    address: r.address,
+    category: r.category,
+    photo_url: r.photo_url,
+    mention_count: r.mention_count,
+    google_rating: r.google_rating,
+    preview:
+      r.preview_title && r.preview_subreddit
+        ? {
+            title: r.preview_title,
+            subreddit: r.preview_subreddit,
+            score: r.preview_score ?? undefined,
+            created_utc: r.preview_created_utc ?? undefined,
+          }
+        : null,
+  };
 }
 
 function categoryCounts(rows: Row[]): Array<[PlaceCategory, number]> {
@@ -80,7 +105,35 @@ export default async function NeighbourhoodPage({
            JOIN reddit_posts rp ON rp.id = pr.post_id
            WHERE pr.restaurant_id = r.id),
           0
-        ) as latest_mention
+        ) as latest_mention,
+        (
+          SELECT rp2.title FROM reddit_posts rp2
+          JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+          WHERE pr2.restaurant_id = r.id
+          ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+          LIMIT 1
+        ) AS preview_title,
+        (
+          SELECT rp2.subreddit FROM reddit_posts rp2
+          JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+          WHERE pr2.restaurant_id = r.id
+          ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+          LIMIT 1
+        ) AS preview_subreddit,
+        (
+          SELECT rp2.score FROM reddit_posts rp2
+          JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+          WHERE pr2.restaurant_id = r.id
+          ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+          LIMIT 1
+        )::int AS preview_score,
+        (
+          SELECT rp2.created_utc FROM reddit_posts rp2
+          JOIN post_restaurants pr2 ON pr2.post_id = rp2.id
+          WHERE pr2.restaurant_id = r.id
+          ORDER BY rp2.score DESC NULLS LAST, rp2.created_utc DESC
+          LIMIT 1
+        )::bigint AS preview_created_utc
       FROM restaurants r
       WHERE r.lat >= ${n.minLat} AND r.lat <= ${n.maxLat}
         AND r.lng >= ${n.minLng} AND r.lng <= ${n.maxLng}
@@ -181,7 +234,12 @@ export default async function NeighbourhoodPage({
                 <p className="eyebrow mb-4">The Standouts</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-12">
                   {featured.map((p, i) => (
-                    <PlaceCard key={p.id} place={p} variant="story" stagger={i} />
+                    <PlaceCard
+                      key={p.id}
+                      place={toCardData(p)}
+                      variant="story"
+                      stagger={i}
+                    />
                   ))}
                 </div>
               </section>
@@ -206,7 +264,7 @@ export default async function NeighbourhoodPage({
                   {ranked.map((p, i) => (
                     <PlaceCard
                       key={p.id}
-                      place={p}
+                      place={toCardData(p)}
                       variant="rank"
                       rank={featured.length + i + 1}
                       stagger={i}
