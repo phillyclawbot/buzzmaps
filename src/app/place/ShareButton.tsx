@@ -12,7 +12,7 @@ export default function ShareButton({ name }: { name: string }) {
   return (
     <button
       onClick={share}
-      className="px-3 py-1.5 bg-[#ff6b35]/10 text-[#ff6b35] rounded-lg text-sm font-medium hover:bg-[#ff6b35]/20 transition-colors"
+      className="px-3 py-1.5 bg-[#ff5b3a]/10 text-[#ff5b3a] rounded-lg text-sm font-medium hover:bg-[#ff5b3a]/20 transition-colors"
     >
       {copied ? '✓ Copied!' : '🔗 Share'}
     </button>

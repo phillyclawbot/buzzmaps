@@ -12,8 +12,11 @@ import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { Place, PlaceCategory } from "@/lib/types";
-import { CATEGORY_FILTERS, VALID_CATEGORIES } from "@/lib/constants";
+import { CATEGORY_FILTERS, VALID_CATEGORIES, CATEGORY_COLORS } from "@/lib/constants";
 import { haversineDistance } from "@/lib/utils";
+import { Search, ArrowLeft } from "lucide-react";
+import { CategoryIcon } from "@/lib/icons";
+import Logo from "@/components/ui/Logo";
 
 // MapView is client-only (Leaflet needs window). Dynamic import with no SSR.
 const MapView = dynamic(() => import("@/components/MapView"), {
@@ -136,58 +139,31 @@ function MapPage() {
       className="h-full w-full relative overflow-hidden"
       style={{ background: "var(--bg)" }}
     >
-      {/* ─── Slim top chrome ─── */}
-      <div
-        className="absolute top-0 left-0 right-0 z-[800]"
-        style={{
-          background:
-            "color-mix(in srgb, var(--bg) 92%, transparent)",
-          backdropFilter: "blur(10px)",
-          WebkitBackdropFilter: "blur(10px)",
-          borderBottom: "1px solid var(--border)",
-        }}
-      >
-        {/* Row 1: back link · wordmark · search hint */}
-        <div className="h-12 flex items-center gap-4 px-4 md:px-6">
+      {/* ─── Floating glass chrome ─── */}
+      <div className="absolute top-0 left-0 right-0 z-[800] px-3 md:px-6 pt-3 md:pt-4">
+        <div
+          className="glass flex items-center gap-3 px-3 md:px-4 h-14 rounded-[var(--radius-xl)]"
+          style={{ boxShadow: "var(--shadow-md)" }}
+        >
           <Link
             href="/"
-            className="eyebrow ink-underline inline-flex items-center gap-1.5"
-            style={{ color: "var(--fg-muted)" }}
+            className="inline-flex items-center justify-center press-down"
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 9999,
+              background: "var(--bg-sunken)",
+              color: "var(--fg)",
+            }}
             aria-label="Back to feed"
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M19 12H5M12 5l-7 7 7 7" />
-            </svg>
-            <span className="hidden sm:inline">Feed</span>
+            <ArrowLeft size={16} />
           </Link>
 
-          <span
-            aria-hidden="true"
-            className="hidden sm:inline"
-            style={{ color: "var(--fg-faint)" }}
-          >
-            ·
-          </span>
+          <Logo size="sm" className="hidden sm:inline-flex" />
 
           <span
-            className="hidden sm:inline font-display tracking-tight"
-            style={{ color: "var(--fg)", fontWeight: 500, fontSize: 14 }}
-          >
-            Map
-          </span>
-
-          <p
-            className="hidden md:block dateline truncate ml-auto"
+            className="hidden md:inline font-display-ui font-semibold text-[13px]"
             style={{ color: "var(--fg-subtle)" }}
           >
             {loading
@@ -197,14 +173,12 @@ function MapPage() {
               : `${filteredPlaces.length.toLocaleString()} ${
                   filteredPlaces.length === 1 ? "place" : "places"
                 }`}
-          </p>
+          </span>
 
           <button
             type="button"
-            className="ml-auto md:ml-4 inline-flex items-center gap-2 press-down"
-            style={{ color: "var(--fg-muted)" }}
+            className="ml-auto inline-flex items-center gap-2 press-down"
             onClick={() => {
-              // Dispatch a synthetic keystroke so CommandPalette (in layout) opens.
               const ev = new KeyboardEvent("keydown", {
                 key: "k",
                 metaKey: true,
@@ -212,30 +186,25 @@ function MapPage() {
               });
               window.dispatchEvent(ev);
             }}
-            aria-label="Open command palette (Cmd+K)"
+            aria-label="Search (Cmd+K)"
+            style={{
+              background: "var(--bg-sunken)",
+              color: "var(--fg-muted)",
+              padding: "8px 14px",
+              borderRadius: 9999,
+              fontSize: 13,
+              fontWeight: 600,
+            }}
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <span className="eyebrow hidden sm:inline">Search</span>
+            <Search size={14} strokeWidth={2.2} />
+            <span className="hidden sm:inline font-display-ui">Search</span>
             <kbd
-              className="font-mono px-1.5 py-0.5 text-[10px] hidden md:inline"
+              className="font-display-ui px-1.5 py-0.5 text-[10px] hidden md:inline"
               style={{
-                background: "var(--bg-sunken)",
+                background: "var(--bg-elevated)",
                 color: "var(--fg-subtle)",
                 border: "1px solid var(--border)",
-                borderRadius: 3,
+                borderRadius: 6,
                 lineHeight: 1,
               }}
               aria-hidden="true"
@@ -245,15 +214,19 @@ function MapPage() {
           </button>
         </div>
 
-        {/* Row 2: category pill rail */}
+        {/* Category chips row */}
         <div
-          className="flex items-center gap-1 overflow-x-auto no-scrollbar px-4 md:px-6 py-2"
-          style={{ borderTop: "1px solid var(--border)" }}
+          className="flex items-center gap-2 overflow-x-auto no-scrollbar mt-3"
           role="tablist"
           aria-label="Filter by category"
         >
           {CATEGORY_FILTERS.map((opt) => {
             const active = category === opt.value;
+            const color =
+              opt.value === "all"
+                ? "var(--brand)"
+                : (CATEGORY_COLORS as Record<string, string>)[opt.value] ||
+                  "var(--brand)";
             return (
               <button
                 key={opt.value}
@@ -261,20 +234,31 @@ function MapPage() {
                 role="tab"
                 aria-selected={active}
                 onClick={() => setCategory(opt.value as Category)}
-                className="shrink-0 press-down transition-colors"
+                className="shrink-0 press-down inline-flex items-center gap-1.5 font-display-ui"
                 style={{
-                  padding: "6px 12px",
-                  borderRadius: 999,
-                  fontFamily: "var(--font-sans)",
-                  fontSize: 12,
-                  fontWeight: 500,
-                  letterSpacing: "0.02em",
+                  padding: "7px 14px",
+                  borderRadius: 9999,
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  letterSpacing: "0.01em",
                   border: "1px solid",
-                  borderColor: active ? "var(--fg)" : "var(--border)",
-                  background: active ? "var(--fg)" : "transparent",
-                  color: active ? "var(--fg-inverse)" : "var(--fg-muted)",
+                  borderColor: active ? color : "var(--border)",
+                  background: active ? color : "var(--bg-elevated)",
+                  color: active ? "#fff" : "var(--fg)",
+                  boxShadow: active
+                    ? `0 6px 16px ${color}40`
+                    : "var(--shadow-sm)",
+                  transition:
+                    "box-shadow 180ms ease, background 180ms ease, color 180ms ease, border-color 180ms ease",
                 }}
               >
+                {opt.value !== "all" && (
+                  <CategoryIcon
+                    category={opt.value}
+                    size={13}
+                    color={active ? "#fff" : color}
+                  />
+                )}
                 {opt.label}
               </button>
             );

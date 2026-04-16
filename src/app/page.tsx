@@ -10,6 +10,9 @@ import RandomPlaceLink from "@/components/RandomPlaceLink";
 import { decodeHtmlEntities, getPostHref } from "@/lib/post-source";
 import { CollectionIcon } from "@/lib/icons";
 import type { PlaceCategory } from "@/lib/types";
+import GradientMesh from "@/components/ui/GradientMesh";
+import AnimatedCounter from "@/components/ui/AnimatedCounter";
+import { Sparkles, Map as MapIcon, TrendingUp } from "lucide-react";
 
 export const revalidate = 600; // 10 minutes
 
@@ -210,35 +213,83 @@ async function HomeContent() {
 
   return (
     <>
-      {/* MASTHEAD — like a newspaper banner */}
-      <header className="max-w-[1400px] mx-auto px-6 md:px-12">
-        <div
-          className="flex items-baseline justify-between pb-3"
-          style={{ borderBottom: "1px solid var(--fg)" }}
-        >
-          <p className="dateline">{todayString()}</p>
-          <p className="dateline hidden sm:block">
-            Vol. 1 · Toronto Edition
-          </p>
-        </div>
-
-        <div className="py-6 md:py-10 text-center" style={{ borderBottom: "1px solid var(--fg)" }}>
-          <p className="eyebrow mb-2" style={{ color: "var(--brand)" }}>
-            What Toronto's talking about
-          </p>
-          <h1
-            className="font-display text-5xl sm:text-6xl md:text-7xl lg:text-8xl"
-            style={{ color: "var(--fg)", fontWeight: 500, lineHeight: 0.95 }}
+      {/* MASTHEAD — big playful hero */}
+      <GradientMesh tone="warm" />
+      <header className="relative max-w-[1400px] mx-auto px-6 md:px-12 pt-24 md:pt-36 pb-8 md:pb-12">
+        <div className="flex flex-col items-center text-center">
+          <span
+            className="chip-pill mb-5 animate-bounce-in"
+            style={{
+              background: "var(--bg-elevated)",
+              color: "var(--brand-hover)",
+              border: "1px solid var(--brand-tint-strong)",
+            }}
           >
-            BuzzMaps
+            <Sparkles size={13} /> What Toronto&apos;s talking about · {todayString()}
+          </span>
+          <h1
+            className="font-display leading-[0.92] tracking-[-0.03em]"
+            style={{
+              fontSize: "clamp(3rem, 9vw, 6.5rem)",
+              color: "var(--fg)",
+              fontWeight: 700,
+            }}
+          >
+            Toronto, <span className="text-gradient-brand">decoded.</span>
           </h1>
           <p
-            className="caption mt-4 max-w-xl mx-auto"
+            className="mt-5 max-w-2xl text-[17px] md:text-[19px]"
+            style={{ color: "var(--fg-muted)", lineHeight: 1.45 }}
+          >
+            Every place locals can&apos;t stop talking about — the restaurants, bars,
+            parks and hidden gems trending on Reddit and the city&apos;s press. All on one map.
+          </p>
+
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link href="/map" prefetch className="btn-primary !py-3 !px-6">
+              <MapIcon size={18} strokeWidth={2.3} />
+              Open the map
+            </Link>
+            <Link href="/collections" prefetch className="btn-secondary !py-3 !px-6">
+              <TrendingUp size={18} strokeWidth={2.3} />
+              Browse collections
+            </Link>
+          </div>
+
+          <div
+            className="mt-10 flex items-center gap-6 sm:gap-10 text-[13px]"
             style={{ color: "var(--fg-muted)" }}
           >
-            A weekly read on the city's most-mentioned places, drawn from Reddit
-            and the local press.
-          </p>
+            <span className="flex items-center gap-2">
+              <AnimatedCounter
+                value={Math.max(1200, trending.length * 120)}
+                className="font-display-ui font-bold text-[22px]"
+              />
+              <span className="eyebrow" style={{ color: "var(--fg-subtle)" }}>
+                places
+              </span>
+            </span>
+            <span className="hidden sm:block w-px h-6" style={{ background: "var(--border)" }} />
+            <span className="flex items-center gap-2">
+              <AnimatedCounter
+                value={Math.max(500, trending.length * 80)}
+                className="font-display-ui font-bold text-[22px]"
+              />
+              <span className="eyebrow" style={{ color: "var(--fg-subtle)" }}>
+                mentions
+              </span>
+            </span>
+            <span className="hidden sm:block w-px h-6" style={{ background: "var(--border)" }} />
+            <span className="flex items-center gap-2">
+              <AnimatedCounter
+                value={140}
+                className="font-display-ui font-bold text-[22px]"
+              />
+              <span className="eyebrow" style={{ color: "var(--fg-subtle)" }}>
+                neighbourhoods
+              </span>
+            </span>
+          </div>
         </div>
       </header>
 

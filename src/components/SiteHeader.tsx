@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion, LayoutGroup } from "framer-motion";
 import Logo from "./ui/Logo";
+import { Search, User, Plus } from "lucide-react";
 
 type NavLink = { href: string; label: string; match: (p: string) => boolean };
 
@@ -21,113 +23,105 @@ const LINKS: NavLink[] = [
     match: (p) => p.startsWith("/neighbourhood"),
   },
   { href: "/digest", label: "Dispatch", match: (p) => p.startsWith("/digest") },
-  { href: "/about", label: "About", match: (p) => p.startsWith("/about") },
 ];
 
 /**
- * Editorial masthead: wordmark on left, understated inline nav, small
- * actions on the right. No gradients, no pills — newspaper masthead energy.
- * Desktop only; BottomNav covers mobile.
+ * Desktop masthead — floating glass pill with animated active indicator.
  */
 export default function SiteHeader() {
   const pathname = usePathname();
 
-  // The map route renders its own app-specific chrome (view toggles,
-  // filters, in-map search). Don't stack a second header on top.
+  // The map route renders its own chrome; don't stack a second header.
   if (pathname === "/map") return null;
 
   return (
     <header
-      className="hidden md:block fixed top-0 left-0 right-0 z-[900]"
-      style={{
-        background: "color-mix(in srgb, var(--bg) 92%, transparent)",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
-        borderBottom: "1px solid var(--border)",
-      }}
+      className="hidden md:block fixed top-0 left-0 right-0 z-[900] px-6 pt-4"
       aria-label="Primary"
     >
-      <div className="max-w-[1400px] mx-auto h-16 flex items-baseline gap-10 px-8">
-        <Logo size="md" />
+      <div className="max-w-[1400px] mx-auto flex items-center gap-4">
+        <div
+          className="glass flex items-center gap-2 rounded-full pl-4 pr-2 h-14 flex-1"
+          style={{
+            boxShadow: "var(--shadow-md)",
+          }}
+        >
+          <Logo size="md" />
 
-        <nav className="flex items-baseline gap-6">
-          {LINKS.map((l) => {
-            const active = l.match(pathname);
-            return (
-              <Link
-                key={l.href}
-                href={l.href}
-                prefetch
-                className="text-sm transition-colors"
-                style={{
-                  color: active ? "var(--fg)" : "var(--fg-muted)",
-                  fontWeight: active ? 600 : 400,
-                  textDecoration: active ? "underline" : "none",
-                  textUnderlineOffset: "6px",
-                  textDecorationThickness: "1px",
-                  textDecorationColor: "var(--brand)",
-                }}
-                aria-current={active ? "page" : undefined}
-              >
-                {l.label}
-              </Link>
-            );
-          })}
-        </nav>
+          <LayoutGroup id="primary-nav">
+            <nav className="ml-6 flex items-center gap-1">
+              {LINKS.map((l) => {
+                const active = l.match(pathname);
+                return (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    prefetch
+                    className="relative inline-flex items-center px-3.5 py-1.5 text-[13.5px] font-display-ui font-semibold rounded-full transition-colors"
+                    style={{
+                      color: active ? "var(--fg)" : "var(--fg-muted)",
+                    }}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    {active && (
+                      <motion.span
+                        layoutId="nav-active-pill"
+                        transition={{
+                          type: "spring",
+                          stiffness: 380,
+                          damping: 30,
+                        }}
+                        className="absolute inset-0 rounded-full -z-0"
+                        style={{
+                          background: "var(--bg-sunken)",
+                          border: "1px solid var(--border)",
+                        }}
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span className="relative z-[1]">{l.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </LayoutGroup>
 
-        <div className="ml-auto flex items-baseline gap-5">
-          <Link
-            href="/search"
-            prefetch
-            className="inline-flex items-baseline gap-2 text-sm transition-colors hover:text-[color:var(--fg)]"
-            style={{ color: "var(--fg-muted)" }}
-            aria-label="Search"
-            title="Search (⌘K opens palette)"
-          >
-            <span>Search</span>
-            <kbd
-              className="font-mono px-1 py-0.5 text-[10px]"
-              style={{
-                background: "var(--bg-sunken)",
-                color: "var(--fg-subtle)",
-                border: "1px solid var(--border)",
-                borderRadius: 3,
-                lineHeight: 1,
-              }}
-              aria-hidden="true"
+          <div className="ml-auto flex items-center gap-1">
+            <Link
+              href="/search"
+              prefetch
+              aria-label="Search"
+              title="Search (⌘K)"
+              className="btn-ghost !p-2.5 !rounded-full"
+              style={{ color: "var(--fg-muted)" }}
             >
-              ⌘K
-            </kbd>
-          </Link>
-
-          <Link
-            href="/submit"
-            prefetch
-            className="text-sm transition-colors hover:text-[color:var(--fg)]"
-            style={{ color: "var(--fg-muted)" }}
-          >
-            Submit
-          </Link>
-
-          <span
-            className="inline-block w-px h-4"
-            style={{ background: "var(--border)", transform: "translateY(2px)" }}
-            aria-hidden="true"
-          />
-
-          <Link
-            href="/account"
-            prefetch
-            className="text-sm transition-colors"
-            style={{
-              color: pathname.startsWith("/account") ? "var(--fg)" : "var(--fg-muted)",
-              fontWeight: pathname.startsWith("/account") ? 600 : 400,
-            }}
-            aria-label="Account"
-          >
-            Account
-          </Link>
+              <Search size={17} />
+            </Link>
+            <Link
+              href="/account"
+              prefetch
+              aria-label="Account"
+              className="btn-ghost !p-2.5 !rounded-full"
+              style={{
+                color: pathname.startsWith("/account")
+                  ? "var(--fg)"
+                  : "var(--fg-muted)",
+              }}
+            >
+              <User size={17} />
+            </Link>
+          </div>
         </div>
+
+        <Link
+          href="/submit"
+          prefetch
+          className="btn-primary !h-14 !px-5 !rounded-full"
+          style={{ boxShadow: "var(--glow-brand)" }}
+        >
+          <Plus size={17} strokeWidth={2.5} />
+          <span>Add a place</span>
+        </Link>
       </div>
     </header>
   );

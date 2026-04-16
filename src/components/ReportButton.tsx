@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Flag, X } from "lucide-react";
 
 const REASONS: { id: string; label: string }[] = [
   { id: "incorrect_info", label: "Incorrect info" },
@@ -54,106 +56,169 @@ export default function ReportButton({ placeId }: { placeId: number }) {
           setStatus("idle");
           setMessage(null);
         }}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all border bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700"
+        className="btn-ghost"
       >
-        <span>🚩</span>
-        <span>Report</span>
+        <Flag size={15} />
+        Report
       </button>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-[1200] flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm"
-          onClick={() => setOpen(false)}
-        >
+      <AnimatePresence>
+        {open && (
           <div
-            className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[1200] flex items-center justify-center px-4"
+            onClick={() => setOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Report this place"
           >
-            <div className="flex items-start justify-between">
-              <h3 className="font-bold text-slate-900">Report this place</h3>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                aria-label="Close"
-                className="text-slate-400 hover:text-slate-600"
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0"
+              style={{
+                background: "rgba(15, 20, 25, 0.45)",
+                backdropFilter: "blur(6px)",
+              }}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 380, damping: 32 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-md p-6"
+              style={{
+                background: "var(--bg-elevated)",
+                borderRadius: "var(--radius-xl)",
+                boxShadow: "var(--shadow-lg)",
+                border: "1px solid var(--border)",
+              }}
+            >
+              <div className="flex items-start justify-between">
+                <h3
+                  className="font-display text-2xl"
+                  style={{
+                    color: "var(--fg)",
+                    fontWeight: 600,
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  Report this place
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label="Close"
+                  className="btn-ghost !p-1.5 !rounded-full"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <p
+                className="text-[13.5px] mt-1"
+                style={{ color: "var(--fg-muted)" }}
               >
-                ✕
-              </button>
-            </div>
-            <p className="text-xs text-slate-500 mt-1">
-              Help us keep BuzzMaps accurate. We&apos;ll review your report.
-            </p>
+                Help us keep BuzzMaps accurate. We&apos;ll review your report.
+              </p>
 
-            {status === "sent" ? (
-              <div className="mt-5 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700">
-                {message}
-                <div className="mt-3">
+              {status === "sent" ? (
+                <div
+                  className="mt-5 p-4"
+                  style={{
+                    background: "color-mix(in srgb, var(--sent-pos) 12%, transparent)",
+                    border: "1px solid color-mix(in srgb, var(--sent-pos) 30%, transparent)",
+                    borderRadius: "var(--radius-md)",
+                    color: "var(--sent-pos)",
+                  }}
+                >
+                  <p className="font-display-ui font-semibold">{message}</p>
                   <button
                     type="button"
                     onClick={() => setOpen(false)}
-                    className="text-xs font-semibold text-green-700 underline"
+                    className="mt-3 btn-ghost !px-0"
+                    style={{ color: "var(--sent-pos)" }}
                   >
                     Close
                   </button>
                 </div>
-              </div>
-            ) : (
-              <form onSubmit={submit} className="mt-4 flex flex-col gap-3">
-                <label className="text-xs font-semibold text-slate-700">
-                  What&apos;s wrong?
-                </label>
-                <select
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 outline-none focus:border-[#ff6b35]"
-                >
-                  {REASONS.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.label}
-                    </option>
-                  ))}
-                </select>
+              ) : (
+                <form onSubmit={submit} className="mt-5 flex flex-col gap-4">
+                  <label className="block">
+                    <span className="eyebrow block mb-2">What&apos;s wrong?</span>
+                    <select
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      className="w-full px-4 py-3 text-[15px] outline-none focus-ring"
+                      style={{
+                        background: "var(--bg-elevated)",
+                        color: "var(--fg)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "var(--radius-md)",
+                      }}
+                    >
+                      {REASONS.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
-                <label className="text-xs font-semibold text-slate-700">
-                  Details{" "}
-                  <span className="font-normal text-slate-400">
-                    ({details.length}/500)
-                  </span>
-                </label>
-                <textarea
-                  value={details}
-                  maxLength={500}
-                  rows={3}
-                  onChange={(e) => setDetails(e.target.value)}
-                  placeholder="Optional — tell us more so we can fix it faster."
-                  className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#ff6b35] resize-none"
-                />
+                  <label className="block">
+                    <span className="eyebrow flex items-center justify-between mb-2">
+                      <span>Details</span>
+                      <span style={{ color: "var(--fg-subtle)" }}>
+                        {details.length}/500
+                      </span>
+                    </span>
+                    <textarea
+                      value={details}
+                      maxLength={500}
+                      rows={3}
+                      onChange={(e) => setDetails(e.target.value)}
+                      placeholder="Optional — tell us more so we can fix it faster."
+                      className="w-full px-4 py-3 text-[15px] outline-none focus-ring resize-none"
+                      style={{
+                        background: "var(--bg-elevated)",
+                        color: "var(--fg)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "var(--radius-md)",
+                      }}
+                    />
+                  </label>
 
-                {message && status === "error" && (
-                  <p className="text-xs text-red-500">{message}</p>
-                )}
+                  {message && status === "error" && (
+                    <p
+                      className="text-[13px]"
+                      style={{ color: "var(--sent-neg)" }}
+                    >
+                      {message}
+                    </p>
+                  )}
 
-                <div className="flex gap-2 justify-end mt-2">
-                  <button
-                    type="button"
-                    onClick={() => setOpen(false)}
-                    className="px-4 py-2 text-sm rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={status === "sending"}
-                    className="px-4 py-2 text-sm font-semibold text-white rounded-xl bg-gradient-to-r from-[#ff6b35] to-[#ea580c] disabled:opacity-60"
-                  >
-                    {status === "sending" ? "Sending…" : "Submit report"}
-                  </button>
-                </div>
-              </form>
-            )}
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setOpen(false)}
+                      className="btn-ghost"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={status === "sending"}
+                      className="btn-primary disabled:opacity-60"
+                    >
+                      {status === "sending" ? "Sending…" : "Submit report"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </>
   );
 }

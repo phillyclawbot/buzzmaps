@@ -2,18 +2,8 @@ import { getPostSource } from "@/lib/post-source";
 
 /**
  * Inline label for a post's origin: subreddit, publication, or ticket vendor.
- *
- * Use this anywhere a post's source needs to be rendered. Don't write
- * `r/${post.subreddit}` directly anywhere else in the app — the prefix is
- * wrong for publications (BlogTO, Toronto Sun, Eater, etc.) and ticket
- * vendors (Ticketmaster, Eventbrite).
- *
- * Visual variants:
- *   - "plain"     — bare text label, inherits color
- *   - "tag"       — small bordered tag (subtle), good for inline rows
- *
- * The colour treatment for publications differs slightly from subreddits
- * so the eye learns the distinction.
+ * - "plain" — bare text label
+ * - "tag"   — pill with tinted background, colored by source kind
  */
 export default function PostSource({
   subreddit,
@@ -27,18 +17,35 @@ export default function PostSource({
   const source = getPostSource(subreddit);
 
   if (variant === "tag") {
+    const color =
+      source.kind === "subreddit"
+        ? "#ff5b3a"
+        : source.kind === "publication"
+        ? "#0066ff"
+        : "#10b981";
     return (
       <span
-        className={`inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold rounded ${className}`}
+        className={`inline-flex items-center gap-1 font-display-ui font-semibold ${className}`}
         style={{
-          color: source.kind === "subreddit" ? "var(--brand)" : "var(--accent-2)",
-          background:
-            source.kind === "subreddit"
-              ? "var(--brand-tint)"
-              : "var(--accent-2-tint)",
+          color,
+          background: `${color}14`,
+          padding: "3px 10px",
+          borderRadius: 9999,
+          fontSize: 10.5,
           letterSpacing: "0.04em",
+          lineHeight: 1.2,
         }}
       >
+        <span
+          aria-hidden="true"
+          style={{
+            display: "inline-block",
+            width: 5,
+            height: 5,
+            borderRadius: 9999,
+            background: color,
+          }}
+        />
         {source.label}
       </span>
     );

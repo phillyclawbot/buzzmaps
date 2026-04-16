@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 export default function BackLink({
   href = "/",
@@ -10,21 +11,20 @@ export default function BackLink({
   return (
     <Link
       href={href}
-      className="back-link inline-flex items-center gap-1.5 text-sm font-medium transition-colors press-down"
+      className="group inline-flex items-center gap-2 font-display-ui font-semibold text-sm transition-all focus-ring"
+      style={{
+        color: "var(--fg)",
+        background: "var(--bg-elevated)",
+        border: "1px solid var(--border)",
+        padding: "8px 14px",
+        borderRadius: "var(--radius-pill)",
+        boxShadow: "var(--shadow-sm)",
+      }}
     >
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M19 12H5M12 5l-7 7 7 7" />
-      </svg>
+      <ArrowLeft
+        size={16}
+        className="transition-transform group-hover:-translate-x-0.5"
+      />
       <span className="hidden sm:inline">{label}</span>
     </Link>
   );

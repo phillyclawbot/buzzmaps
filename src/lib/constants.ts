@@ -14,35 +14,51 @@ export const TORONTO_CENTER = {
   lng: -79.3832,
 } as const;
 
-// Brand colors — mirror the CSS token values in globals.css (--brand / --brand-hover).
-// Component code should prefer `var(--brand)` in className/style; these hex literals
-// exist only for places that need a raw value (e.g. Leaflet pin SVGs, inline <svg fill>).
-export const BRAND_PRIMARY = "#ff6b35";
-export const BRAND_PRIMARY_DARK = "#ea580c";
+// Brand colors — mirror --brand / --brand-hover in globals.css.
+export const BRAND_PRIMARY = "#ff5b3a";
+export const BRAND_PRIMARY_DARK = "#e64a29";
 
-// Sentiment colors — mirror --sent-pos-fill / --sent-neu / --sent-neg in globals.css.
+// Sentiment colors — mirror --sent-pos / --sent-neu / --sent-neg in globals.css.
 export const SENTIMENT_COLORS: Record<string, string> = {
-  positive: "#22c55e",
+  positive: "#10b981",
   negative: "#ef4444",
   neutral: "#f59e0b",
 };
 
-// Category colors for map pins and list cards
+// Category colors — vibrant & distinct, accessible on white.
 export const CATEGORY_COLORS: Record<PlaceCategory, string> = {
-  restaurant: "#ff6b35",
-  bar: "#a855f7",
+  restaurant: "#ff5b3a",
+  bar: "#8b5cf6",
   cafe: "#6366f1",
   club: "#ec4899",
   shop: "#06b6d4",
-  park: "#22c55e",
-  gym: "#ef4444",
+  park: "#10b981",
+  gym: "#f43f5e",
   venue: "#f59e0b",
-  market: "#10b981",
+  market: "#14b8a6",
   museum: "#3b82f6",
   event: "#d946ef",
-  landmark: "#78716c",
+  landmark: "#475569",
   attraction: "#f97316",
   other: "#64748b",
+};
+
+// Darker tone of each category color, used to paint gradient pins.
+export const CATEGORY_COLORS_DARK: Record<PlaceCategory, string> = {
+  restaurant: "#e64a29",
+  bar: "#6d28d9",
+  cafe: "#4338ca",
+  club: "#be185d",
+  shop: "#0284a8",
+  park: "#047857",
+  gym: "#be123c",
+  venue: "#c2780c",
+  market: "#0f766e",
+  museum: "#1d4ed8",
+  event: "#a21caf",
+  landmark: "#334155",
+  attraction: "#c2410c",
+  other: "#475569",
 };
 
 // Shared category filter options used in the top bar and list view.
@@ -105,22 +121,23 @@ export function isPublication(subreddit: string): boolean {
   return PUBLICATION_NAMES.has(subreddit);
 }
 
-// Category gradient classes for hero sections (single source of truth)
+// Category gradient classes for hero sections (single source of truth).
+// Pairs each category with a warm sibling so the hero feels energetic.
 export const CATEGORY_GRADIENT: Record<PlaceCategory, string> = {
-  restaurant: "from-orange-500 to-amber-400",
-  bar: "from-purple-500 to-fuchsia-400",
-  cafe: "from-indigo-500 to-blue-400",
-  club: "from-pink-500 to-rose-400",
-  shop: "from-cyan-500 to-sky-400",
-  park: "from-green-500 to-emerald-400",
-  gym: "from-red-500 to-orange-400",
-  venue: "from-amber-500 to-yellow-400",
-  market: "from-teal-500 to-green-400",
-  museum: "from-blue-500 to-indigo-400",
-  event: "from-fuchsia-500 to-purple-400",
-  landmark: "from-sky-500 to-cyan-400",
-  attraction: "from-rose-500 to-pink-400",
-  other: "from-slate-500 to-slate-400",
+  restaurant: "from-[#ff5b3a] to-[#ff8a3d]",
+  bar: "from-[#8b5cf6] to-[#d946ef]",
+  cafe: "from-[#6366f1] to-[#8b5cf6]",
+  club: "from-[#ec4899] to-[#f43f5e]",
+  shop: "from-[#06b6d4] to-[#3b82f6]",
+  park: "from-[#10b981] to-[#84cc16]",
+  gym: "from-[#f43f5e] to-[#ff5b3a]",
+  venue: "from-[#f59e0b] to-[#ff8a3d]",
+  market: "from-[#14b8a6] to-[#10b981]",
+  museum: "from-[#3b82f6] to-[#6366f1]",
+  event: "from-[#d946ef] to-[#ec4899]",
+  landmark: "from-[#475569] to-[#64748b]",
+  attraction: "from-[#f97316] to-[#f59e0b]",
+  other: "from-[#64748b] to-[#94a3b8]",
 };
 
 // Sentiment text labels for accessibility

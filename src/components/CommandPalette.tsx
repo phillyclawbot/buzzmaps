@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
+import { Search, Command as CommandIcon } from "lucide-react";
 import { COLLECTIONS } from "@/lib/collections";
 import { CATEGORY_FILTERS } from "@/lib/constants";
 import { getRecentPlaces, clearRecentPlaces, type RecentPlace } from "@/lib/recent-places";
@@ -259,145 +261,165 @@ export default function CommandPalette() {
     }
   };
 
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-[2000] flex items-start justify-center pt-[10vh] px-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Command palette"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) setOpen(false);
-      }}
-    >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0"
-        style={{ background: "rgba(20, 18, 17, 0.55)" }}
-        onClick={() => setOpen(false)}
-      />
-
-      {/* Panel */}
-      <div
-        className="relative w-full max-w-xl animate-sheet-in"
-        style={{
-          background: "var(--bg-elevated)",
-          border: "1px solid var(--border-strong)",
-          borderRadius: "var(--radius-md)",
-          boxShadow: "var(--shadow-lg)",
-          overflow: "hidden",
-        }}
-      >
-        <div className="flex items-center px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={onKeyDown}
-            placeholder="Search places, collections, pages…"
-            className="flex-1 bg-transparent outline-none text-base font-serif"
-            style={{ color: "var(--fg)" }}
-            aria-label="Command palette search"
+    <AnimatePresence>
+      {open && (
+        <div
+          className="fixed inset-0 z-[2000] flex items-start justify-center pt-[10vh] px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Command palette"
+        >
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="absolute inset-0"
+            style={{ background: "rgba(15, 20, 25, 0.45)", backdropFilter: "blur(6px)" }}
+            onClick={() => setOpen(false)}
           />
-          {loading && (
-            <span className="dateline ml-3" style={{ color: "var(--fg-subtle)" }}>
-              searching…
-            </span>
-          )}
-          <kbd
-            className="ml-3 px-1.5 py-0.5 text-[10px] font-mono"
+
+          <motion.div
+            initial={{ opacity: 0, y: -12, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 380, damping: 32 }}
+            className="relative w-full max-w-xl"
             style={{
-              background: "var(--bg-sunken)",
-              color: "var(--fg-muted)",
+              background: "var(--bg-elevated)",
               border: "1px solid var(--border)",
-              borderRadius: 4,
+              borderRadius: "var(--radius-xl)",
+              boxShadow: "var(--shadow-lg)",
+              overflow: "hidden",
             }}
           >
-            ESC
-          </kbd>
-        </div>
+            <div
+              className="flex items-center gap-3 px-5 py-4"
+              style={{ borderBottom: "1px solid var(--border)" }}
+            >
+              <Search
+                size={18}
+                style={{ color: "var(--fg-subtle)", flexShrink: 0 }}
+              />
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="Search places, collections, pages…"
+                className="flex-1 bg-transparent outline-none text-[15.5px]"
+                style={{ color: "var(--fg)" }}
+                aria-label="Command palette search"
+              />
+              {loading && (
+                <span
+                  className="eyebrow"
+                  style={{ color: "var(--fg-subtle)", fontSize: 10 }}
+                >
+                  searching…
+                </span>
+              )}
+              <kbd
+                className="px-2 py-1 text-[10px] font-display-ui font-semibold"
+                style={{
+                  background: "var(--bg-sunken)",
+                  color: "var(--fg-muted)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 6,
+                }}
+              >
+                ESC
+              </kbd>
+            </div>
 
-        <div className="max-h-[60vh] overflow-y-auto">
-          {sections.entries.length === 0 && (
-            <div className="py-10 text-center">
-              <p className="caption" style={{ color: "var(--fg-muted)" }}>
-                No matches.
+            <div className="max-h-[60vh] overflow-y-auto p-2">
+              {sections.entries.length === 0 && (
+                <div className="py-12 text-center">
+                  <p
+                    className="caption"
+                    style={{ color: "var(--fg-muted)" }}
+                  >
+                    No matches.
+                  </p>
+                </div>
+              )}
+
+              {sections.entries.map(([section, items]) => {
+                const start = sections.flat.indexOf(items[0]);
+                return (
+                  <div key={section}>
+                    <p
+                      className="eyebrow px-3 pt-3 pb-1.5"
+                      style={{ color: "var(--fg-subtle)" }}
+                    >
+                      {section}
+                    </p>
+                    <ul className="flex flex-col gap-0.5">
+                      {items.map((item, i) => {
+                        const flatIndex = start + i;
+                        const isActive = flatIndex === active;
+                        return (
+                          <li key={item.id}>
+                            <button
+                              type="button"
+                              onClick={() => runAction(item)}
+                              onMouseEnter={() => setActive(flatIndex)}
+                              className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-md)] transition-colors"
+                              style={{
+                                background: isActive
+                                  ? "var(--bg-sunken)"
+                                  : "transparent",
+                              }}
+                            >
+                              <span
+                                className="flex-1 min-w-0 font-display-ui font-semibold text-[14.5px] truncate"
+                                style={{ color: "var(--fg)" }}
+                              >
+                                {item.label}
+                              </span>
+                              {item.subtitle && (
+                                <span
+                                  className="truncate shrink-0 max-w-[55%] text-[12.5px]"
+                                  style={{ color: "var(--fg-subtle)" }}
+                                >
+                                  {item.subtitle}
+                                </span>
+                              )}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div
+              className="flex items-center justify-between px-5 py-2.5"
+              style={{
+                borderTop: "1px solid var(--border)",
+                background: "var(--bg-sunken)",
+              }}
+            >
+              <p
+                className="eyebrow"
+                style={{ color: "var(--fg-subtle)", fontSize: 10 }}
+              >
+                ↑↓ navigate · ↵ open · esc close
+              </p>
+              <p
+                className="eyebrow inline-flex items-center gap-1"
+                style={{ color: "var(--fg-subtle)", fontSize: 10 }}
+              >
+                <CommandIcon size={11} /> K anywhere
               </p>
             </div>
-          )}
-
-          {sections.entries.map(([section, items]) => {
-            // Figure out this section's starting index in the flat list for
-            // the keyboard cursor highlight.
-            const start = sections.flat.indexOf(items[0]);
-            return (
-              <div key={section}>
-                <p
-                  className="eyebrow px-4 pt-3 pb-1"
-                  style={{ color: "var(--fg-subtle)" }}
-                >
-                  {section}
-                </p>
-                <ul>
-                  {items.map((item, i) => {
-                    const flatIndex = start + i;
-                    const isActive = flatIndex === active;
-                    return (
-                      <li key={item.id}>
-                        <button
-                          type="button"
-                          onClick={() => runAction(item)}
-                          onMouseEnter={() => setActive(flatIndex)}
-                          className="w-full text-left flex items-baseline gap-3 px-4 py-2.5 transition-colors"
-                          style={{
-                            background: isActive
-                              ? "var(--brand-tint)"
-                              : "transparent",
-                          }}
-                        >
-                          <span
-                            className="font-serif text-base truncate flex-1"
-                            style={{
-                              color: isActive ? "var(--brand)" : "var(--fg)",
-                            }}
-                          >
-                            {item.label}
-                          </span>
-                          {item.subtitle && (
-                            <span
-                              className="dateline truncate shrink-0 max-w-[45%]"
-                              style={{ color: "var(--fg-subtle)" }}
-                            >
-                              {item.subtitle}
-                            </span>
-                          )}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            );
-          })}
+          </motion.div>
         </div>
-
-        <div
-          className="flex items-center justify-between px-4 py-2"
-          style={{
-            borderTop: "1px solid var(--border)",
-            background: "var(--bg-sunken)",
-          }}
-        >
-          <p className="dateline" style={{ color: "var(--fg-subtle)" }}>
-            ↑↓ navigate · ↵ open · esc close
-          </p>
-          <p className="dateline" style={{ color: "var(--fg-subtle)" }}>
-            ⌘K anywhere
-          </p>
-        </div>
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 }

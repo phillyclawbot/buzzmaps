@@ -1,32 +1,57 @@
 "use client";
 
 import { useState, useMemo, memo } from "react";
-import type { Place, PlaceCategory } from "@/lib/types";
-import { CATEGORY_EMOJI } from "@/lib/types";
-import { NEIGHBOURHOODS, filterByNeighbourhood, getNeighbourhood } from "@/lib/neighbourhoods";
+import type { Place } from "@/lib/types";
+import {
+  NEIGHBOURHOODS,
+  filterByNeighbourhood,
+  getNeighbourhood,
+} from "@/lib/neighbourhoods";
 import CheckinButton from "@/components/CheckinButton";
 import { CATEGORY_COLORS, SENTIMENT_COLORS } from "@/lib/constants";
 import { decodeHtmlEntities, getPostHref } from "@/lib/post-source";
 import PostSource from "@/components/ui/PostSource";
+import CategoryBadge from "@/components/ui/CategoryBadge";
+import Skeleton from "@/components/ui/Skeleton";
 import { formatTimeAgo } from "@/lib/utils";
-import { CategoryIcon, IconStar, IconChat } from "@/lib/icons";
+import { CategoryIcon } from "@/lib/icons";
+import {
+  Search,
+  MessageCircle,
+  Star,
+  Share2,
+  Check,
+  ChevronDown,
+  Calendar,
+  MapPin,
+  Ticket,
+  Zap,
+} from "lucide-react";
 
 type SortMode = "mentions" | "newest" | "az" | "rating" | "buzz" | "neighbourhood";
 
 function buzzScore(r: Place): number {
   const now = Date.now() / 1000;
   const posts = r.posts ?? [];
-  const recent7  = posts.filter(p => p.created_utc > now - 7  * 86400).length;
-  const recent30 = posts.filter(p => p.created_utc > now - 30 * 86400).length;
-  const older    = Math.max(0, r.mention_count - recent30);
-  const mentionScore = Math.min(recent7 * 18 + (recent30 - recent7) * 7 + older * 1, 75);
-  const ratingScore = r.google_rating ? Math.max(0, (r.google_rating - 3.5) * 20) : 0;
-  const trendBonus = r.mention_count > 1 && recent30 / r.mention_count > 0.5 ? 10 : 0;
-  return Math.round(Math.min(100, Math.max(0, mentionScore + ratingScore + trendBonus)));
+  const recent7 = posts.filter((p) => p.created_utc > now - 7 * 86400).length;
+  const recent30 = posts.filter((p) => p.created_utc > now - 30 * 86400).length;
+  const older = Math.max(0, r.mention_count - recent30);
+  const mentionScore = Math.min(
+    recent7 * 18 + (recent30 - recent7) * 7 + older * 1,
+    75
+  );
+  const ratingScore = r.google_rating
+    ? Math.max(0, (r.google_rating - 3.5) * 20)
+    : 0;
+  const trendBonus =
+    r.mention_count > 1 && recent30 / r.mention_count > 0.5 ? 10 : 0;
+  return Math.round(
+    Math.min(100, Math.max(0, mentionScore + ratingScore + trendBonus))
+  );
 }
 
 function buzzLabel(score: number): string {
-  if (score >= 80) return "HOT";
+  if (score >= 80) return "Hot";
   if (score >= 50) return "Trending";
   if (score >= 20) return "Rising";
   return "";
@@ -34,15 +59,22 @@ function buzzLabel(score: number): string {
 
 function SkeletonCard() {
   return (
-    <div className="rounded-xl overflow-hidden bg-white border border-slate-100 animate-pulse">
-      <div className="w-full h-36 bg-slate-100" />
-      <div className="p-3.5 space-y-2.5">
-        <div className="h-3 bg-slate-100 rounded w-1/4" />
-        <div className="h-4 bg-slate-100 rounded w-3/4" />
-        <div className="h-3 bg-slate-50 rounded w-1/2" />
+    <div
+      className="overflow-hidden"
+      style={{
+        background: "var(--bg-elevated)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-xl)",
+      }}
+    >
+      <Skeleton className="w-full h-40" rounded="none" />
+      <div className="p-4 space-y-2.5">
+        <Skeleton style={{ height: 12, width: "35%" }} />
+        <Skeleton style={{ height: 18, width: "70%" }} />
+        <Skeleton style={{ height: 12, width: "55%" }} />
         <div className="flex gap-2 mt-1">
-          <div className="h-6 bg-slate-100 rounded-full w-16" />
-          <div className="h-6 bg-slate-100 rounded-full w-14" />
+          <Skeleton style={{ height: 26, width: 70 }} rounded="pill" />
+          <Skeleton style={{ height: 26, width: 60 }} rounded="pill" />
         </div>
       </div>
     </div>
@@ -65,13 +97,15 @@ function PlaceCard({
   const [showEvents, setShowEvents] = useState(false);
   const posts = r.posts ?? [];
   const hasPosts = posts.length > 0;
-  const color = CATEGORY_COLORS[r.category] || "#ff6b35";
+  const color = CATEGORY_COLORS[r.category] || "var(--brand)";
   const score = buzzScore(r);
   const label = buzzLabel(score);
 
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const url = `https://buzzmaps.vercel.app/?place=${encodeURIComponent(r.name)}`;
+    const url = `https://buzzmaps.vercel.app/?place=${encodeURIComponent(
+      r.name
+    )}`;
     navigator.clipboard.writeText(url).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -82,111 +116,149 @@ function PlaceCard({
 
   return (
     <div
-      className="group rounded-xl overflow-hidden bg-white border border-slate-200/60 hover:border-slate-300 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-[1.01] animate-fade-in-up"
-      style={{
-        ...(isEvent ? { borderLeft: `3px solid ${color}` } : { borderTop: `2px solid ${color}` }),
-        ...({ "--stagger": index } as Record<string, number>),
-      }}
+      className="group overflow-hidden cursor-pointer animate-fade-in-up place-card-hover"
+      style={
+        {
+          ["--stagger" as string]: index,
+          ["--card-glow" as string]: `${color}44`,
+          background: "var(--bg-elevated)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-xl)",
+          boxShadow: "var(--shadow-sm)",
+        } as React.CSSProperties
+      }
       onClick={() => setExpanded(!expanded)}
     >
-      {/* Image with gradient overlay */}
-      <div className="relative h-36 overflow-hidden bg-slate-50">
+      {/* Image */}
+      <div
+        className="relative h-40 overflow-hidden"
+        style={{
+          background: r.photo_url
+            ? "var(--bg-sunken)"
+            : `linear-gradient(135deg, ${color} 0%, ${color}99 100%)`,
+        }}
+      >
         {r.photo_url ? (
-          <>
-            <img
-              src={r.photo_url}
-              alt={r.name}
-              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
-            />
-            <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/15 to-transparent" />
-          </>
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={r.photo_url}
+            alt={r.name}
+            className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-700"
+          />
         ) : (
-          <div
-            className="w-full h-full flex items-center justify-center"
-            style={{ background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)` }}
-          >
-            <span style={{ color }}>
-              <CategoryIcon category={r.category} size={36} />
-            </span>
+          <div className="w-full h-full flex items-center justify-center">
+            <CategoryIcon category={r.category} size={52} color="#ffffffdd" />
           </div>
         )}
-        {/* Buzz badge — top right on image */}
+        <div className="absolute top-3 left-3">
+          <CategoryBadge category={r.category} size="sm" />
+        </div>
         {score >= 20 && (
-          <span className="absolute top-2 right-2 text-[10px] font-bold bg-white/90 backdrop-blur-sm text-slate-700 px-2 py-0.5 rounded-full shadow-sm">
-            {label} {score}
+          <span
+            className="absolute top-3 right-3 inline-flex items-center gap-1 font-display-ui font-semibold"
+            style={{
+              background: "rgba(255,255,255,0.95)",
+              color: "var(--fg)",
+              padding: "3px 10px",
+              borderRadius: 9999,
+              fontSize: 11,
+              letterSpacing: "0.02em",
+              boxShadow: "var(--shadow-sm)",
+            }}
+          >
+            <Zap size={11} style={{ color: "var(--brand)" }} />
+            {label}
           </span>
         )}
       </div>
 
       {/* Body */}
-      <div className="p-3.5">
-        {/* Category pill + event badge */}
-        <div className="flex items-center gap-1.5 mb-2">
-          <span
-            className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
-            style={{ background: `${color}12`, color }}
-          >
-            <CategoryIcon category={r.category} size={11} /> {r.category}
-          </span>
-          {isEvent && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-600">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              Upcoming
-            </span>
-          )}
-        </div>
-
-        {/* Title */}
-        <h3 className="font-semibold text-sm text-slate-900 leading-snug mb-0.5">{r.name}</h3>
+      <div className="p-4">
+        <h3
+          className="font-display-ui font-semibold text-[17px] leading-snug group-hover:text-[color:var(--brand)] transition-colors"
+          style={{ color: "var(--fg)" }}
+        >
+          {r.name}
+        </h3>
         {r.cuisine_type && (
-          <p className="text-[11px] text-slate-500 mb-0.5">{r.cuisine_type}{r.price_level ? ` · ${"$".repeat(r.price_level)}` : ""}</p>
+          <p
+            className="text-[12.5px] mt-0.5"
+            style={{ color: "var(--fg-muted)" }}
+          >
+            {r.cuisine_type}
+            {r.price_level ? ` · ${"$".repeat(r.price_level)}` : ""}
+          </p>
         )}
-        <p className="text-xs text-slate-400 truncate mb-3" title={r.address}>{r.address}</p>
+        <p
+          className="text-[12px] truncate mt-0.5"
+          style={{ color: "var(--fg-subtle)" }}
+          title={r.address}
+        >
+          {r.address}
+        </p>
 
-        {/* Stats */}
-        <div className="flex items-center gap-2 mb-3">
+        <div
+          className="flex items-center gap-3 mt-3 text-[11.5px] font-display-ui font-semibold"
+          style={{ color: "var(--fg-muted)" }}
+        >
           {isEvent && r.metadata?.event_date ? (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              {new Date(r.metadata.event_date).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}
+            <span className="inline-flex items-center gap-1">
+              <Calendar size={12} />
+              {new Date(r.metadata.event_date).toLocaleDateString("en-CA", {
+                month: "short",
+                day: "numeric",
+              })}
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500">
-              <IconChat size={11} className="text-slate-400" />
-              {r.mention_count} mention{Number(r.mention_count) !== 1 ? "s" : ""}
+            <span className="inline-flex items-center gap-1">
+              <MessageCircle size={12} />
+              {r.mention_count}
             </span>
           )}
           {r.google_rating && (
-            <span className="inline-flex items-center gap-0.5 text-[11px] text-amber-500 font-medium">
-              <IconStar size={11} className="text-amber-400" /> {r.google_rating.toFixed(1)}
+            <span
+              className="inline-flex items-center gap-1"
+              style={{ color: "var(--gold)" }}
+            >
+              <Star size={12} fill="currentColor" />
+              {r.google_rating.toFixed(1)}
             </span>
           )}
           {isEvent && r.metadata?.venue_name && (
-            <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 truncate">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span
+              className="inline-flex items-center gap-1 truncate"
+              style={{ color: "var(--fg-subtle)" }}
+            >
+              <MapPin size={11} />
               {r.metadata.venue_name}
             </span>
           )}
-          {isEvent && r.metadata?.genre && (
-            <span className="text-[10px] text-purple-500 bg-purple-50 px-1.5 py-0.5 rounded font-medium">{r.metadata.genre}</span>
-          )}
-          {isEvent && r.metadata?.price_range && (
-            <span className="text-[10px] text-slate-400">{r.metadata.price_range}</span>
-          )}
-          <span className="text-[10px] text-slate-300 ml-auto">{formatTimeAgo(r.latest_mention)}</span>
+          <span
+            className="ml-auto"
+            style={{ color: "var(--fg-subtle)" }}
+          >
+            {formatTimeAgo(r.latest_mention)}
+          </span>
         </div>
 
-        {/* Preview quote */}
         {!expanded && posts[0] && (
-          <p className="text-[11px] text-slate-400 italic line-clamp-1 mb-3">&ldquo;{posts[0].title}&rdquo;</p>
+          <p
+            className="font-serif italic line-clamp-1 mt-3 text-[13px]"
+            style={{ color: "var(--fg-muted)" }}
+          >
+            &ldquo;{decodeHtmlEntities(posts[0].title)}&rdquo;
+          </p>
         )}
 
-        {/* Action buttons */}
-        <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="flex gap-2 mt-4"
+          onClick={(e) => e.stopPropagation()}
+        >
           <button
             onClick={() => onViewOnMap(r.lat, r.lng)}
-            className="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors press-down"
+            className="flex-1 btn-secondary !py-2"
           >
+            <MapPin size={13} />
             Map
           </button>
           {isEvent && r.metadata?.ticket_url ? (
@@ -195,66 +267,81 @@ function PlaceCard({
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium text-white text-center transition-colors"
-              style={{ background: color }}
+              className="flex-1 btn-primary !py-2 text-center"
             >
+              <Ticket size={13} />
               Tickets
             </a>
           ) : (
             <a
               href={`/place/${encodeURIComponent(r.name)}`}
               onClick={(e) => e.stopPropagation()}
-              className="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#ff6b35] bg-[#ff6b35]/10 hover:bg-[#ff6b35]/20 transition-colors text-center press-down"
+              className="flex-1 btn-primary !py-2 text-center"
             >
               Details
             </a>
           )}
           <button
             onClick={handleShare}
-            className="px-2 py-1.5 rounded-lg text-slate-400 bg-slate-50 hover:bg-slate-100 transition-colors"
+            className="btn-secondary !py-2 !px-3"
             title="Copy link"
           >
             {copied ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+              <Check size={14} style={{ color: "var(--sent-pos)" }} />
             ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-              </svg>
+              <Share2 size={14} />
             )}
           </button>
         </div>
       </div>
 
-      {/* Upcoming Events section — shown when venue has linked Ticketmaster events */}
       {linkedEvents.length > 0 && (
-        <div className="px-3.5 pb-2 border-t border-slate-50" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="px-4 pb-3"
+          style={{ borderTop: "1px solid var(--border)" }}
+          onClick={(e) => e.stopPropagation()}
+        >
           <button
-            onClick={() => setShowEvents(v => !v)}
+            onClick={() => setShowEvents((v) => !v)}
             className="flex items-center justify-between w-full py-2 text-left"
           >
-            <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wide">
-              🎟 {linkedEvents.length} Upcoming Event{linkedEvents.length !== 1 ? "s" : ""}
-            </span>
-            <svg
-              width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-              className={`text-slate-400 transition-transform ${showEvents ? "rotate-180" : ""}`}
+            <span
+              className="eyebrow inline-flex items-center gap-1"
+              style={{ color: "var(--plum)" }}
             >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+              <Ticket size={11} /> {linkedEvents.length} Upcoming Event
+              {linkedEvents.length !== 1 ? "s" : ""}
+            </span>
+            <ChevronDown
+              size={14}
+              className={`transition-transform ${showEvents ? "rotate-180" : ""}`}
+              style={{ color: "var(--fg-subtle)" }}
+            />
           </button>
           {showEvents && (
             <div className="space-y-1.5 pb-1">
               {linkedEvents.map((ev) => (
-                <div key={ev.id} className="flex items-center gap-2 py-1 border-b border-slate-50 last:border-0">
+                <div
+                  key={ev.id}
+                  className="flex items-center gap-2 py-1.5"
+                  style={{ borderTop: "1px solid var(--border)" }}
+                >
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semibold text-slate-700 truncate">{ev.name}</p>
-                    <p className="text-[10px] text-slate-400">
+                    <p
+                      className="text-[12.5px] font-display-ui font-semibold truncate"
+                      style={{ color: "var(--fg)" }}
+                    >
+                      {ev.name}
+                    </p>
+                    <p
+                      className="text-[11px]"
+                      style={{ color: "var(--fg-subtle)" }}
+                    >
                       {ev.metadata?.event_date
-                        ? new Date(ev.metadata.event_date).toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric" })
+                        ? new Date(ev.metadata.event_date).toLocaleDateString(
+                            "en-CA",
+                            { weekday: "short", month: "short", day: "numeric" }
+                          )
                         : ""}
                       {ev.metadata?.genre ? ` · ${ev.metadata.genre}` : ""}
                     </p>
@@ -265,8 +352,10 @@ function PlaceCard({
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="shrink-0 text-[9px] font-bold text-white px-2 py-1 rounded-md"
-                      style={{ background: "linear-gradient(135deg, #7c3aed, #9333ea)" }}
+                      className="shrink-0 btn-primary !py-1 !px-3 !text-[10px]"
+                      style={{
+                        background: "linear-gradient(135deg, #8b5cf6, #d946ef)",
+                      }}
                     >
                       Tickets
                     </a>
@@ -278,56 +367,73 @@ function PlaceCard({
         </div>
       )}
 
-      {/* Expanded posts */}
-      <div className={`expand-grid ${expanded ? "open" : ""}`}>
+      <div
+        className={`expand-grid ${expanded ? "open" : ""}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div>
-        <div className="px-3.5 pb-3 border-t border-slate-100">
-          {hasPosts ? (
-            <div className="space-y-1 pt-2.5">
-              {posts.map((p) => (
-                <a
-                  key={p.id}
-                  href={getPostHref(p.subreddit, p.permalink)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex items-start gap-2 text-xs text-slate-500 hover:text-[#ff6b35] transition-colors py-1 px-1.5 -mx-1.5 rounded-lg hover:bg-slate-50"
-                >
-                  <span
-                    className="inline-block w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
-                    style={{ background: SENTIMENT_COLORS[p.sentiment] || SENTIMENT_COLORS.neutral }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate leading-relaxed">{decodeHtmlEntities(p.title)}</p>
-                    <p className="text-slate-400 text-[10px]">
-                      <PostSource subreddit={p.subreddit} variant="tag" className="mr-1" />
-                      {p.score} pts · {formatTimeAgo(p.created_utc)}
-                      {(p.mentions_in_thread ?? 1) > 1 && (
-                        <span className="ml-1 text-[#ff6b35]">· {p.mentions_in_thread}x mentioned</span>
-                      )}
-                    </p>
-                  </div>
-                </a>
-              ))}
-            </div>
-          ) : (
-            <div className="py-3 text-center">
-              <p className="text-xs text-slate-400">No Reddit mentions yet</p>
-            </div>
-          )}
-          <a
-            href={`/place/${encodeURIComponent(r.name)}`}
-            onClick={(e) => e.stopPropagation()}
-            className="mt-2 flex items-center justify-center gap-1.5 w-full py-2 rounded-lg text-xs font-semibold text-[#ff6b35] bg-[#ff6b35]/5 hover:bg-[#ff6b35]/10 transition-colors border border-[#ff6b35]/20 press-down"
+          <div
+            className="px-4 pb-4 pt-3"
+            style={{ borderTop: "1px solid var(--border)" }}
           >
-            View full details →
-          </a>
-        </div>
+            {hasPosts ? (
+              <div className="flex flex-col gap-1 pt-1">
+                {posts.map((p) => (
+                  <a
+                    key={p.id}
+                    href={getPostHref(p.subreddit, p.permalink)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-start gap-2 text-[12.5px] py-1.5 px-2 -mx-2 rounded-[var(--radius-md)] transition-colors hover:bg-[var(--bg-sunken)]"
+                    style={{ color: "var(--fg-muted)" }}
+                  >
+                    <span
+                      className="inline-block w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
+                      style={{
+                        background:
+                          SENTIMENT_COLORS[p.sentiment] ||
+                          SENTIMENT_COLORS.neutral,
+                      }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="line-clamp-2">
+                        {decodeHtmlEntities(p.title)}
+                      </p>
+                      <p
+                        className="text-[11px] mt-0.5 inline-flex items-center gap-1.5"
+                        style={{ color: "var(--fg-subtle)" }}
+                      >
+                        <PostSource subreddit={p.subreddit} variant="tag" />
+                        {p.score} pts · {formatTimeAgo(p.created_utc)}
+                      </p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <p
+                className="py-3 text-center text-[13px]"
+                style={{ color: "var(--fg-subtle)" }}
+              >
+                No Reddit mentions yet
+              </p>
+            )}
+            <a
+              href={`/place/${encodeURIComponent(r.name)}`}
+              onClick={(e) => e.stopPropagation()}
+              className="mt-3 btn-secondary w-full !justify-center !text-[12.5px]"
+            >
+              View full details →
+            </a>
+          </div>
         </div>
       </div>
 
-      {/* Check-in */}
-      <div className="px-3.5 pb-3" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="px-4 pb-4"
+        onClick={(e) => e.stopPropagation()}
+      >
         <CheckinButton placeId={r.id} />
       </div>
     </div>
@@ -356,7 +462,11 @@ export default memo(function ListView({
   const [sort, setSort] = useState<SortMode>("buzz");
   const [neighbourhood, setNeighbourhood] = useState("all");
 
-  const isFiltersActive = !!(searchQuery || activeCategory !== "all" || neighbourhood !== "all");
+  const isFiltersActive = !!(
+    searchQuery ||
+    activeCategory !== "all" ||
+    neighbourhood !== "all"
+  );
 
   const mostLoved = useMemo(() => {
     return [...places]
@@ -366,21 +476,34 @@ export default memo(function ListView({
 
   const filtered = useMemo(() => {
     let items = places;
-    if (activeCategory !== "all") items = items.filter((r) => r.category === activeCategory);
-    // Hide venue-linked events from main list unless specifically filtering for events
+    if (activeCategory !== "all")
+      items = items.filter((r) => r.category === activeCategory);
     if (activeCategory !== "event") {
-      items = items.filter(p => p.category !== "event" || !linkedEventIds.has(p.id));
+      items = items.filter(
+        (p) => p.category !== "event" || !linkedEventIds.has(p.id)
+      );
     }
-    if (neighbourhood !== "all") items = filterByNeighbourhood(items, neighbourhood);
+    if (neighbourhood !== "all")
+      items = filterByNeighbourhood(items, neighbourhood);
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      items = items.filter((r) => r.name.toLowerCase().includes(q) || r.address.toLowerCase().includes(q));
+      items = items.filter(
+        (r) =>
+          r.name.toLowerCase().includes(q) ||
+          r.address.toLowerCase().includes(q)
+      );
     }
     const sorted = [...items];
     switch (sort) {
-      case "mentions": sorted.sort((a, b) => b.mention_count - a.mention_count); break;
-      case "newest": sorted.sort((a, b) => b.latest_mention - a.latest_mention); break;
-      case "az": sorted.sort((a, b) => a.name.localeCompare(b.name)); break;
+      case "mentions":
+        sorted.sort((a, b) => b.mention_count - a.mention_count);
+        break;
+      case "newest":
+        sorted.sort((a, b) => b.latest_mention - a.latest_mention);
+        break;
+      case "az":
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        break;
       case "rating":
         sorted.sort((a, b) => {
           if (a.google_rating === null && b.google_rating === null) return 0;
@@ -389,14 +512,19 @@ export default memo(function ListView({
           return b.google_rating - a.google_rating;
         });
         break;
-      case "buzz": sorted.sort((a, b) => buzzScore(b) - buzzScore(a)); break;
-      case "neighbourhood": sorted.sort((a, b) => {
-        const na = getNeighbourhood(a.lat, a.lng) || "zzz";
-        const nb = getNeighbourhood(b.lat, b.lng) || "zzz";
-        if (na !== nb) return na.localeCompare(nb);
-        return b.mention_count - a.mention_count;
-      }); break;
-      default: break;
+      case "buzz":
+        sorted.sort((a, b) => buzzScore(b) - buzzScore(a));
+        break;
+      case "neighbourhood":
+        sorted.sort((a, b) => {
+          const na = getNeighbourhood(a.lat, a.lng) || "zzz";
+          const nb = getNeighbourhood(b.lat, b.lng) || "zzz";
+          if (na !== nb) return na.localeCompare(nb);
+          return b.mention_count - a.mention_count;
+        });
+        break;
+      default:
+        break;
     }
     return sorted;
   }, [places, activeCategory, neighbourhood, searchQuery, sort, linkedEventIds]);
@@ -412,127 +540,259 @@ export default memo(function ListView({
     return Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
   }, [filtered, sort]);
 
+  const selectStyle: React.CSSProperties = {
+    background: "var(--bg-elevated)",
+    color: "var(--fg)",
+    border: "1px solid var(--border)",
+    borderRadius: "var(--radius-pill)",
+    padding: "8px 16px",
+    fontSize: 13,
+    fontFamily: "var(--font-display-ui)",
+    fontWeight: 600,
+    cursor: "pointer",
+  };
+
   return (
-    <div className="h-full pt-14 md:pt-[92px] pb-16 md:pb-8 overflow-y-auto bg-slate-50/50 page-enter">
-      <div className="max-w-5xl mx-auto px-4 py-4">
-        {/* Search + sort controls */}
+    <div
+      className="h-full pt-14 md:pt-[92px] pb-24 md:pb-8 overflow-y-auto page-enter"
+      style={{ background: "var(--bg)" }}
+    >
+      <div className="max-w-6xl mx-auto px-4 py-4">
         <div className="flex flex-col sm:flex-row gap-2 mb-4">
-          <input
-            type="text"
-            placeholder="Search places..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-[#ff6b35] focus:ring-1 focus:ring-[#ff6b35]/20"
-          />
+          <div
+            className="flex-1 flex items-center gap-2 px-4"
+            style={{
+              background: "var(--bg-elevated)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-pill)",
+              boxShadow: "var(--shadow-sm)",
+            }}
+          >
+            <Search size={16} style={{ color: "var(--fg-subtle)" }} />
+            <input
+              type="text"
+              placeholder="Search places…"
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="flex-1 bg-transparent outline-none py-2.5 text-[14.5px]"
+              style={{ color: "var(--fg)" }}
+            />
+          </div>
           <div className="flex gap-2">
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortMode)}
-              className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 outline-none focus:border-[#ff6b35] cursor-pointer"
+              style={selectStyle}
+              className="focus-ring"
             >
               <option value="buzz">Buzz Score</option>
               <option value="mentions">Most Mentioned</option>
               <option value="newest">Newest</option>
-              <option value="az">A-Z</option>
+              <option value="az">A–Z</option>
               <option value="rating">Rating</option>
               <option value="neighbourhood">Neighbourhood</option>
             </select>
             <select
               value={neighbourhood}
               onChange={(e) => setNeighbourhood(e.target.value)}
-              className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 outline-none focus:border-[#ff6b35] cursor-pointer"
+              style={selectStyle}
+              className="focus-ring"
             >
               <option value="all">All Areas</option>
               {NEIGHBOURHOODS.map((n) => (
-                <option key={n.name} value={n.name}>{n.name}</option>
+                <option key={n.name} value={n.name}>
+                  {n.name}
+                </option>
               ))}
             </select>
           </div>
         </div>
 
-        {/* Results count */}
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs text-slate-400">
+          <span
+            className="eyebrow"
+            style={{ color: "var(--fg-subtle)" }}
+          >
             {filtered.length} place{filtered.length !== 1 ? "s" : ""}
-            {activeCategory !== "all" && ` in ${activeCategory}`}
+            {activeCategory !== "all" && ` · ${activeCategory}`}
           </span>
         </div>
 
-        {/* Most Loved */}
         {!isFiltersActive && !loading && mostLoved.length > 0 && (
-          <div className="mb-5">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Most Loved</div>
+          <div className="mb-6">
+            <div
+              className="eyebrow mb-2.5"
+              style={{ color: "var(--brand)" }}
+            >
+              <Zap size={11} className="inline -mt-0.5 mr-1" /> Most Loved
+            </div>
             <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
               {mostLoved.map((r) => (
                 <button
                   key={r.id}
                   onClick={() => onViewOnMap(r.lat, r.lng)}
-                  className="shrink-0 flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 hover:border-[#ff6b35] hover:shadow-sm transition-all group"
+                  className="shrink-0 flex items-center gap-3 press-down group"
+                  style={{
+                    background: "var(--bg-elevated)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius-pill)",
+                    padding: "6px 14px 6px 6px",
+                    boxShadow: "var(--shadow-sm)",
+                  }}
                 >
-                  <span style={{ color: CATEGORY_COLORS[r.category] || "#64748b" }}>
-                    <CategoryIcon category={r.category} size={18} />
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      width: 32,
+                      height: 32,
+                      borderRadius: 9999,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: `${CATEGORY_COLORS[r.category] || "#64748b"}1f`,
+                      color: CATEGORY_COLORS[r.category] || "#64748b",
+                    }}
+                  >
+                    <CategoryIcon category={r.category} size={16} />
                   </span>
-                  <div className="text-left">
-                    <div className="text-xs font-medium text-slate-700 truncate max-w-[100px] group-hover:text-[#ff6b35]">{r.name}</div>
-                    <div className="text-[10px] text-slate-400">{r.mention_count} mentions</div>
-                  </div>
+                  <span className="text-left">
+                    <span
+                      className="block font-display-ui font-semibold text-[13px] truncate max-w-[140px] group-hover:text-[color:var(--brand)]"
+                      style={{ color: "var(--fg)" }}
+                    >
+                      {r.name}
+                    </span>
+                    <span
+                      className="block text-[11px]"
+                      style={{ color: "var(--fg-subtle)" }}
+                    >
+                      {r.mention_count} mentions
+                    </span>
+                  </span>
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        {/* Cards */}
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300 mb-3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <div
+            className="flex flex-col items-center justify-center py-20"
+            style={{ color: "var(--fg-subtle)" }}
+          >
+            <div
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: 9999,
+                background: "var(--brand-gradient)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                boxShadow: "var(--glow-brand)",
+                marginBottom: 16,
+              }}
+            >
+              <Search size={32} strokeWidth={2} />
+            </div>
             {searchQuery ? (
               <>
-                <p className="text-sm">No places found for &ldquo;{searchQuery}&rdquo;</p>
-                <p className="text-xs text-slate-400 mt-1">Try searching for a neighbourhood name or cuisine type</p>
-                <button onClick={() => onSearchChange("")} className="mt-3 px-4 py-1.5 bg-slate-900 text-white text-xs rounded-lg font-medium hover:bg-slate-800 transition-colors">
+                <p
+                  className="font-display text-xl"
+                  style={{ color: "var(--fg)", fontWeight: 600 }}
+                >
+                  Nothing matches &ldquo;{searchQuery}&rdquo;
+                </p>
+                <p
+                  className="text-[13.5px] mt-1"
+                  style={{ color: "var(--fg-muted)" }}
+                >
+                  Try a neighbourhood, cuisine, or different spelling.
+                </p>
+                <button
+                  onClick={() => onSearchChange("")}
+                  className="btn-primary mt-5"
+                >
                   Clear search
                 </button>
               </>
             ) : activeCategory !== "all" ? (
-              <>
-                <p className="text-sm">No {activeCategory} places match these filters</p>
-                <p className="text-xs text-slate-400 mt-1">Try adjusting your neighbourhood or sort options</p>
-              </>
+              <p
+                className="font-display text-xl"
+                style={{ color: "var(--fg)", fontWeight: 600 }}
+              >
+                No {activeCategory} places match these filters
+              </p>
             ) : (
-              <p className="text-sm">No places match these filters</p>
+              <p
+                className="font-display text-xl"
+                style={{ color: "var(--fg)", fontWeight: 600 }}
+              >
+                No places match these filters
+              </p>
             )}
           </div>
         ) : grouped ? (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {grouped.map(([hood, places]) => (
               <div key={hood}>
                 <div className="flex items-center gap-2 mb-3">
-                  <h2 className="text-sm font-semibold text-slate-800">{hood}</h2>
-                  <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                  <h2
+                    className="font-display text-xl"
+                    style={{
+                      color: "var(--fg)",
+                      fontWeight: 600,
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    {hood}
+                  </h2>
+                  <span
+                    className="eyebrow"
+                    style={{
+                      background: "var(--bg-sunken)",
+                      color: "var(--fg-muted)",
+                      padding: "3px 10px",
+                      borderRadius: 9999,
+                    }}
+                  >
                     {places.length}
                   </span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {places.map((r, pi) => (
-                    <PlaceCard key={r.id} r={r} onViewOnMap={onViewOnMap} index={pi} linkedEvents={venueEvents.get(r.id) ?? []} />
+                    <PlaceCard
+                      key={r.id}
+                      r={r}
+                      onViewOnMap={onViewOnMap}
+                      index={pi}
+                      linkedEvents={venueEvents.get(r.id) ?? []}
+                    />
                   ))}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((r, i) => (
-              <PlaceCard key={r.id} r={r} onViewOnMap={onViewOnMap} index={i} linkedEvents={venueEvents.get(r.id) ?? []} />
+              <PlaceCard
+                key={r.id}
+                r={r}
+                onViewOnMap={onViewOnMap}
+                index={i}
+                linkedEvents={venueEvents.get(r.id) ?? []}
+              />
             ))}
           </div>
         )}
       </div>
     </div>
   );
-})
+});

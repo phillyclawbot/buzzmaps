@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import type { RedditPostWithPlaces, PlaceCategory } from "@/lib/types";
-import { CATEGORY_EMOJI } from "@/lib/types";
 import { SENTIMENT_COLORS } from "@/lib/constants";
+import { CategoryIcon } from "@/lib/icons";
 import { decodeHtmlEntities } from "@/lib/post-source";
 import PostSource from "@/components/ui/PostSource";
 import { formatTimeAgo } from "@/lib/utils";
@@ -186,7 +186,7 @@ function SidebarContent({
           placeholder="Search places..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-3 py-2 min-h-[36px] bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-[#9ca3af] outline-none focus:border-[#ff6b35]"
+          className="w-full px-3 py-2 min-h-[36px] bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-[#9ca3af] outline-none focus:border-[#ff5b3a]"
         />
       </div>
 
@@ -198,7 +198,7 @@ function SidebarContent({
             onClick={() => setFilter(f.key)}
             className={`min-h-[36px] px-3 py-2 rounded-full text-xs font-medium transition-colors ${
               filter === f.key
-                ? "bg-gradient-to-r from-[#ff6b35] to-[#ea580c] text-white"
+                ? "bg-gradient-to-r from-[#ff5b3a] to-[#e64a29] text-white"
                 : "bg-slate-100 text-slate-500 hover:text-slate-900"
             }`}
           >
@@ -265,7 +265,7 @@ function SidebarContent({
                           key={r.id}
                           className="inline-flex items-center gap-1 text-xs text-slate-800 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full font-medium"
                         >
-                          <span>{CATEGORY_EMOJI[(r.category || "restaurant") as PlaceCategory] || "📍"}</span>
+                          <CategoryIcon category={(r.category || "restaurant") as PlaceCategory} size={12} />
                           <span>{r.name}</span>
                           <SentimentDot sentiment={r.sentiment} />
                         </span>

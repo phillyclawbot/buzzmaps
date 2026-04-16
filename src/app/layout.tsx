@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Fraunces } from "next/font/google";
+import { Geist, Geist_Mono, Fraunces, Space_Grotesk } from "next/font/google";
 import BottomNav from "@/components/BottomNav";
 import SiteHeader from "@/components/SiteHeader";
 import Analytics from "@/components/Analytics";
 import CommandPalette from "@/components/CommandPalette";
 import ShortcutsHelp from "@/components/ShortcutsHelp";
 import RecentPlaceTracker from "@/components/RecentPlaceTracker";
+import MotionProvider from "@/components/MotionProvider";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 import "./globals.css";
 
@@ -19,7 +20,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Editorial display face — variable font, optical-sizing enabled via CSS
+// Big editorial display face — used only for hero headlines now
 const fraunces = Fraunces({
   variable: "--font-fraunces",
   subsets: ["latin"],
@@ -27,9 +28,18 @@ const fraunces = Fraunces({
   axes: ["SOFT", "WONK", "opsz"],
 });
 
+// Rounded-geometric label face for buttons, eyebrows, chips
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  themeColor: "#ff5b3a",
 };
 
 export const metadata: Metadata = {
@@ -71,16 +81,18 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <body className="h-full">
-        <SiteHeader />
-        {children}
-        <BottomNav />
-        <CommandPalette />
-        <ShortcutsHelp />
-        <RecentPlaceTracker />
-        <Analytics />
+        <MotionProvider>
+          <SiteHeader />
+          {children}
+          <BottomNav />
+          <CommandPalette />
+          <ShortcutsHelp />
+          <RecentPlaceTracker />
+          <Analytics />
+        </MotionProvider>
       </body>
     </html>
   );

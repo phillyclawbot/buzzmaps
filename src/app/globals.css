@@ -1,101 +1,120 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────
-   Design tokens
-   ─────────────────────────────────────────────────────────
-   Everything chrome-related goes through these vars. Category
-   colors (data) remain in src/lib/constants.ts.
+   BuzzMaps design tokens — playful map aesthetic
+   Inspired by Citymapper, Airbnb, Atlas Obscura, AllTrails.
+   Light-only. Category/data colors live in src/lib/constants.ts.
    ───────────────────────────────────────────────────────── */
 
 :root {
-  /* Explicit light-only color scheme so browser chrome (scrollbars,
-     native form controls) doesn't go dark on systems that prefer dark. */
   color-scheme: light;
 
-  /* ─── Surfaces — warm, newsprint-like ─── */
-  --bg: #faf7f2;              /* off-white, warm */
-  --bg-elevated: #ffffff;     /* cards */
-  --bg-sunken: #f1ede3;       /* inputs, rail, subtle wash */
-  --surface-hover: #f5f0e6;
+  /* ─── Surfaces ─── */
+  --bg:            #fbfaf7;   /* warm near-white paper */
+  --bg-elevated:   #ffffff;
+  --bg-sunken:     #f3f1ec;
+  --bg-tint:       #eef4ff;   /* cool wash for hero sections */
+  --bg-tint-warm:  #fff4ee;   /* warm wash */
+  --surface-hover: #f6f4ef;
 
-  /* ─── Text — warm charcoal, not cool slate ─── */
-  --fg: #141211;              /* near-black, ever so slightly warm */
-  --fg-muted: #5a544c;        /* muted warm gray */
-  --fg-subtle: #8a8278;       /* secondary captions */
-  --fg-faint: #c5bdb0;        /* dividers, hairlines */
-  --fg-inverse: #faf7f2;
+  /* ─── Ink ─── */
+  --fg:         #0f1419;
+  --fg-muted:   #4b5563;
+  --fg-subtle:  #8b8f99;
+  --fg-faint:   #d6d8de;
+  --fg-inverse: #ffffff;
 
-  /* ─── Borders — warm beige ─── */
-  --border: #e6dfd1;
-  --border-strong: #c5bdb0;
+  /* ─── Borders ─── */
+  --border:         #e8e6df;
+  --border-strong:  #c9c7bf;
 
-  /* ─── Brand — used sparingly as accent ─── */
-  --brand: #d94e1f;           /* deeper, editorial orange (vs the old #ff6b35) */
-  --brand-hover: #b13d12;
-  --brand-tint: rgba(217, 78, 31, 0.10);
-  --brand-tint-strong: rgba(217, 78, 31, 0.20);
+  /* ─── Brand — sunset coral gradient ─── */
+  --brand:        #ff5b3a;
+  --brand-2:      #ff8a3d;
+  --brand-hover:  #e64a29;
+  --brand-tint:         rgba(255, 91, 58, 0.10);
+  --brand-tint-strong:  rgba(255, 91, 58, 0.22);
+  --brand-gradient: linear-gradient(135deg, #ff5b3a 0%, #ff8a3d 100%);
 
-  /* ─── Secondary accent — muted editorial sage ─── */
-  --accent-2: #4a6850;
-  --accent-2-tint: rgba(74, 104, 80, 0.10);
+  /* ─── Map blue — the "mapness" accent ─── */
+  --map:       #0066ff;
+  --map-tint:  rgba(0, 102, 255, 0.10);
 
-  /* ─── Ink — used for big typographic moments ─── */
-  --ink: #141211;
-  --ink-inverse: #faf7f2;
+  /* ─── Accent colors (for hero washes, decorations) ─── */
+  --plum:   #8b5cf6;
+  --aqua:   #06b6d4;
+  --sage:   #10b981;
+  --gold:   #f59e0b;
+  --rose:   #ec4899;
 
-  /* ─── Sentiment (kept readable) ─── */
-  --sent-pos: #3a7a4a;
-  --sent-pos-fill: #4a8a5a;
-  --sent-neu: #b07418;
-  --sent-neg: #a63e1a;
+  /* ─── Ink (for typographic moments) ─── */
+  --ink:         #0f1419;
+  --ink-inverse: #ffffff;
 
-  /* ─── Radii — less rounded, more editorial ─── */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 10px;
-  --radius-xl: 16px;
+  /* ─── Sentiment ─── */
+  --sent-pos:      #10b981;
+  --sent-pos-fill: #14c08a;
+  --sent-neu:      #f59e0b;
+  --sent-neg:      #ef4444;
 
-  /* ─── Shadows — softer, warmer ─── */
-  --shadow-sm: 0 1px 2px rgba(40, 30, 20, 0.05);
-  --shadow-md: 0 6px 20px rgba(40, 30, 20, 0.08);
-  --shadow-lg: 0 20px 50px rgba(40, 30, 20, 0.12);
+  /* ─── Radii — chunkier ─── */
+  --radius-sm:   8px;
+  --radius-md:   14px;
+  --radius-lg:   20px;
+  --radius-xl:   28px;
+  --radius-pill: 9999px;
+
+  /* ─── Shadows — soft squish + colored glow ─── */
+  --shadow-sm:  0 1px 2px rgba(15,20,25,.06), 0 2px 6px rgba(15,20,25,.04);
+  --shadow-md:  0 4px 12px rgba(15,20,25,.08), 0 12px 32px rgba(15,20,25,.06);
+  --shadow-lg:  0 12px 36px rgba(15,20,25,.10), 0 32px 80px rgba(15,20,25,.08);
+  --shadow-pin: 0 6px 14px rgba(15,20,25,.18), 0 2px 4px rgba(15,20,25,.12);
+  --glow-brand: 0 10px 30px rgba(255, 91, 58, 0.35);
+  --glow-map:   0 10px 30px rgba(0, 102, 255, 0.30);
 
   /* ─── Typography ─── */
-  --font-serif: var(--font-fraunces), Georgia, "Times New Roman", serif;
-  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
+  --font-serif:  var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-sans:   var(--font-geist-sans), system-ui, sans-serif;
+  --font-display-ui: var(--font-space-grotesk), var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono:   var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
 
   /* ─── Legacy aliases ─── */
   --background: var(--bg);
   --foreground: var(--fg);
-  --accent: var(--brand);
-  --card-bg: var(--bg-elevated);
+  --accent:     var(--brand);
+  --accent-2:   var(--sage);
+  --accent-2-tint: rgba(16, 185, 129, 0.10);
+  --card-bg:     var(--bg-elevated);
   --card-border: var(--border);
-  --muted: var(--fg-muted);
+  --muted:       var(--fg-muted);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Dark mode intentionally disabled — BuzzMaps is light-only, matches
-       the editorial / newsprint aesthetic. Leaving this empty block so
-       future additions have an obvious home; the browser will just
-       inherit the default :root values above. */
+    /* Dark mode intentionally disabled — BuzzMaps stays bright & sunny. */
     color-scheme: light;
   }
 }
 
 @theme inline {
-  --color-bg: var(--bg);
+  --color-bg:          var(--bg);
   --color-bg-elevated: var(--bg-elevated);
-  --color-bg-sunken: var(--bg-sunken);
-  --color-fg: var(--fg);
-  --color-fg-muted: var(--fg-muted);
-  --color-fg-subtle: var(--fg-subtle);
-  --color-border: var(--border);
+  --color-bg-sunken:   var(--bg-sunken);
+  --color-bg-tint:     var(--bg-tint);
+  --color-fg:          var(--fg);
+  --color-fg-muted:    var(--fg-muted);
+  --color-fg-subtle:   var(--fg-subtle);
+  --color-border:      var(--border);
   --color-border-strong: var(--border-strong);
-  --color-brand: var(--brand);
+  --color-brand:       var(--brand);
+  --color-brand-2:     var(--brand-2);
   --color-brand-hover: var(--brand-hover);
-  --color-accent-2: var(--accent-2);
+  --color-map:         var(--map);
+  --color-plum:        var(--plum);
+  --color-aqua:        var(--aqua);
+  --color-sage:        var(--sage);
+  --color-gold:        var(--gold);
+  --color-rose:        var(--rose);
   --color-sent-pos: var(--sent-pos);
   --color-sent-neu: var(--sent-neu);
   --color-sent-neg: var(--sent-neg);
@@ -103,10 +122,10 @@
   /* legacy */
   --color-background: var(--bg);
   --color-foreground: var(--fg);
-  --color-accent: var(--brand);
-  --color-card: var(--bg-elevated);
+  --color-accent:     var(--brand);
+  --color-card:       var(--bg-elevated);
   --color-card-border: var(--border);
-  --color-muted: var(--fg-muted);
+  --color-muted:      var(--fg-muted);
 }
 
 body {
@@ -114,44 +133,47 @@ body {
   color: var(--fg);
   font-family: var(--font-sans);
   font-feature-settings: "ss01", "cv02";
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ─────────────────────────────────────────
-   Editorial typography utility classes
+   Typography utilities
    ───────────────────────────────────────── */
 
-/* Display headline — big, serif, tight tracking */
 .font-display {
   font-family: var(--font-serif);
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  line-height: 1.05;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
   font-optical-sizing: auto;
-  font-variation-settings: "SOFT" 30, "WONK" 0;
+  font-variation-settings: "SOFT" 100, "WONK" 1;
 }
 
-/* Serif for mid-size headings */
+.font-display-ui {
+  font-family: var(--font-display-ui);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
 .font-serif {
   font-family: var(--font-serif);
   font-optical-sizing: auto;
 }
 
-/* Mono for numbers, datelines, eyebrow labels */
 .font-mono {
   font-family: var(--font-mono);
 }
 
-/* Eyebrow: small, all caps, tracked out, used above headlines */
+/* Eyebrow: chunky rounded-geometric uppercase */
 .eyebrow {
-  font-family: var(--font-sans);
+  font-family: var(--font-display-ui);
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--fg-muted);
 }
 
-/* Caption: italic serif, smaller, used for editorial descriptions */
 .caption {
   font-family: var(--font-serif);
   font-style: italic;
@@ -160,7 +182,6 @@ body {
   color: var(--fg-muted);
 }
 
-/* Dateline: mono, tiny, muted */
 .dateline {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -168,37 +189,49 @@ body {
   color: var(--fg-subtle);
 }
 
-/* Editorial underline — uses native text-decoration so it sits on the
-   baseline regardless of line-height, font-variation, or descenders. */
+/* Gradient text — brand sunset */
+.text-gradient-brand {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.text-gradient-map {
+  background: linear-gradient(135deg, var(--map) 0%, var(--plum) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Editorial underline */
 .ink-underline {
   text-decoration: underline;
   text-decoration-color: var(--ink);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 5px;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
   text-decoration-skip-ink: auto;
   transition: text-decoration-color 200ms ease, text-decoration-thickness 200ms ease;
 }
 .ink-underline:hover {
   text-decoration-color: var(--brand);
-  text-decoration-thickness: 2px;
+  text-decoration-thickness: 3px;
 }
 
-/* Hairline divider */
 .hairline {
   border: 0;
   border-top: 1px solid var(--border);
 }
-.hairline-strong {
-  border-top: 1px solid var(--fg);
-}
 
-/* ───── Leaflet ───── */
+/* ─────────────────────────────────────────
+   Leaflet overrides — rounded + playful
+   ───────────────────────────────────────── */
 .leaflet-container {
   background: var(--bg-sunken);
   font-family: inherit;
 }
-
-/* Tailwind v4 preflight sets plus-lighter on images, breaking Leaflet tiles */
 .leaflet-container img.leaflet-tile {
   mix-blend-mode: normal !important;
 }
@@ -206,284 +239,512 @@ body {
 .leaflet-popup-content-wrapper {
   background: var(--bg-elevated);
   color: var(--fg);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
   box-shadow: var(--shadow-lg);
   padding: 0;
   max-width: min(340px, 92vw);
+  overflow: hidden;
 }
-
 .leaflet-popup-content {
   margin: 0;
   max-width: min(340px, 92vw);
   font-family: var(--font-sans);
 }
-
 .leaflet-popup-tip {
   background: var(--bg-elevated);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   box-shadow: none;
 }
-
 .leaflet-popup-close-button {
   color: var(--fg-subtle) !important;
-  width: 24px !important;
-  height: 24px !important;
-  padding: 4px 6px !important;
-  font-size: 18px !important;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 6px !important;
+  font-size: 20px !important;
   font-weight: 400 !important;
+  border-radius: 999px !important;
+  margin: 6px !important;
+  transition: background 150ms ease, color 150ms ease !important;
 }
-
 .leaflet-popup-close-button:hover {
   color: var(--fg) !important;
-  background: transparent !important;
+  background: var(--bg-sunken) !important;
 }
 
-/* Subtle zoom-control tweak so the +/- buttons don't clash with the
-   editorial aesthetic when the user scrolls a zoom-enabled map. */
 .leaflet-bar {
-  border: 1px solid var(--border-strong) !important;
-  border-radius: var(--radius-sm) !important;
-  box-shadow: var(--shadow-sm) !important;
+  border: 0 !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-md) !important;
+  overflow: hidden;
 }
 .leaflet-bar a {
   background: var(--bg-elevated) !important;
   color: var(--fg) !important;
   border-color: var(--border) !important;
-  font-family: var(--font-sans) !important;
-  font-weight: 400 !important;
+  font-family: var(--font-display-ui) !important;
+  font-weight: 600 !important;
 }
 .leaflet-bar a:hover {
-  background: var(--bg-sunken) !important;
+  background: var(--bg-tint) !important;
+  color: var(--map) !important;
 }
 
-/* Attribution: quieter, smaller, matches the editorial tone. */
 .leaflet-control-attribution {
   background: color-mix(in srgb, var(--bg-elevated) 85%, transparent) !important;
   color: var(--fg-subtle) !important;
   font-family: var(--font-mono) !important;
   font-size: 9px !important;
-  padding: 2px 6px !important;
+  padding: 3px 8px !important;
   letter-spacing: 0.02em;
+  border-radius: var(--radius-pill) !important;
+  margin: 6px !important;
 }
-.leaflet-control-attribution a {
-  color: var(--fg-muted) !important;
-}
+.leaflet-control-attribution a { color: var(--fg-muted) !important; }
 
-/* ───── Scrollbars ───── */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg-sunken);
-}
+/* ─────────────────────────────────────────
+   Scrollbars
+   ───────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   background: var(--border-strong);
-  border-radius: 3px;
+  border-radius: 4px;
+  border: 2px solid var(--bg);
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--fg-subtle);
-}
+::-webkit-scrollbar-thumb:hover { background: var(--fg-subtle); }
 
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
-/* ───── Focus ring (one consistent style) ───── */
+/* ─────────────────────────────────────────
+   Focus ring — brand-tinted, consistent
+   ───────────────────────────────────────── */
 .focus-ring {
   outline: none;
-  transition: box-shadow 120ms ease, border-color 120ms ease;
+  transition: box-shadow 140ms ease, border-color 140ms ease;
 }
 .focus-ring:focus-visible {
-  box-shadow: 0 0 0 3px var(--brand-tint-strong);
+  box-shadow: 0 0 0 4px var(--brand-tint-strong);
   border-color: var(--brand);
 }
 
-/* ───── Back link (used in TopBar) ───── */
-.back-link {
-  color: var(--fg-muted);
-}
-.back-link:hover {
-  color: var(--brand);
-}
-
-/* ───── Editorial card primitives ───── */
+/* ─────────────────────────────────────────
+   Cards & surfaces
+   ───────────────────────────────────────── */
 .app-card {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-}
-.app-card-hover {
-  transition: box-shadow 200ms ease, border-color 200ms ease, transform 200ms ease;
+  transition: box-shadow 220ms ease, transform 220ms ease, border-color 220ms ease;
 }
 .app-card-hover:hover {
   box-shadow: var(--shadow-md);
-  border-color: var(--border-strong);
+  transform: translateY(-3px);
+  border-color: transparent;
 }
 
-/* Editorial tag: uppercase tracked, monospaced-feeling */
+/* Place card — lifts with a glow tinted by --card-glow (set inline per card). */
+.place-card-hover {
+  transition: transform 240ms cubic-bezier(.22,1,.36,1),
+              box-shadow 240ms cubic-bezier(.22,1,.36,1),
+              border-color 220ms ease;
+}
+.place-card-hover:hover {
+  transform: translateY(-5px);
+  border-color: transparent;
+  box-shadow:
+    0 22px 44px -10px var(--card-glow, rgba(15,20,25,0.12)),
+    0 6px 14px rgba(15,20,25,0.06);
+}
+@media (prefers-reduced-motion: reduce) {
+  .place-card-hover:hover { transform: none; }
+}
+
+/* Glass surface — used on floating headers, modals, map chrome */
+.glass {
+  background: color-mix(in srgb, var(--bg-elevated) 78%, transparent);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.glass-dark {
+  background: color-mix(in srgb, var(--fg) 75%, transparent);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  color: var(--fg-inverse);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* ─────────────────────────────────────────
+   Chips, pills, tags
+   ───────────────────────────────────────── */
+.chip-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display-ui);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+.chip-pill:hover {
+  background: var(--bg-tint);
+  border-color: var(--border-strong);
+}
+.chip-pill-active {
+  background: var(--fg);
+  color: var(--fg-inverse);
+  border-color: var(--fg);
+}
+.chip-pill-brand {
+  background: var(--brand-gradient);
+  color: var(--fg-inverse);
+  border-color: transparent;
+}
+
+/* Legacy tag & chip — kept for anything still referencing them */
 .tag {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  padding: 2px 8px;
-  border: 1px solid currentColor;
-  border-radius: 2px;
-  font-family: var(--font-sans);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display-ui);
   font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   line-height: 1.4;
   text-transform: uppercase;
+  background: var(--bg-sunken);
+  color: var(--fg);
 }
 .tag-solid {
   background: var(--ink);
   color: var(--ink-inverse);
-  border-color: var(--ink);
 }
 .tag-brand {
-  background: var(--brand);
+  background: var(--brand-gradient);
   color: var(--fg-inverse);
-  border-color: var(--brand);
 }
 
-/* Legacy chip kept for anything that still references it */
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.25rem 0.625rem;
+  padding: 4px 10px;
   border-radius: 9999px;
-  font-size: 0.75rem;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1;
 }
 .chip-brand {
   background: var(--brand-tint);
-  color: var(--brand);
+  color: var(--brand-hover);
 }
 .chip-muted {
   background: var(--bg-sunken);
   color: var(--fg-muted);
 }
 
-/* ───── Animations ───── */
+/* ─────────────────────────────────────────
+   Buttons
+   ───────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 10px 20px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display-ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg-inverse);
+  background: var(--brand-gradient);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 200ms ease, transform 120ms ease, filter 200ms ease;
+}
+.btn-primary:hover {
+  box-shadow: var(--glow-brand);
+  filter: brightness(1.04);
+}
+.btn-primary:active {
+  transform: scale(0.97);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 10px 20px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display-ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 200ms ease, border-color 200ms ease, transform 120ms ease;
+}
+.btn-secondary:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-strong);
+}
+.btn-secondary:active { transform: scale(0.97); }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display-ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  background: transparent;
+  transition: background 150ms ease, color 150ms ease;
+}
+.btn-ghost:hover {
+  background: var(--bg-sunken);
+  color: var(--fg);
+}
+
+/* Floating action button */
+.fab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-gradient);
+  color: var(--fg-inverse);
+  box-shadow: var(--glow-brand), var(--shadow-md);
+  transition: transform 160ms cubic-bezier(.34,1.56,.64,1), box-shadow 200ms ease;
+}
+.fab:hover { transform: scale(1.08); }
+.fab:active { transform: scale(0.95); }
+
+/* Back link */
+.back-link { color: var(--fg-muted); }
+.back-link:hover { color: var(--brand); }
+
+/* ─────────────────────────────────────────
+   Gradient mesh (animated ambient background)
+   ───────────────────────────────────────── */
+.gradient-mesh {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.gradient-mesh::before,
+.gradient-mesh::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.55;
+  will-change: transform;
+}
+.gradient-mesh::before {
+  width: 520px; height: 520px;
+  top: -160px; left: -140px;
+  background: radial-gradient(circle, rgba(255,138,61,0.55), transparent 65%);
+  animation: floaty 22s ease-in-out infinite;
+}
+.gradient-mesh::after {
+  width: 640px; height: 640px;
+  bottom: -220px; right: -180px;
+  background: radial-gradient(circle, rgba(0,102,255,0.35), transparent 65%);
+  animation: floaty 28s ease-in-out infinite reverse;
+}
+
+/* ─────────────────────────────────────────
+   Animations
+   ───────────────────────────────────────── */
 @keyframes pinPulse {
-  0% { transform: scale(0.8); opacity: 0.8; }
-  100% { transform: scale(2.2); opacity: 0; }
+  0% { transform: scale(0.7); opacity: 0.85; }
+  100% { transform: scale(2.6); opacity: 0; }
 }
 
 @keyframes nearMePulse {
-  0% { transform: scale(1); opacity: 0.6; }
-  100% { transform: scale(3); opacity: 0; }
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(3.2); opacity: 0; }
+}
+
+@keyframes pinDrop {
+  0% { transform: translateY(-28px) scale(0.5); opacity: 0; }
+  60% { transform: translateY(4px) scale(1.08); opacity: 1; }
+  80% { transform: translateY(-2px) scale(0.97); }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+.pin-drop {
+  animation: pinDrop 0.55s cubic-bezier(.34,1.56,.64,1) both;
+  transform-origin: 50% 100%;
 }
 
 @keyframes pageIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-.page-enter {
-  animation: pageIn 0.25s ease-out;
-}
+.page-enter { animation: pageIn 0.3s ease-out; }
 
-/* Loading progress bar */
 @keyframes progressBar {
   from { width: 0%; }
-  to { width: 100%; }
+  to   { width: 100%; }
 }
 .progress-bar {
-  height: 2px;
-  background: linear-gradient(to right, var(--brand), #f59e0b);
+  height: 3px;
+  background: var(--brand-gradient);
   position: absolute;
   bottom: 0;
   left: 0;
-  border-radius: 0 1px 1px 0;
+  border-radius: 0 999px 999px 0;
   transition: width 0.3s ease;
 }
 
-/* ── Staggered fade-in-up for cards and sections ── */
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in-up {
-  animation: fadeInUp 0.4s ease-out both;
+  animation: fadeInUp 0.55s cubic-bezier(.22,1,.36,1) both;
   animation-delay: calc(var(--stagger, 0) * 60ms);
 }
 
-/* ── Popup entrance ── */
 @keyframes popIn {
-  from { opacity: 0; transform: scale(0.92); }
-  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
 }
-.leaflet-popup {
-  animation: popIn 0.2s ease-out;
+.leaflet-popup { animation: popIn 0.24s cubic-bezier(.34,1.56,.64,1); }
+
+@keyframes bounceIn {
+  0%   { opacity: 0; transform: scale(0.4); }
+  60%  { opacity: 1; transform: scale(1.08); }
+  80%  { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+.animate-bounce-in { animation: bounceIn 0.5s cubic-bezier(.34,1.56,.64,1) both; }
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-6deg); }
+  75% { transform: rotate(6deg); }
+}
+.hover-wiggle:hover { animation: wiggle 0.5s ease-in-out; }
+
+@keyframes floaty {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(40px, -30px) scale(1.06); }
+  66%      { transform: translate(-30px, 40px) scale(0.96); }
+}
+.animate-floaty { animation: floaty 18s ease-in-out infinite; }
+
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-sunken) 0%,
+    var(--surface-hover) 50%,
+    var(--bg-sunken) 100%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.6s linear infinite;
+  border-radius: var(--radius-md);
 }
 
-/* ── Expand / collapse with grid-rows ── */
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-ticker {
+  animation: ticker 45s linear infinite;
+  will-change: transform;
+}
+.ticker-group:hover .animate-ticker { animation-play-state: paused; }
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradientShift 8s ease infinite;
+}
+
 .expand-grid {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.25s ease-out;
+  transition: grid-template-rows 0.3s cubic-bezier(.22,1,.36,1);
 }
-.expand-grid.open {
-  grid-template-rows: 1fr;
-}
-.expand-grid > div {
-  overflow: hidden;
-}
+.expand-grid.open { grid-template-rows: 1fr; }
+.expand-grid > div { overflow: hidden; }
 
-/* ── Button press micro-interaction ── */
-.press-down {
-  transition: transform 80ms ease;
-}
-.press-down:active {
-  transform: scale(0.96);
-}
+.press-down { transition: transform 80ms ease; }
+.press-down:active { transform: scale(0.96); }
 
-/* ── Bottom nav active indicator dot ── */
 @keyframes navDotIn {
   from { transform: scale(0); }
-  to { transform: scale(1); }
+  to   { transform: scale(1); }
 }
-.nav-dot {
-  animation: navDotIn 0.2s ease-out;
-}
+.nav-dot { animation: navDotIn 0.24s cubic-bezier(.34,1.56,.64,1); }
 
-/* ── Sheet / drawer slide-in ── */
 @keyframes sheetIn {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-.animate-sheet-in {
-  animation: sheetIn 0.22s ease-out both;
-}
+.animate-sheet-in { animation: sheetIn 0.28s cubic-bezier(.22,1,.36,1) both; }
 
-/* ── Respect reduced motion preference ── */
+/* ─── Respect reduced motion ─── */
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up,
   .animate-sheet-in,
+  .animate-bounce-in,
+  .animate-floaty,
+  .animate-ticker,
+  .animate-gradient,
   .leaflet-popup,
-  .page-enter {
+  .page-enter,
+  .pin-drop,
+  .skeleton,
+  .hover-wiggle:hover {
     animation: none !important;
   }
-  .expand-grid {
-    transition: none !important;
-  }
-  .press-down:active {
-    transform: none !important;
-  }
+  .gradient-mesh::before,
+  .gradient-mesh::after { animation: none !important; }
+  .expand-grid { transition: none !important; }
+  .press-down:active { transform: none !important; }
+  .app-card-hover:hover { transform: none !important; }
 }
 
 /* ─────────────────────────────────────────────
-   Print styles — strip chrome, let the editorial
-   content breathe as if on newsprint.
+   Print styles — keep a clean editorial printable
    ───────────────────────────────────────────── */
 @media print {
   :root {
     --bg: #ffffff;
     --bg-elevated: #ffffff;
     --bg-sunken: #ffffff;
+    --bg-tint: #ffffff;
     --fg: #000000;
     --fg-muted: #333333;
     --fg-subtle: #555555;
@@ -491,65 +752,35 @@ body {
     --shadow-sm: none;
     --shadow-md: none;
     --shadow-lg: none;
+    --shadow-pin: none;
+    --glow-brand: none;
+    --brand-gradient: #d94e1f;
   }
-
-  /* Hide all persistent chrome and interactive UI */
-  header,
-  nav,
-  footer,
-  [role="dialog"],
-  [data-print-hide],
-  .leaflet-container {
-    display: none !important;
-  }
-
-  /* Articles fill the page, no fixed widths */
-  article,
-  main {
+  header, nav, footer,
+  [role="dialog"], [data-print-hide],
+  .gradient-mesh, .leaflet-container { display: none !important; }
+  article, main {
     max-width: 100% !important;
     padding: 0 !important;
     margin: 0 !important;
   }
-
   body {
     background: #ffffff !important;
     color: #000000 !important;
     font-size: 11pt !important;
   }
-
-  /* Keep paragraphs together, widow-aware */
-  h1, h2, h3, h4 {
-    page-break-after: avoid;
-    break-after: avoid;
-  }
-  p, li, article {
-    orphans: 3;
-    widows: 3;
-  }
-
-  /* Don't let images blow past the page edge */
+  h1, h2, h3, h4 { page-break-after: avoid; break-after: avoid; }
+  p, li, article { orphans: 3; widows: 3; }
   img {
-    max-width: 100% !important;
-    height: auto !important;
-    page-break-inside: avoid;
-    break-inside: avoid;
+    max-width: 100% !important; height: auto !important;
+    page-break-inside: avoid; break-inside: avoid;
   }
-
-  a {
-    color: #000000 !important;
-    text-decoration: underline;
-  }
-
-  /* Expose link URLs next to the anchor text */
+  a { color: #000000 !important; text-decoration: underline; }
   a[href^="http"]::after,
   a[href^="/"]::after {
     content: " (" attr(href) ")";
     font-size: 9pt;
     color: #666;
   }
-  /* But don't expose fragment/internal links */
-  a[href^="#"]::after,
-  a[href^="javascript:"]::after {
-    content: "";
-  }
+  a[href^="#"]::after, a[href^="javascript:"]::after { content: ""; }
 }

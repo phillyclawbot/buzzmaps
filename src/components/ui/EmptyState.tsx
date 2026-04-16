@@ -1,4 +1,8 @@
+"use client";
+
+import { motion } from "framer-motion";
 import type { ReactNode } from "react";
+import { Compass } from "lucide-react";
 
 export default function EmptyState({
   icon,
@@ -12,40 +16,45 @@ export default function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div
-      className="flex flex-col items-center justify-center text-center py-16 px-6"
-      style={{ color: "var(--fg-muted)" }}
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="flex flex-col items-center justify-center text-center py-20 px-6"
     >
-      {icon ?? (
-        <svg
-          width="32"
-          height="32"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="mb-3"
-          style={{ color: "var(--fg-faint)" }}
-          aria-hidden="true"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-      )}
-      <p className="text-sm font-semibold" style={{ color: "var(--fg)" }}>
+      <motion.div
+        animate={{ y: [0, -8, 0], rotate: [0, 4, -4, 0] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        className="mb-5"
+        style={{
+          width: 88,
+          height: 88,
+          borderRadius: 9999,
+          background: "var(--brand-gradient)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: "var(--glow-brand)",
+          color: "#fff",
+        }}
+      >
+        {icon ?? <Compass size={40} strokeWidth={1.8} />}
+      </motion.div>
+      <p
+        className="font-display text-2xl"
+        style={{ color: "var(--fg)" }}
+      >
         {title}
       </p>
       {message && (
         <p
-          className="text-xs mt-1 max-w-sm"
-          style={{ color: "var(--fg-subtle)" }}
+          className="mt-2 max-w-sm text-sm"
+          style={{ color: "var(--fg-muted)" }}
         >
           {message}
         </p>
       )}
-      {action && <div className="mt-4">{action}</div>}
-    </div>
+      {action && <div className="mt-6">{action}</div>}
+    </motion.div>
   );
 }

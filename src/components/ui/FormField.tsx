@@ -1,7 +1,14 @@
 import type { InputHTMLAttributes, TextareaHTMLAttributes, ReactNode } from "react";
 
 const inputBase =
-  "w-full rounded-lg px-3 py-2 text-sm outline-none transition-colors focus-ring";
+  "w-full px-4 py-3 text-[15px] outline-none transition-all focus-ring";
+
+const inputStyle: React.CSSProperties = {
+  background: "var(--bg-elevated)",
+  color: "var(--fg)",
+  border: "1px solid var(--border)",
+  borderRadius: "var(--radius-md)",
+};
 
 export function FormField({
   label,
@@ -18,7 +25,7 @@ export function FormField({
     <label className="block">
       {label && (
         <span
-          className="block text-xs font-semibold mb-1.5"
+          className="eyebrow block mb-2"
           style={{ color: "var(--fg-muted)" }}
         >
           {label}
@@ -26,13 +33,16 @@ export function FormField({
       )}
       {children}
       {hint && !error && (
-        <span className="block text-[11px] mt-1" style={{ color: "var(--fg-subtle)" }}>
+        <span
+          className="block mt-1.5 text-[12px]"
+          style={{ color: "var(--fg-subtle)" }}
+        >
           {hint}
         </span>
       )}
       {error && (
         <span
-          className="block text-[11px] mt-1"
+          className="block mt-1.5 text-[12px] font-display-ui font-semibold"
           style={{ color: "var(--sent-neg)" }}
           role="alert"
         >
@@ -48,12 +58,7 @@ export function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       className={`${inputBase} ${props.className ?? ""}`}
-      style={{
-        background: "var(--bg-elevated)",
-        color: "var(--fg)",
-        border: "1px solid var(--border)",
-        ...props.style,
-      }}
+      style={{ ...inputStyle, ...props.style }}
     />
   );
 }
@@ -63,12 +68,7 @@ export function TextArea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
     <textarea
       {...props}
       className={`${inputBase} ${props.className ?? ""}`}
-      style={{
-        background: "var(--bg-elevated)",
-        color: "var(--fg)",
-        border: "1px solid var(--border)",
-        ...props.style,
-      }}
+      style={{ ...inputStyle, ...props.style }}
     />
   );
 }
@@ -76,11 +76,12 @@ export function TextArea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
 export function FormError({ children }: { children: ReactNode }) {
   return (
     <div
-      className="text-xs rounded-lg px-3 py-2"
+      className="px-4 py-3 text-sm font-medium"
       style={{
         color: "var(--sent-neg)",
-        background: "color-mix(in srgb, var(--sent-neg) 8%, transparent)",
-        border: "1px solid color-mix(in srgb, var(--sent-neg) 20%, transparent)",
+        background: "color-mix(in srgb, var(--sent-neg) 10%, transparent)",
+        border: "1px solid color-mix(in srgb, var(--sent-neg) 30%, transparent)",
+        borderRadius: "var(--radius-md)",
       }}
       role="alert"
     >

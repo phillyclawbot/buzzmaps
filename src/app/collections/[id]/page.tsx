@@ -7,7 +7,7 @@ import { COLLECTIONS, getCollectionById } from "@/lib/collections";
 import type { CollectionQuery } from "@/lib/collections";
 import { decodeHtmlEntities, getPostHref } from "@/lib/post-source";
 import PostSource from "@/components/ui/PostSource";
-import { CollectionIcon, CategoryIcon, IconStar, IconChat, IconMap, IconExternalLink, IconUpArrow } from "@/lib/icons";
+import { ExternalLink } from "lucide-react";
 import JsonLd from "@/components/JsonLd";
 import TopBar from "@/components/ui/TopBar";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
@@ -495,7 +495,7 @@ export default async function CollectionDetailPage({
                               className="shrink-0"
                               style={{ color: "var(--fg-faint)" }}
                             >
-                              <IconExternalLink size={14} />
+                              <ExternalLink size={14} />
                             </span>
                           </a>
                         );

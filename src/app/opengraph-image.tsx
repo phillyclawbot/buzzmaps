@@ -16,7 +16,7 @@ export default function OGImage() {
           justifyContent: "space-between",
           padding: "80px",
           background:
-            "linear-gradient(135deg, #ff6b35 0%, #f59e0b 55%, #fbbf24 100%)",
+            "linear-gradient(135deg, #ff5b3a 0%, #f59e0b 55%, #fbbf24 100%)",
           color: "#ffffff",
           fontFamily: "sans-serif",
         }}

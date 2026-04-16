@@ -3,8 +3,8 @@ import Logo from "./Logo";
 import BackLink from "./BackLink";
 
 /**
- * Editorial mobile top bar (desktop uses SiteHeader).
- * Back arrow · logo · serif section title.
+ * Mobile top bar (desktop uses SiteHeader).
+ * Floating rounded chrome: back pill · logo · title · right slot.
  */
 export default function TopBar({
   title,
@@ -21,37 +21,25 @@ export default function TopBar({
 }) {
   return (
     <div
-      className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-4 gap-3"
+      className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 flex items-center gap-3 px-3"
       style={{
-        background: "color-mix(in srgb, var(--bg) 95%, transparent)",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
-        borderBottom: "1px solid var(--border)",
+        background: "color-mix(in srgb, var(--bg) 85%, transparent)",
+        backdropFilter: "saturate(180%) blur(18px)",
+        WebkitBackdropFilter: "saturate(180%) blur(18px)",
+        borderBottom: "1px solid color-mix(in srgb, var(--border) 70%, transparent)",
       }}
     >
       {showBack ? <BackLink href={back} label={backLabel} /> : <Logo size="sm" />}
 
-      {showBack && (
-        <>
-          <span className="hidden sm:inline" style={{ color: "var(--fg-faint)" }}>·</span>
-          <Logo size="sm" className="hidden sm:inline-flex" />
-        </>
-      )}
+      {showBack && <Logo size="sm" className="hidden sm:inline-flex" />}
 
       {title && (
-        <>
-          <span
-            className="inline-block w-px h-3 ml-1"
-            style={{ background: "var(--fg-faint)" }}
-            aria-hidden="true"
-          />
-          <span
-            className="font-display text-[15px] truncate"
-            style={{ color: "var(--fg)", fontWeight: 500 }}
-          >
-            {title}
-          </span>
-        </>
+        <span
+          className="font-display text-[17px] truncate"
+          style={{ color: "var(--fg)", letterSpacing: "-0.01em" }}
+        >
+          {title}
+        </span>
       )}
 
       {right && <div className="ml-auto flex items-center gap-2">{right}</div>}

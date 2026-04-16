@@ -5,9 +5,10 @@ import dynamic from "next/dynamic";
 const PlaceMap = dynamic(() => import("@/components/PlaceMap"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[220px] bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 text-sm">
-      Loading map...
-    </div>
+    <div
+      className="skeleton w-full"
+      style={{ height: 280, borderRadius: "var(--radius-xl)" }}
+    />
   ),
 });
 

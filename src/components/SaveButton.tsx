@@ -2,22 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
+import { Bookmark, BookmarkCheck, Check, LogIn } from "lucide-react";
+import { useConfetti } from "@/components/ui/Confetti";
 import type { SavedStatus } from "@/lib/saved-status";
 
 /**
- * Editorial save control with three visual states:
- *
- *   null (unsaved)   → "Save"  ← primary action adds to wishlist
- *   "wishlist"       → "Saved · Mark visited"
- *                        primary (underlined) removes · secondary promotes
- *   "visited"        → "Visited · Remove"
- *                        primary shows state · secondary deletes
- *
- * Plain text, ink-underline hover, no pills, no emoji. Inline checkmark
- * SVG for the Visited state.
- *
- * Signed-out users see a "Sign in to save" link pointing back at the
- * current page.
+ * Save / visited toggle. Three visual states, celebration on first save.
  */
 export default function SaveButton({
   placeId,
@@ -26,11 +17,11 @@ export default function SaveButton({
 }: {
   placeId: number;
   signedIn: boolean;
-  /** Current saved status from the server; null if not saved */
   initialStatus?: SavedStatus | null;
 }) {
   const [status, setStatus] = useState<SavedStatus | null>(initialStatus);
   const [busy, setBusy] = useState(false);
+  const fire = useConfetti();
 
   useEffect(() => {
     setStatus(initialStatus);
@@ -42,15 +33,15 @@ export default function SaveButton({
         href={`/login?next=${encodeURIComponent(
           typeof window !== "undefined" ? window.location.pathname : "/"
         )}`}
-        className="eyebrow ink-underline"
-        style={{ color: "var(--fg-muted)" }}
+        className="btn-secondary"
       >
+        <LogIn size={15} />
         Sign in to save
       </Link>
     );
   }
 
-  const doPost = async (next: SavedStatus) => {
+  const doPost = async (next: SavedStatus, celebrate = false) => {
     if (busy) return;
     setBusy(true);
     try {
@@ -59,7 +50,10 @@ export default function SaveButton({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ placeId, status: next }),
       });
-      if (res.ok) setStatus(next);
+      if (res.ok) {
+        setStatus(next);
+        if (celebrate) fire();
+      }
     } finally {
       setBusy(false);
     }
@@ -78,96 +72,86 @@ export default function SaveButton({
     }
   };
 
-  // UNSAVED
+  // UNSAVED → primary "Save"
   if (status === null) {
     return (
-      <button
+      <motion.button
+        whileHover={{ scale: 1.03 }}
+        whileTap={{ scale: 0.95 }}
         type="button"
-        onClick={() => doPost("wishlist")}
+        onClick={() => doPost("wishlist", true)}
         disabled={busy}
+        className="btn-primary disabled:opacity-60"
         aria-label="Save to wishlist"
-        className="eyebrow ink-underline press-down disabled:opacity-50"
-        style={{ color: "var(--fg-muted)" }}
       >
+        <Bookmark size={15} strokeWidth={2.3} />
         {busy ? "Saving…" : "Save"}
-      </button>
+      </motion.button>
     );
   }
 
-  // WISHLIST: primary removes, secondary promotes to visited
+  // WISHLIST → Saved chip + mark visited
   if (status === "wishlist") {
     return (
-      <span className="inline-flex items-baseline gap-4">
-        <button
+      <div className="inline-flex items-center gap-2">
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.95 }}
           type="button"
           onClick={doDelete}
           disabled={busy}
+          className="btn-secondary"
+          style={{
+            background: "var(--brand-tint)",
+            color: "var(--brand-hover)",
+            borderColor: "var(--brand-tint-strong)",
+          }}
           aria-label="Remove from wishlist"
-          className="eyebrow ink-underline press-down disabled:opacity-50"
-          style={{ color: "var(--brand)" }}
         >
+          <BookmarkCheck size={15} strokeWidth={2.3} />
           Saved
-        </button>
-        <span
-          aria-hidden="true"
-          className="dateline"
-          style={{ color: "var(--fg-faint)" }}
-        >
-          ·
-        </span>
-        <button
+        </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.95 }}
           type="button"
-          onClick={() => doPost("visited")}
+          onClick={() => doPost("visited", true)}
           disabled={busy}
+          className="btn-secondary"
           aria-label="Mark as visited"
-          className="eyebrow ink-underline press-down disabled:opacity-50"
-          style={{ color: "var(--fg-muted)" }}
         >
+          <Check size={15} strokeWidth={2.3} />
           Mark visited
-        </button>
-      </span>
+        </motion.button>
+      </div>
     );
   }
 
-  // VISITED: primary shows state, secondary removes
+  // VISITED
   return (
-    <span className="inline-flex items-baseline gap-4">
+    <div className="inline-flex items-center gap-2">
       <span
-        className="eyebrow inline-flex items-center gap-1.5"
-        style={{ color: "var(--sent-pos)" }}
+        className="btn-secondary"
+        style={{
+          background: "color-mix(in srgb, var(--sent-pos) 12%, transparent)",
+          color: "var(--sent-pos)",
+          borderColor: "color-mix(in srgb, var(--sent-pos) 30%, transparent)",
+        }}
       >
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
+        <Check size={15} strokeWidth={2.5} />
         Visited
       </span>
-      <span
-        aria-hidden="true"
-        className="dateline"
-        style={{ color: "var(--fg-faint)" }}
-      >
-        ·
-      </span>
-      <button
+      <motion.button
+        whileHover={{ scale: 1.03 }}
+        whileTap={{ scale: 0.95 }}
         type="button"
         onClick={doDelete}
         disabled={busy}
+        className="btn-ghost"
         aria-label="Remove from visited"
-        className="eyebrow ink-underline press-down disabled:opacity-50"
-        style={{ color: "var(--fg-muted)" }}
       >
         Remove
-      </button>
-    </span>
+      </motion.button>
+    </div>
   );
 }

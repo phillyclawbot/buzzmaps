@@ -8,7 +8,6 @@ import JsonLd from "@/components/JsonLd";
 import TopBar from "@/components/ui/TopBar";
 import { COLLECTIONS } from "@/lib/collections";
 import type { CollectionQuery } from "@/lib/collections";
-import { IconGrid } from "@/lib/icons";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
 
 export const dynamic = "force-dynamic";

@@ -198,8 +198,8 @@ export default async function CategoryPage({
       <JsonLd data={breadcrumbLd} />
       <div className="fixed top-0 left-0 right-0 h-12 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-50 flex items-center px-4 gap-3">
         <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#ff6b35] shrink-0" />
-          <span className="font-semibold text-sm tracking-tight bg-gradient-to-r from-[#ff6b35] to-[#f59e0b] bg-clip-text text-transparent">
+          <div className="w-2.5 h-2.5 rounded-full bg-[#ff5b3a] shrink-0" />
+          <span className="font-semibold text-sm tracking-tight bg-gradient-to-r from-[#ff5b3a] to-[#f59e0b] bg-clip-text text-transparent">
             BuzzMaps
           </span>
         </Link>
@@ -213,7 +213,7 @@ export default async function CategoryPage({
         <div className="mb-6">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-[#ff6b35] transition-colors mb-3"
+            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-[#ff5b3a] transition-colors mb-3"
           >
             ← Back to map
           </Link>
@@ -259,7 +259,7 @@ export default async function CategoryPage({
             <p className="text-xs text-slate-400 mt-1">Be the first to suggest one!</p>
             <Link
               href="/submit"
-              className="mt-4 px-5 py-2 bg-[#ff6b35] text-white text-xs font-semibold rounded-lg hover:bg-[#ea580c] transition-colors"
+              className="mt-4 px-5 py-2 bg-[#ff5b3a] text-white text-xs font-semibold rounded-lg hover:bg-[#e64a29] transition-colors"
             >
               ➕ Submit a {label}
             </Link>
@@ -272,7 +272,7 @@ export default async function CategoryPage({
                 <Link
                   key={place.id}
                   href={`/place/${encodeURIComponent(place.name)}`}
-                  className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#ff6b35]/40 transition-all overflow-hidden cursor-pointer hover:scale-[1.01]"
+                  className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#ff5b3a]/40 transition-all overflow-hidden cursor-pointer hover:scale-[1.01]"
                 >
                   {place.photo_url && (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -304,7 +304,7 @@ export default async function CategoryPage({
                       </div>
                     </div>
                     <div className="flex items-center flex-wrap gap-2 mt-2">
-                      <span className="text-xs font-semibold bg-[#ff6b35]/10 text-[#ff6b35] px-2 py-0.5 rounded-full">
+                      <span className="text-xs font-semibold bg-[#ff5b3a]/10 text-[#ff5b3a] px-2 py-0.5 rounded-full">
                         {place.mention_count} mention
                         {place.mention_count !== 1 ? "s" : ""}
                       </span>
@@ -344,7 +344,7 @@ export default async function CategoryPage({
               className={`px-3 py-1.5 rounded-full border ${
                 page === 1
                   ? "text-slate-300 border-slate-100 pointer-events-none"
-                  : "text-slate-600 border-slate-200 hover:border-[#ff6b35] hover:text-[#ff6b35]"
+                  : "text-slate-600 border-slate-200 hover:border-[#ff5b3a] hover:text-[#ff5b3a]"
               }`}
             >
               ← Prev
@@ -358,7 +358,7 @@ export default async function CategoryPage({
               className={`px-3 py-1.5 rounded-full border ${
                 page === totalPages
                   ? "text-slate-300 border-slate-100 pointer-events-none"
-                  : "text-slate-600 border-slate-200 hover:border-[#ff6b35] hover:text-[#ff6b35]"
+                  : "text-slate-600 border-slate-200 hover:border-[#ff5b3a] hover:text-[#ff5b3a]"
               }`}
             >
               Next →

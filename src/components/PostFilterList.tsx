@@ -130,7 +130,7 @@ export default function PostFilterList({ posts }: { posts: Post[] }) {
               href={getPostHref(post.subreddit, post.permalink)}
               target="_blank"
               rel="noopener noreferrer"
-              className="block bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:border-[#ff6b35]/60 hover:shadow-md transition-all group"
+              className="block bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:border-[#ff5b3a]/60 hover:shadow-md transition-all group"
             >
               <div className="flex items-start gap-3">
                 <div
@@ -145,7 +145,7 @@ export default function PostFilterList({ posts }: { posts: Post[] }) {
                   }}
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 group-hover:text-[#ff6b35] transition-colors line-clamp-2">
+                  <p className="text-sm font-medium text-slate-900 group-hover:text-[#ff5b3a] transition-colors line-clamp-2">
                     {decodeHtmlEntities(post.title)}
                   </p>
                   <div className="flex items-center flex-wrap gap-2 mt-2">

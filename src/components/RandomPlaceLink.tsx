@@ -2,14 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { motion } from "framer-motion";
+import { Sparkles, Loader2 } from "lucide-react";
 
 /**
- * "Take me somewhere new" — one-click random place. Fires the /api/places/random
- * endpoint and navigates to /place/[name]. Also surfaced in the command palette.
+ * "Surprise me" — one-click random place button.
  */
 export default function RandomPlaceLink({
   className = "",
-  children = "Take me somewhere new →",
+  children = "Surprise me",
 }: {
   className?: string;
   children?: React.ReactNode;
@@ -37,14 +38,20 @@ export default function RandomPlaceLink({
   };
 
   return (
-    <button
+    <motion.button
       type="button"
       onClick={go}
       disabled={loading}
-      className={`font-display text-xl md:text-2xl ink-underline press-down disabled:opacity-50 ${className}`}
-      style={{ color: "var(--brand)", fontWeight: 500 }}
+      whileHover={{ scale: 1.04 }}
+      whileTap={{ scale: 0.95 }}
+      className={`btn-primary disabled:opacity-60 ${className}`}
     >
-      {loading ? "Thinking…" : children}
-    </button>
+      {loading ? (
+        <Loader2 size={15} className="animate-spin" />
+      ) : (
+        <Sparkles size={15} strokeWidth={2.4} />
+      )}
+      {loading ? "Picking…" : children}
+    </motion.button>
   );
 }

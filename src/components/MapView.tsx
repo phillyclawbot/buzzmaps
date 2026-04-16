@@ -13,11 +13,15 @@ import {
   useMapEvents,
 } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
+import { Crosshair } from "lucide-react";
 import type { Place, PlaceCategory } from "@/lib/types";
-import { CATEGORY_COLORS, SENTIMENT_COLORS } from "@/lib/constants";
+import {
+  CATEGORY_COLORS,
+  CATEGORY_COLORS_DARK,
+  SENTIMENT_COLORS,
+} from "@/lib/constants";
 import { decodeHtmlEntities, getPostHref, getPostSource } from "@/lib/post-source";
 import { formatTimeAgo } from "@/lib/utils";
-import { getNeighbourhood } from "@/lib/neighbourhoods";
 
 // ─────────────────────────────────────────────────────────
 // Tile provider: CARTO Positron — minimal light basemap.
@@ -31,51 +35,111 @@ const TILE_ATTR =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
 // ─────────────────────────────────────────────────────────
-// Pin design: flat desaturated circle in the category color,
-// no white border, no drop shadow. Lets the quiet basemap
-// breathe. Size scales logarithmically with mention count.
-// Fresh-within-24h places get two subtle pulse rings.
+// Pin design: gradient teardrop + white inner disk + category
+// glyph. Top-mentioned places with a photo get photo-bubble
+// pins (Airbnb-style). Fresh-within-24h places get a pulse.
 // ─────────────────────────────────────────────────────────
+
+const CATEGORY_GLYPH_PATHS: Record<string, string> = {
+  restaurant:
+    '<path d="M8 6v6a2 2 0 0 0 2 2v4M8 6v4M10 6v4M12 6v4M16 6c-1 1-2 2.6-2 4.5S15 14 16 14v4" stroke="CLR" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+  bar: '<path d="M5 6h14l-7 7-7-7zM12 13v5M9 18h6" stroke="CLR" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+  cafe: '<path d="M8 3c0 1 1 1.5 1 2.5S8 7 8 8M12 3c0 1 1 1.5 1 2.5S12 7 12 8M16 3c0 1 1 1.5 1 2.5s-1 1.5-1 2.5M5 10h11v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4v-5zM16 12h2a2.5 2.5 0 0 1 0 5h-2" stroke="CLR" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+  club: '<circle cx="12" cy="12" r="5.5" stroke="CLR" stroke-width="1.8" fill="none"/><path d="M6.5 12h11M12 6.5v11M8 8l8 8M16 8l-8 8" stroke="CLR" stroke-width="1.6" stroke-linecap="round" fill="none"/>',
+  shop: '<path d="M5 8h14l-1 11a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 8zM9 8V6a3 3 0 0 1 6 0v2" stroke="CLR" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+  park: '<path d="M12 3l4 5h-2.5L16 11h-2.5L16 14H8l2.5-3H8l2.5-3H8l4-5zM12 14v6M9 20h6" stroke="CLR" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+  gym: '<path d="M3 10v4M21 10v4" stroke="CLR" stroke-width="1.9" stroke-linecap="round" fill="none"/><rect x="5" y="8" width="3" height="8" rx="0.8" stroke="CLR" stroke-width="1.9" fill="none"/><rect x="16" y="8" width="3" height="8" rx="0.8" stroke="CLR" stroke-width="1.9" fill="none"/><path d="M8 12h8" stroke="CLR" stroke-width="1.9" stroke-linecap="round" fill="none"/>',
+  venue: '<path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V9zM14 7v2M14 13v2" stroke="CLR" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+  market:
+    '<path d="M4 8h16v3H4zM8 8v3M12 8v3M16 8v3M6 11v8M18 11v8M6 15h12" stroke="CLR" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+  museum:
+    '<path d="M3 10 12 4l9 6M4 10v10M20 10v10M3 20h18M8 14v4M12 14v4M16 14v4" stroke="CLR" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+  event:
+    '<rect x="4" y="6" width="16" height="14" rx="2" stroke="CLR" stroke-width="1.8" fill="none"/><path d="M4 10h16M8 4v4M16 4v4" stroke="CLR" stroke-width="1.8" stroke-linecap="round" fill="none"/>',
+  landmark:
+    '<path d="M12 3v3M10 6h4v3h-4zM11 9h2v11h-2zM8 20h8M9 12h6" stroke="CLR" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+  attraction:
+    '<circle cx="12" cy="11" r="7" stroke="CLR" stroke-width="1.8" fill="none"/><circle cx="12" cy="11" r="1.2" fill="CLR"/><path d="M12 4v14M5 11h14M7 16l10-10M17 16L7 6" stroke="CLR" stroke-width="1.6" stroke-linecap="round" fill="none"/>',
+  other:
+    '<circle cx="12" cy="12" r="8" stroke="CLR" stroke-width="1.8" fill="none"/><path d="m14.8 9.2-1.8 4.8-4.8 1.8 1.8-4.8 4.8-1.8z" stroke="CLR" stroke-width="1.6" stroke-linejoin="round" fill="none"/>',
+};
+
+function glyphSvg(category: string, color: string, size: number) {
+  const key = (category in CATEGORY_GLYPH_PATHS ? category : "other") as string;
+  const body = CATEGORY_GLYPH_PATHS[key].split("CLR").join(color);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">${body}</svg>`;
+}
 
 function createPinIcon(
   category: PlaceCategory,
   mentionCount: number,
-  isRecent: boolean
+  isRecent: boolean,
+  photoUrl?: string | null
 ) {
   const color = CATEGORY_COLORS[category] || CATEGORY_COLORS.other;
-  const showPulse = isRecent && mentionCount >= 2;
+  const colorDark = CATEGORY_COLORS_DARK[category] || CATEGORY_COLORS_DARK.other;
+  const showPulse = isRecent;
 
-  // Size: 14 → 24 depending on buzz
-  const size = Math.min(24, Math.max(14, 12 + Math.sqrt(mentionCount) * 2.5));
-  const S = Math.ceil(size);
-  const r = size / 2;
-  const hit = S + 6; // larger hit area for easier tapping
+  // Photo bubble threshold: top-mentioned places with a photo
+  const usePhoto = !!photoUrl && mentionCount >= 6;
 
-  const pulseRing = showPulse
-    ? `
-    <span style="position:absolute;top:${-6}px;left:${-6}px;width:${S + 12}px;height:${S + 12}px;border-radius:50%;border:1.5px solid ${color};opacity:0;animation:pinPulse 2s ease-out infinite;pointer-events:none;"></span>
-    <span style="position:absolute;top:${-6}px;left:${-6}px;width:${S + 12}px;height:${S + 12}px;border-radius:50%;border:1.5px solid ${color};opacity:0;animation:pinPulse 2s ease-out 1s infinite;pointer-events:none;"></span>
-  `
+  if (usePhoto) {
+    const S = 44;
+    const hit = S + 6;
+    const pulse = showPulse
+      ? `<span style="position:absolute;inset:-6px;border-radius:50%;border:2px solid ${color};opacity:0;animation:pinPulse 2s ease-out infinite;pointer-events:none;"></span>`
+      : "";
+    return L.divIcon({
+      html: `
+        <span class="pin-drop" style="position:relative;display:block;width:${hit}px;height:${hit}px;">
+          ${pulse}
+          <span style="position:absolute;inset:3px;border-radius:9999px;padding:2px;background:${color};box-shadow:0 6px 14px rgba(15,20,25,.22),0 2px 4px rgba(15,20,25,.14);">
+            <span style="display:block;width:100%;height:100%;border-radius:9999px;background:#fff;padding:2px;">
+              <img src="${photoUrl}" alt="" width="${S - 8}" height="${S - 8}" style="width:100%;height:100%;object-fit:cover;border-radius:9999px;display:block;" />
+            </span>
+          </span>
+          <span style="position:absolute;bottom:-1px;left:50%;transform:translateX(-50%) rotate(45deg);width:10px;height:10px;background:${color};border-radius:1px;box-shadow:0 2px 3px rgba(15,20,25,.15);z-index:-1;"></span>
+        </span>
+      `,
+      className: "",
+      iconSize: [hit, hit],
+      iconAnchor: [hit / 2, hit / 2 + 4],
+      popupAnchor: [0, -S / 2 - 2],
+    });
+  }
+
+  // Teardrop pin — size scales gently with mentions
+  const scale = Math.min(1.3, Math.max(0.85, 0.85 + Math.sqrt(mentionCount) * 0.1));
+  const W = Math.round(36 * scale);
+  const H = Math.round(44 * scale);
+  const glyph = glyphSvg(category, color, Math.round(14 * scale));
+  const gradId = `g-${category}-${Math.round(W)}`;
+
+  const pulse = showPulse
+    ? `<span style="position:absolute;left:${W / 2 - 14}px;top:${W / 2 - 14}px;width:28px;height:28px;border-radius:50%;border:2px solid ${color};opacity:0;animation:pinPulse 2s ease-out infinite;pointer-events:none;"></span>`
     : "";
-
-  const dot = `
-    <svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${r}" cy="${r}" r="${r - 0.5}" fill="${color}" />
-    </svg>
-  `;
 
   return L.divIcon({
     html: `
-      <span style="position:relative;display:block;width:${hit}px;height:${hit}px;">
-        <span style="position:absolute;top:${(hit - S) / 2}px;left:${(hit - S) / 2}px;width:${S}px;height:${S}px;">
-          ${pulseRing}${dot}
-        </span>
+      <span class="pin-drop" style="position:relative;display:block;width:${W}px;height:${H}px;filter:drop-shadow(0 6px 10px rgba(15,20,25,0.25));">
+        ${pulse}
+        <svg width="${W}" height="${H}" viewBox="0 0 40 48" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+          <defs>
+            <linearGradient id="${gradId}" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="${color}" />
+              <stop offset="100%" stop-color="${colorDark}" />
+            </linearGradient>
+          </defs>
+          <path d="M20 1.5C10.6 1.5 3 9 3 18.3c0 11.8 12.5 24.2 15.8 27.2a1.8 1.8 0 0 0 2.4 0C24.5 42.5 37 30.1 37 18.3 37 9 29.4 1.5 20 1.5z" fill="url(#${gradId})" stroke="#ffffff" stroke-width="1.6"/>
+          <circle cx="20" cy="18" r="9" fill="#ffffff"/>
+        </svg>
+        <span style="position:absolute;top:${Math.round((H * 18) / 48) - Math.round((14 * scale) / 2)}px;left:${W / 2 - Math.round((14 * scale) / 2)}px;display:flex;align-items:center;justify-content:center;">${glyph}</span>
       </span>
     `,
     className: "",
-    iconSize: [hit, hit],
-    iconAnchor: [hit / 2, hit / 2],
-    popupAnchor: [0, -S / 2 - 2],
+    iconSize: [W, H],
+    iconAnchor: [W / 2, H - 2],
+    popupAnchor: [0, -H + 6],
   });
 }
 
@@ -88,9 +152,9 @@ function createClusterIcon(cluster: {
   getChildCount: () => number;
 }) {
   const count = cluster.getChildCount();
-  const size = Math.max(32, Math.min(52, 28 + Math.sqrt(count) * 3));
+  const size = Math.max(40, Math.min(64, 34 + Math.sqrt(count) * 3.2));
   const S = Math.round(size);
-  const fontSize = count >= 1000 ? 12 : count >= 100 ? 13 : 15;
+  const fontSize = count >= 1000 ? 14 : count >= 100 ? 15 : 17;
 
   return L.divIcon({
     html: `
@@ -98,16 +162,15 @@ function createClusterIcon(cluster: {
         display:flex;align-items:center;justify-content:center;
         width:${S}px;height:${S}px;
         border-radius:50%;
-        background:color-mix(in srgb, var(--bg-elevated, #fff) 90%, transparent);
-        border:1px solid var(--fg, #141211);
-        color:var(--fg, #141211);
-        font-family: var(--font-fraunces), Georgia, serif;
-        font-weight:500;
+        background:linear-gradient(135deg,#ff5b3a,#ff8a3d);
+        box-shadow:0 8px 20px rgba(255,91,58,.38),0 2px 6px rgba(15,20,25,.15);
+        color:#ffffff;
+        font-family: var(--font-space-grotesk), var(--font-geist-sans), system-ui, sans-serif;
+        font-weight:700;
         font-size:${fontSize}px;
-        font-variation-settings: 'opsz' 24;
-        backdrop-filter:blur(4px);
-        -webkit-backdrop-filter:blur(4px);
+        letter-spacing:-0.01em;
         line-height:1;
+        border:3px solid #ffffff;
       ">${count}</span>
     `,
     className: "",
@@ -215,13 +278,13 @@ export default memo(function MapView({
           mapRef.current.removeLayer(userMarkerRef.current);
         }
         const pulseIcon = L.divIcon({
-          html: `<span style="width:18px;height:18px;position:relative;display:block;">
-            <span style="position:absolute;inset:0;border-radius:50%;background:var(--brand, #d94e1f);opacity:0.25;animation:nearMePulse 1.5s ease-out infinite;"></span>
-            <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;background:var(--brand, #d94e1f);border:2px solid #faf7f2;"></span>
+          html: `<span style="width:22px;height:22px;position:relative;display:block;">
+            <span style="position:absolute;inset:0;border-radius:50%;background:#0066ff;opacity:0.25;animation:nearMePulse 1.6s ease-out infinite;"></span>
+            <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:#0066ff;border:3px solid #fff;box-shadow:0 4px 10px rgba(0,102,255,0.4);"></span>
           </span>`,
           className: "",
-          iconSize: [18, 18],
-          iconAnchor: [9, 9],
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
         });
         userMarkerRef.current = L.marker([latitude, longitude], { icon: pulseIcon }).addTo(mapRef.current);
       }
@@ -297,38 +360,28 @@ export default memo(function MapView({
           onClick={handleNearMe}
           className="press-down focus-ring"
           style={{
-            width: "48px",
-            height: "48px",
-            borderRadius: "50%",
-            background: nearMeActive ? "var(--brand)" : "var(--bg-elevated)",
-            border: "1px solid var(--border-strong)",
+            width: 52,
+            height: 52,
+            borderRadius: 9999,
+            background: nearMeActive
+              ? "var(--brand-gradient)"
+              : "var(--bg-elevated)",
+            border: nearMeActive ? "none" : "1px solid var(--border)",
             cursor: "pointer",
-            boxShadow: "var(--shadow-md)",
+            boxShadow: nearMeActive
+              ? "var(--glow-brand), var(--shadow-md)"
+              : "var(--shadow-md)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: nearMeActive ? "var(--fg-inverse)" : "var(--fg)",
+            color: nearMeActive ? "#fff" : "var(--fg)",
+            transition:
+              "transform 160ms cubic-bezier(.34,1.56,.64,1), box-shadow 200ms ease",
           }}
           aria-label={nearMeActive ? "Clear near me" : "Find places near me"}
           aria-pressed={nearMeActive}
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.75"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="3" />
-            <line x1="12" y1="2" x2="12" y2="5" />
-            <line x1="12" y1="19" x2="12" y2="22" />
-            <line x1="2" y1="12" x2="5" y2="12" />
-            <line x1="19" y1="12" x2="22" y2="12" />
-          </svg>
+          <Crosshair size={20} strokeWidth={2.2} />
         </button>
       </div>
 
@@ -354,9 +407,9 @@ export default memo(function MapView({
             center={[userCoords.lat, userCoords.lng]}
             radius={nearMeRadius * 1000}
             pathOptions={{
-              color: "var(--brand)",
-              fillColor: "var(--brand)",
-              fillOpacity: 0.06,
+              color: "#0066ff",
+              fillColor: "#0066ff",
+              fillOpacity: 0.08,
               weight: 1.5,
               dashArray: "4 4",
             }}
@@ -380,7 +433,7 @@ export default memo(function MapView({
               <Marker
                 key={r.id}
                 position={[r.lat, r.lng]}
-                icon={createPinIcon(category, mentionCount, isRecent)}
+                icon={createPinIcon(category, mentionCount, isRecent, r.photo_url)}
               >
               <Popup maxWidth={340} minWidth={260}>
                 <div style={{ fontFamily: "var(--font-sans)", lineHeight: 1.4, color: "var(--fg)" }}>
@@ -744,18 +797,14 @@ export default memo(function MapView({
                       </div>
                     )}
 
-                  {/* Hairline footer: actions */}
+                  {/* Footer: action pills */}
                   <div
                     style={{
                       display: "flex",
-                      justifyContent: "space-between",
+                      gap: 8,
                       padding: "10px 14px",
-                      borderTop: "1px solid var(--fg)",
-                      fontFamily: "var(--font-sans)",
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      letterSpacing: "0.12em",
-                      textTransform: "uppercase",
+                      borderTop: "1px solid var(--border)",
+                      background: "var(--bg-sunken)",
                     }}
                   >
                     {r.category === "event" && r.metadata?.ticket_url ? (
@@ -764,9 +813,18 @@ export default memo(function MapView({
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{
-                          color: "var(--fg-muted)",
-                          textDecoration: "underline",
-                          textUnderlineOffset: "4px",
+                          flex: 1,
+                          textAlign: "center",
+                          padding: "8px 14px",
+                          borderRadius: 9999,
+                          background: "var(--bg-elevated)",
+                          border: "1px solid var(--border)",
+                          color: "var(--fg)",
+                          fontFamily:
+                            "var(--font-space-grotesk), var(--font-geist-sans), sans-serif",
+                          fontWeight: 600,
+                          fontSize: 12,
+                          textDecoration: "none",
                         }}
                       >
                         Tickets →
@@ -777,23 +835,42 @@ export default memo(function MapView({
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{
-                          color: "var(--fg-muted)",
-                          textDecoration: "underline",
-                          textUnderlineOffset: "4px",
+                          flex: 1,
+                          textAlign: "center",
+                          padding: "8px 14px",
+                          borderRadius: 9999,
+                          background: "var(--bg-elevated)",
+                          border: "1px solid var(--border)",
+                          color: "var(--fg)",
+                          fontFamily:
+                            "var(--font-space-grotesk), var(--font-geist-sans), sans-serif",
+                          fontWeight: 600,
+                          fontSize: 12,
+                          textDecoration: "none",
                         }}
                       >
-                        Directions →
+                        Directions
                       </a>
                     )}
                     <a
                       href={`/place/${encodeURIComponent(r.name)}`}
                       style={{
-                        color: "var(--brand)",
-                        textDecoration: "underline",
-                        textUnderlineOffset: "4px",
+                        flex: 1,
+                        textAlign: "center",
+                        padding: "8px 14px",
+                        borderRadius: 9999,
+                        background:
+                          "linear-gradient(135deg, #ff5b3a, #ff8a3d)",
+                        color: "#fff",
+                        fontFamily:
+                          "var(--font-space-grotesk), var(--font-geist-sans), sans-serif",
+                        fontWeight: 600,
+                        fontSize: 12,
+                        textDecoration: "none",
+                        boxShadow: "0 4px 12px rgba(255,91,58,0.35)",
                       }}
                     >
-                      Read →
+                      See details
                     </a>
                   </div>
                 </div>
