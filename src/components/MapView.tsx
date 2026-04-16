@@ -22,6 +22,7 @@ import {
 } from "@/lib/constants";
 import { decodeHtmlEntities, getPostHref, getPostSource } from "@/lib/post-source";
 import { formatTimeAgo } from "@/lib/utils";
+import { getNeighbourhood } from "@/lib/neighbourhoods";
 
 // ─────────────────────────────────────────────────────────
 // Tile provider: CARTO Positron — minimal light basemap.
@@ -144,39 +145,57 @@ function createPinIcon(
 }
 
 // ─────────────────────────────────────────────────────────
-// Cluster icon: hairline ink-colored ring, serif numeral.
-// Matches the editorial type system. No colored fill.
+// Cluster icon: brand-gradient bubble with count, with the
+// neighbourhood name as a chip tucked underneath.
 // ─────────────────────────────────────────────────────────
 
-function createClusterIcon(cluster: {
-  getChildCount: () => number;
-}) {
-  const count = cluster.getChildCount();
-  const size = Math.max(40, Math.min(64, 34 + Math.sqrt(count) * 3.2));
-  const S = Math.round(size);
-  const fontSize = count >= 1000 ? 14 : count >= 100 ? 15 : 17;
+function makeClusterIconFactory(neighbourhood: string) {
+  return function createClusterIcon(cluster: { getChildCount: () => number }) {
+    const count = cluster.getChildCount();
+    const size = Math.max(40, Math.min(64, 34 + Math.sqrt(count) * 3.2));
+    const S = Math.round(size);
+    const fontSize = count >= 1000 ? 14 : count >= 100 ? 15 : 17;
+    const labelH = neighbourhood ? 22 : 0;
 
-  return L.divIcon({
-    html: `
-      <span style="
-        display:flex;align-items:center;justify-content:center;
-        width:${S}px;height:${S}px;
-        border-radius:50%;
-        background:linear-gradient(135deg,#ff5b3a,#ff8a3d);
-        box-shadow:0 8px 20px rgba(255,91,58,.38),0 2px 6px rgba(15,20,25,.15);
-        color:#ffffff;
-        font-family: var(--font-space-grotesk), var(--font-geist-sans), system-ui, sans-serif;
-        font-weight:700;
-        font-size:${fontSize}px;
-        letter-spacing:-0.01em;
-        line-height:1;
-        border:3px solid #ffffff;
-      ">${count}</span>
-    `,
-    className: "",
-    iconSize: [S, S],
-    iconAnchor: [S / 2, S / 2],
-  });
+    const label = neighbourhood
+      ? `<span style="
+          position:absolute;top:${S + 4}px;left:50%;transform:translateX(-50%);
+          white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;
+          background:#ffffff;color:#0f1419;
+          font-family:var(--font-space-grotesk), var(--font-geist-sans), system-ui, sans-serif;
+          font-weight:600;font-size:10.5px;letter-spacing:0.02em;
+          padding:3px 9px;border-radius:9999px;
+          border:1px solid #e8e6df;
+          box-shadow:0 2px 6px rgba(15,20,25,.08);
+          pointer-events:none;line-height:1.2;
+        ">${neighbourhood}</span>`
+      : "";
+
+    return L.divIcon({
+      html: `
+        <span style="position:relative;display:block;width:${S}px;height:${S + labelH}px;">
+          <span style="
+            display:flex;align-items:center;justify-content:center;
+            width:${S}px;height:${S}px;
+            border-radius:50%;
+            background:linear-gradient(135deg,#ff5b3a,#ff8a3d);
+            box-shadow:0 8px 20px rgba(255,91,58,.38),0 2px 6px rgba(15,20,25,.15);
+            color:#ffffff;
+            font-family: var(--font-space-grotesk), var(--font-geist-sans), system-ui, sans-serif;
+            font-weight:700;
+            font-size:${fontSize}px;
+            letter-spacing:-0.01em;
+            line-height:1;
+            border:3px solid #ffffff;
+          ">${count}</span>
+          ${label}
+        </span>
+      `,
+      className: "",
+      iconSize: [S, S + labelH],
+      iconAnchor: [S / 2, S / 2],
+    });
+  };
 }
 
 function InitialLocationHandler() {
@@ -257,6 +276,20 @@ export default memo(function MapView({
     }
     return Array.from(byName.values());
   }, [places]);
+
+  // Group places by neighbourhood so clustering can't cross boundaries.
+  // Places outside any known neighbourhood fall into the "" bucket and
+  // get no label under the cluster.
+  const placesByHood = useMemo(() => {
+    const groups = new Map<string, typeof dedupedPlaces>();
+    for (const p of dedupedPlaces) {
+      const hood = getNeighbourhood(p.lat, p.lng) ?? "";
+      const bucket = groups.get(hood);
+      if (bucket) bucket.push(p);
+      else groups.set(hood, [p]);
+    }
+    return Array.from(groups.entries());
+  }, [dedupedPlaces]);
 
   const handleNearMe = () => {
     if (nearMeActive) {
@@ -416,15 +449,17 @@ export default memo(function MapView({
           />
         )}
 
+        {placesByHood.map(([hood, hoodPlaces]) => (
         <MarkerClusterGroup
+          key={`hood-${hood || "unknown"}`}
           chunkedLoading
-          iconCreateFunction={createClusterIcon}
+          iconCreateFunction={makeClusterIconFactory(hood)}
           showCoverageOnHover={false}
           spiderfyOnMaxZoom
           maxClusterRadius={60}
           disableClusteringAtZoom={17}
         >
-          {dedupedPlaces.map((r) => {
+          {hoodPlaces.map((r) => {
             const category = r.category || "other";
             const mentionCount = Number(r.mention_count);
             const isRecent = Date.now() / 1000 - r.latest_mention < 86400;
@@ -879,6 +914,7 @@ export default memo(function MapView({
           );
         })}
         </MarkerClusterGroup>
+        ))}
       </MapContainer>
     </div>
   );
