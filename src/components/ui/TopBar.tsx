@@ -1,10 +1,16 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import Logo from "./Logo";
 import BackLink from "./BackLink";
+import { Search } from "@/lib/icons-lucide";
 
 /**
  * Mobile top bar (desktop uses SiteHeader).
  * Floating rounded chrome: back pill · logo · title · right slot.
+ *
+ * If `right` is not provided we drop in a default Search affordance,
+ * since BottomNav has no search slot — this is mobile's only built-in
+ * way to reach /search without ⌘K.
  */
 export default function TopBar({
   title,
@@ -19,6 +25,19 @@ export default function TopBar({
   showBack?: boolean;
   right?: ReactNode;
 }) {
+  const rightSlot =
+    right ?? (
+      <Link
+        href="/search"
+        prefetch
+        aria-label="Search"
+        className="btn-ghost !p-2.5 !rounded-full"
+        style={{ color: "var(--fg-muted)" }}
+      >
+        <Search size={17} />
+      </Link>
+    );
+
   return (
     <div
       className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 flex items-center gap-3 px-3"
@@ -42,7 +61,7 @@ export default function TopBar({
         </span>
       )}
 
-      {right && <div className="ml-auto flex items-center gap-2">{right}</div>}
+      <div className="ml-auto flex items-center gap-2">{rightSlot}</div>
     </div>
   );
 }

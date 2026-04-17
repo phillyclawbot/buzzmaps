@@ -12,7 +12,8 @@ import { CollectionIcon } from "@/lib/icons";
 import type { PlaceCategory } from "@/lib/types";
 import GradientMesh from "@/components/ui/GradientMesh";
 import AnimatedCounter from "@/components/ui/AnimatedCounter";
-import { Sparkles, Map as MapIcon, TrendingUp } from "lucide-react";
+import { Sparkles, Map as MapIcon, TrendingUp, Mail, Search } from "lucide-react";
+import DigestSubscribeForm from "@/components/DigestSubscribeForm";
 
 export const revalidate = 600; // 10 minutes
 
@@ -254,6 +255,15 @@ async function HomeContent() {
               <TrendingUp size={18} strokeWidth={2.3} />
               Browse collections
             </Link>
+            <Link
+              href="/search"
+              prefetch
+              className="btn-ghost !py-3 !px-5"
+              style={{ color: "var(--fg-muted)" }}
+            >
+              <Search size={18} strokeWidth={2.3} />
+              Search Toronto
+            </Link>
           </div>
 
           <div
@@ -305,7 +315,11 @@ async function HomeContent() {
               See all trending →
             </Link>
           </div>
-          <PlaceCard place={toCardData(hero)} variant="feature" />
+          <PlaceCard
+            place={toCardData(hero)}
+            variant="feature"
+            href={`/place/${encodeURIComponent(hero.name)}?from=%2F`}
+          />
         </section>
       ) : (
         <FallbackHero />
@@ -324,6 +338,7 @@ async function HomeContent() {
                 place={toCardData(p)}
                 variant="story"
                 stagger={i}
+                href={`/place/${encodeURIComponent(p.name)}?from=%2F`}
               />
             ))}
           </div>
@@ -409,11 +424,66 @@ async function HomeContent() {
                 variant="rank"
                 rank={i + 4}
                 stagger={i}
+                href={`/place/${encodeURIComponent(p.name)}?from=%2F`}
               />
             ))}
           </div>
         </section>
       )}
+
+      {/* DIGEST CTA */}
+      <section className="max-w-[1400px] mx-auto px-6 md:px-12 pt-12 md:pt-16">
+        <div
+          className="relative overflow-hidden rounded-[var(--radius-xl)] px-6 sm:px-10 py-10 sm:py-12 text-center"
+          style={{
+            background:
+              "linear-gradient(135deg, color-mix(in srgb, var(--brand) 14%, var(--bg-elevated)) 0%, color-mix(in srgb, var(--brand-2) 10%, var(--bg-elevated)) 100%)",
+            border: "1px solid var(--border)",
+            boxShadow: "var(--shadow-sm)",
+          }}
+        >
+          <span
+            aria-hidden
+            className="inline-flex items-center justify-center mb-4"
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: "var(--radius-md)",
+              background: "var(--bg-elevated)",
+              color: "var(--brand)",
+              boxShadow: "var(--shadow-sm)",
+            }}
+          >
+            <Mail size={22} strokeWidth={2.2} />
+          </span>
+          <p className="eyebrow mb-2" style={{ color: "var(--brand)" }}>
+            The Dispatch
+          </p>
+          <h2
+            className="font-display text-3xl sm:text-4xl md:text-5xl"
+            style={{
+              color: "var(--fg)",
+              fontWeight: 500,
+              lineHeight: 1.05,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            One email on Monday.
+          </h2>
+          <p
+            className="caption mt-3 max-w-md mx-auto"
+            style={{ color: "var(--fg-muted)" }}
+          >
+            The places locals can&apos;t stop talking about, in your inbox before
+            the week starts.
+          </p>
+          <div className="mt-6">
+            <Suspense fallback={null}>
+              <DigestSubscribeForm />
+            </Suspense>
+          </div>
+        </div>
+      </section>
 
       {/* RECENT MENTIONS RAIL */}
       {posts.length > 0 && (
@@ -507,6 +577,7 @@ async function HomeContent() {
                 place={toCardData(p)}
                 variant="story"
                 stagger={i}
+                href={`/place/${encodeURIComponent(p.name)}?from=%2F`}
               />
             ))}
           </div>

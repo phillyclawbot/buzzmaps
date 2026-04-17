@@ -5,6 +5,7 @@ import { CATEGORY_EMOJI } from "@/lib/types";
 import type { PlaceCategory } from "@/lib/types";
 import JsonLd from "@/components/JsonLd";
 import TopBar from "@/components/ui/TopBar";
+import BackLink from "@/components/ui/BackLink";
 import PlaceCard from "@/components/ui/PlaceCard";
 import EmptyState from "@/components/ui/EmptyState";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
@@ -320,9 +321,12 @@ export default async function SearchPage({
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       {itemListLd ? <JsonLd data={itemListLd} /> : null}
 
-      <TopBar title="Search" />
+      <TopBar title="Search" back="/" backLabel="Feed" />
 
       <article className="pt-14 md:pt-16 pb-24 max-w-4xl mx-auto px-6 md:px-10 page-enter">
+        <div className="hidden md:block pt-6">
+          <BackLink href="/" label="Feed" />
+        </div>
         <header
           className="text-center pt-8 pb-8 mb-10"
           style={{ borderBottom: "1px solid var(--fg)" }}
@@ -481,6 +485,7 @@ export default async function SearchPage({
                   key={place.id}
                   place={toCardData(place)}
                   stagger={i}
+                  href={`/place/${encodeURIComponent(place.name)}?from=${encodeURIComponent(`/search${qs({})}`)}`}
                 />
               ))}
             </div>

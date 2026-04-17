@@ -3,6 +3,9 @@
 import { useMemo, useState } from "react";
 import { decodeHtmlEntities, getPostHref } from "@/lib/post-source";
 import PostSource from "@/components/ui/PostSource";
+import Chip from "@/components/ui/Chip";
+import { SENTIMENT_COLORS, SENTIMENT_LABELS } from "@/lib/constants";
+import { ArrowUp, MessageCircle } from "@/lib/icons-lucide";
 
 interface Post {
   id: number;
@@ -25,12 +28,16 @@ const TIMEFRAMES: { id: Timeframe; label: string; seconds: number | null }[] = [
   { id: "month", label: "Past month", seconds: 30 * 86400 },
 ];
 
-const SENTIMENTS: { id: Sentiment; label: string; dot: string }[] = [
-  { id: "all", label: "All", dot: "#94a3b8" },
-  { id: "positive", label: "Positive", dot: "#22c55e" },
-  { id: "neutral", label: "Neutral", dot: "#f59e0b" },
-  { id: "negative", label: "Negative", dot: "#ef4444" },
+const SENTIMENTS: { id: Sentiment; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "positive", label: "Positive" },
+  { id: "neutral", label: "Neutral" },
+  { id: "negative", label: "Negative" },
 ];
+
+function sentimentColor(id: string): string {
+  return SENTIMENT_COLORS[id] ?? "var(--fg-subtle)";
+}
 
 function formatDate(utc: number): string {
   return new Date(utc * 1000).toLocaleDateString("en-CA", {
@@ -41,18 +48,25 @@ function formatDate(utc: number): string {
 }
 
 function SentimentBadge({ sentiment }: { sentiment: string }) {
-  const config: Record<string, { label: string; bg: string; text: string }> = {
-    positive: { label: "Positive", bg: "#dcfce7", text: "#16a34a" },
-    negative: { label: "Negative", bg: "#fee2e2", text: "#dc2626" },
-    neutral: { label: "Neutral", bg: "#fef9c3", text: "#ca8a04" },
-  };
-  const c = config[sentiment] || config.neutral;
+  const color = sentimentColor(sentiment);
+  const label = SENTIMENT_LABELS[sentiment] ?? "Neutral";
   return (
     <span
-      className="text-xs font-medium px-2 py-0.5 rounded-full"
-      style={{ background: c.bg, color: c.text }}
+      className="inline-flex items-center gap-1 font-display-ui font-semibold text-[11px]"
+      style={{
+        background: `color-mix(in srgb, ${color} 14%, transparent)`,
+        color,
+        padding: "3px 8px",
+        borderRadius: 9999,
+        letterSpacing: "0.02em",
+      }}
     >
-      {c.label}
+      <span
+        aria-hidden
+        className="inline-block w-1.5 h-1.5 rounded-full"
+        style={{ background: color }}
+      />
+      {label}
     </span>
   );
 }
@@ -74,53 +88,69 @@ export default function PostFilterList({ posts }: { posts: Post[] }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider px-1">
-          💬 Mentions ({filtered.length})
-        </h2>
+        <p
+          className="eyebrow inline-flex items-center gap-2"
+          style={{ color: "var(--fg-muted)" }}
+        >
+          <MessageCircle size={12} strokeWidth={2.4} />
+          Mentions ({filtered.length})
+        </p>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-4">
-        <div className="flex flex-wrap gap-1 bg-white border border-slate-200 rounded-full p-1">
-          {SENTIMENTS.map((s) => (
-            <button
+      <div className="flex flex-wrap gap-2 mb-5">
+        {SENTIMENTS.map((s) => {
+          const isActive = sentiment === s.id;
+          const color = s.id === "all" ? undefined : sentimentColor(s.id);
+          return (
+            <Chip
               key={s.id}
-              type="button"
+              size="sm"
+              active={isActive}
+              color={color}
               onClick={() => setSentiment(s.id)}
-              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full transition-colors ${
-                sentiment === s.id
-                  ? "bg-slate-900 text-white"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`}
             >
-              <span
-                className="inline-block w-2 h-2 rounded-full"
-                style={{ background: s.dot }}
-              />
+              {s.id !== "all" && (
+                <span
+                  aria-hidden
+                  className="inline-block w-1.5 h-1.5 rounded-full"
+                  style={{
+                    background: isActive ? "var(--fg-inverse)" : color,
+                  }}
+                />
+              )}
               {s.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-1 bg-white border border-slate-200 rounded-full p-1">
-          {TIMEFRAMES.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTimeframe(t.id)}
-              className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${
-                timeframe === t.id
-                  ? "bg-slate-900 text-white"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+            </Chip>
+          );
+        })}
+        <span
+          aria-hidden
+          className="hidden sm:inline-block w-px self-stretch mx-1"
+          style={{ background: "var(--border)" }}
+        />
+        {TIMEFRAMES.map((t) => (
+          <Chip
+            key={t.id}
+            size="sm"
+            active={timeframe === t.id}
+            onClick={() => setTimeframe(t.id)}
+          >
+            {t.label}
+          </Chip>
+        ))}
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-10 text-slate-400 text-sm">
-          No posts match the current filters.
+        <div
+          className="text-center py-12 rounded-[var(--radius-lg)]"
+          style={{
+            background: "var(--bg-elevated)",
+            border: "1px solid var(--border)",
+            color: "var(--fg-subtle)",
+          }}
+        >
+          <p className="font-display-ui text-sm">
+            No posts match the current filters.
+          </p>
         </div>
       ) : (
         <div className="space-y-3 mb-6">
@@ -130,36 +160,48 @@ export default function PostFilterList({ posts }: { posts: Post[] }) {
               href={getPostHref(post.subreddit, post.permalink)}
               target="_blank"
               rel="noopener noreferrer"
-              className="block bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:border-[#ff5b3a]/60 hover:shadow-md transition-all group"
+              className="group block place-card-hover"
+              style={
+                {
+                  ["--card-glow" as string]: `${sentimentColor(post.sentiment)}55`,
+                  background: "var(--bg-elevated)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-lg)",
+                  boxShadow: "var(--shadow-sm)",
+                  padding: "16px",
+                  color: "inherit",
+                  textDecoration: "none",
+                } as React.CSSProperties
+              }
             >
               <div className="flex items-start gap-3">
                 <div
+                  aria-hidden
                   className="w-1 self-stretch rounded-full shrink-0"
-                  style={{
-                    background:
-                      post.sentiment === "positive"
-                        ? "#22c55e"
-                        : post.sentiment === "negative"
-                        ? "#ef4444"
-                        : "#f59e0b",
-                  }}
+                  style={{ background: sentimentColor(post.sentiment) }}
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 group-hover:text-[#ff5b3a] transition-colors line-clamp-2">
+                  <p
+                    className="font-display-ui font-semibold text-sm line-clamp-2 transition-colors group-hover:text-[color:var(--brand)]"
+                    style={{ color: "var(--fg)" }}
+                  >
                     {decodeHtmlEntities(post.title)}
                   </p>
-                  <div className="flex items-center flex-wrap gap-2 mt-2">
+                  <div
+                    className="flex items-center flex-wrap gap-2 mt-2 font-display-ui text-[11.5px]"
+                    style={{ color: "var(--fg-subtle)" }}
+                  >
                     <PostSource subreddit={post.subreddit} variant="tag" />
                     <SentimentBadge sentiment={post.sentiment} />
-                    <span className="text-xs text-slate-400">
-                      ↑ {post.score} pts
+                    <span className="inline-flex items-center gap-1">
+                      <ArrowUp size={11} strokeWidth={2.4} />
+                      {post.score}
                     </span>
-                    <span className="text-xs text-slate-400">
-                      {post.num_comments} comments
+                    <span className="inline-flex items-center gap-1">
+                      <MessageCircle size={11} strokeWidth={2.4} />
+                      {post.num_comments}
                     </span>
-                    <span className="text-xs text-slate-400 ml-auto">
-                      {formatDate(post.created_utc)}
-                    </span>
+                    <span className="ml-auto">{formatDate(post.created_utc)}</span>
                   </div>
                 </div>
               </div>

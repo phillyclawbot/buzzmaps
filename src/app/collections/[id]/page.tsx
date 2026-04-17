@@ -431,7 +431,7 @@ export default async function CollectionDetailPage({
                         {String(place.category).toUpperCase()}
                       </p>
                       <Link
-                        href={`/place/${encodeURIComponent(place.name)}`}
+                        href={`/place/${encodeURIComponent(place.name)}?from=${encodeURIComponent(`/collections/${id}`)}`}
                         className="font-display text-2xl md:text-3xl ink-underline inline"
                         style={{ color: "var(--fg)", fontWeight: 500, lineHeight: 1.1 }}
                       >

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { AlertTriangle } from "@/lib/icons-lucide";
+import GradientMesh from "@/components/ui/GradientMesh";
 
 export default function Error({
   error,
@@ -15,41 +17,64 @@ export default function Error({
   }, [error]);
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-6 py-16">
-      <div className="max-w-xl w-full text-center">
-        <div
-          className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-6"
-          style={{ background: "rgba(239,68,68,0.12)" }}
+    <main
+      className="min-h-screen flex items-center justify-center px-6 py-16 page-enter"
+      style={{ background: "var(--bg)" }}
+    >
+      <GradientMesh tone="warm" />
+      <div className="max-w-xl w-full text-center relative">
+        <span
+          aria-hidden
+          className="inline-flex items-center justify-center mb-6"
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: "var(--radius-lg)",
+            background: "var(--brand-tint)",
+            color: "var(--brand)",
+          }}
         >
-          <span className="text-4xl" aria-hidden>
-            ⚠️
-          </span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">
-          Something went off the map
-        </h1>
-        <p className="mt-4 text-slate-600 text-base">
-          We hit an unexpected error loading this page. You can try again, or head
-          back to the map.
+          <AlertTriangle size={28} strokeWidth={2.2} />
+        </span>
+        <p className="eyebrow mb-3" style={{ color: "var(--brand)" }}>
+          Detour
         </p>
-        {error.digest ? (
-          <p className="mt-2 text-xs text-slate-400 font-mono">
+        <h1
+          className="font-display text-4xl sm:text-5xl"
+          style={{
+            color: "var(--fg)",
+            fontWeight: 500,
+            lineHeight: 1.05,
+            letterSpacing: "-0.02em",
+          }}
+        >
+          Something went off the map.
+        </h1>
+        <p
+          className="mt-5 text-base"
+          style={{ color: "var(--fg-muted)" }}
+        >
+          We hit an unexpected error loading this page. Try again, or head back
+          to the map.
+        </p>
+        {error.digest && (
+          <p
+            className="mt-3 font-mono text-xs"
+            style={{ color: "var(--fg-subtle)", letterSpacing: "0.04em" }}
+          >
             ref: {error.digest}
           </p>
-        ) : null}
+        )}
 
         <div className="mt-8 flex items-center justify-center gap-3">
           <button
             type="button"
             onClick={() => unstable_retry()}
-            className="rounded-full bg-[var(--accent)] px-6 py-3 text-white font-semibold shadow-sm hover:brightness-95 press-down"
+            className="btn-primary"
           >
             Try again
           </button>
-          <Link
-            href="/"
-            className="rounded-full border border-slate-200 bg-white px-6 py-3 text-slate-700 font-semibold hover:border-slate-300 press-down"
-          >
+          <Link href="/" className="btn-secondary">
             Back to the map
           </Link>
         </div>

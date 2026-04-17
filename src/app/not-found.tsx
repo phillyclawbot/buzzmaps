@@ -1,61 +1,105 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { LayoutGrid, Map as MapIcon, Plus } from "@/lib/icons-lucide";
+import { CategoryIcon } from "@/lib/icons";
+import GradientMesh from "@/components/ui/GradientMesh";
+import type { PlaceCategory } from "@/lib/types";
+import { CATEGORY_COLORS } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Page not found — BuzzMaps",
   description: "We couldn't find that place. Try the map or browse by category.",
 };
 
-const QUICK_LINKS: { href: string; label: string; emoji: string }[] = [
-  { href: "/", label: "Explore the map", emoji: "🗺️" },
-  { href: "/category/restaurant", label: "Restaurants", emoji: "🍽️" },
-  { href: "/category/bar", label: "Bars", emoji: "🍸" },
-  { href: "/category/cafe", label: "Cafes", emoji: "☕" },
-  { href: "/collections", label: "Curated collections", emoji: "📚" },
-  { href: "/submit", label: "Submit a place", emoji: "➕" },
+type LucideIcon = typeof MapIcon;
+
+type QuickLink =
+  | { href: string; label: string; kind: "category"; category: PlaceCategory }
+  | { href: string; label: string; kind: "lucide"; icon: LucideIcon; tone: string };
+
+const QUICK_LINKS: QuickLink[] = [
+  { href: "/map", label: "Map", kind: "lucide", icon: MapIcon, tone: "var(--map)" },
+  { href: "/category/restaurant", label: "Restaurants", kind: "category", category: "restaurant" },
+  { href: "/category/bar", label: "Bars", kind: "category", category: "bar" },
+  { href: "/category/cafe", label: "Cafés", kind: "category", category: "cafe" },
+  { href: "/collections", label: "Collections", kind: "lucide", icon: LayoutGrid, tone: "var(--plum)" },
+  { href: "/submit", label: "Submit a place", kind: "lucide", icon: Plus, tone: "var(--brand)" },
 ];
 
 export default function NotFound() {
   return (
-    <main className="min-h-screen flex items-center justify-center px-6 py-16">
-      <div className="max-w-xl w-full text-center">
-        <div
-          className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-6"
-          style={{ background: "rgba(255,107,53,0.12)" }}
+    <main
+      className="min-h-screen flex items-center justify-center px-6 py-16 page-enter"
+      style={{ background: "var(--bg)" }}
+    >
+      <GradientMesh tone="warm" />
+      <div className="max-w-xl w-full text-center relative">
+        <p className="eyebrow mb-3" style={{ color: "var(--brand)" }}>
+          404 — Off the map
+        </p>
+        <h1
+          className="font-display text-5xl sm:text-6xl md:text-7xl text-gradient-brand"
+          style={{ fontWeight: 500, lineHeight: 1, letterSpacing: "-0.02em" }}
         >
-          <span className="text-4xl" aria-hidden>
-            📍
-          </span>
-        </div>
-        <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-slate-900">
-          We couldn&apos;t find that place
+          Lost the trail.
         </h1>
-        <p className="mt-4 text-slate-600 text-base sm:text-lg">
-          The page you&apos;re looking for doesn&apos;t exist, or it may have moved.
-          Try one of these instead.
+        <p
+          className="mt-6 max-w-md mx-auto text-base sm:text-lg"
+          style={{ color: "var(--fg-muted)" }}
+        >
+          We couldn&apos;t find that place. It may have moved, been renamed, or
+          never existed. Try one of these instead.
         </p>
 
-        <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {QUICK_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="flex flex-col items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-4 text-sm font-medium text-slate-700 hover:border-[var(--accent)] hover:text-[var(--accent)] transition press-down"
-            >
-              <span className="text-2xl" aria-hidden>
-                {link.emoji}
-              </span>
-              <span>{link.label}</span>
-            </Link>
-          ))}
+        <div className="mt-10 grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {QUICK_LINKS.map((link) => {
+            const tone =
+              link.kind === "category"
+                ? (CATEGORY_COLORS as Record<string, string>)[link.category]
+                : link.tone;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="chip-pill flex-col gap-2 py-4"
+                style={{ borderRadius: "var(--radius-lg)" }}
+              >
+                <span
+                  aria-hidden
+                  className="inline-flex items-center justify-center"
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: "var(--radius-md)",
+                    background: `${tone}1f`,
+                    color: tone,
+                  }}
+                >
+                  {link.kind === "category" ? (
+                    <CategoryIcon
+                      category={link.category}
+                      size={18}
+                      tone="mono"
+                      color={tone}
+                    />
+                  ) : (
+                    <link.icon size={18} strokeWidth={2.2} />
+                  )}
+                </span>
+                <span className="font-display-ui text-[13px] font-semibold">
+                  {link.label}
+                </span>
+              </Link>
+            );
+          })}
         </div>
 
-        <div className="mt-8">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-6 py-3 text-white font-semibold shadow-sm hover:brightness-95 press-down"
-          >
+        <div className="mt-10 flex items-center justify-center gap-3">
+          <Link href="/" className="btn-primary">
             Back to the map
+          </Link>
+          <Link href="/search" className="btn-secondary">
+            Search instead
           </Link>
         </div>
       </div>

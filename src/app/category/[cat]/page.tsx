@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
 import { getDb } from "@/lib/db";
 import Link from "next/link";
-import { CATEGORY_EMOJI } from "@/lib/types";
 import type { PlaceCategory } from "@/lib/types";
 import JsonLd from "@/components/JsonLd";
+import TopBar from "@/components/ui/TopBar";
+import BackLink from "@/components/ui/BackLink";
+import PlaceCard from "@/components/ui/PlaceCard";
+import CategoryBadge from "@/components/ui/CategoryBadge";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
-import { VALID_CATEGORIES } from "@/lib/constants";
+import {
+  VALID_CATEGORIES,
+  CATEGORY_COLORS,
+  CATEGORY_GRADIENT,
+} from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +25,22 @@ const SORTS: { id: Sort; label: string }[] = [
   { id: "alpha", label: "A–Z" },
 ];
 
-function priceBadge(level: number | null): string {
-  if (!level || level < 1) return "";
-  return "$".repeat(Math.min(level, 4));
-}
+const LABELS: Record<string, string> = {
+  restaurant: "Restaurants",
+  bar: "Bars",
+  cafe: "Cafés",
+  club: "Clubs",
+  shop: "Shops",
+  park: "Parks",
+  gym: "Gyms",
+  venue: "Venues",
+  market: "Markets",
+  museum: "Museums",
+  event: "Events",
+  landmark: "Landmarks",
+  attraction: "Attractions",
+  other: "Places",
+};
 
 export async function generateMetadata({
   params,
@@ -30,15 +49,14 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { cat } = await params;
   const isValid = (VALID_CATEGORIES as readonly string[]).includes(cat);
-  const label = cat.charAt(0).toUpperCase() + cat.slice(1);
-  const emoji = CATEGORY_EMOJI[cat as PlaceCategory] || "📍";
+  const label = LABELS[cat] ?? cat;
 
   if (!isValid) {
     return { title: `Category — ${SITE_NAME}` };
   }
 
-  const title = `${emoji} ${label} in Toronto — ${SITE_NAME}`;
-  const description = `Discover Toronto's best ${label.toLowerCase()} places, ranked by how often Reddit and local blogs talk about them.`;
+  const title = `${label} in Toronto — ${SITE_NAME}`;
+  const description = `Discover Toronto's best ${label.toLowerCase()}, ranked by how often Reddit and local blogs talk about them.`;
   const canonical = `${SITE_URL}/category/${cat}`;
   return {
     title,
@@ -59,10 +77,6 @@ interface CategoryPlace {
   cuisine_type: string | null;
   price_level: number | null;
   photo_url: string | null;
-}
-
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 export default async function CategoryPage({
@@ -88,8 +102,6 @@ export default async function CategoryPage({
 
   const sql = getDb();
 
-  // Count first — small, cacheable, avoids paginating through an unbounded
-  // query plan.
   const countRows = (await sql`
     SELECT COUNT(*)::int AS total FROM restaurants WHERE category = ${cat}
   `) as { total: number }[];
@@ -98,7 +110,6 @@ export default async function CategoryPage({
 
   let places: CategoryPlace[] = [];
   if (total > 0) {
-    // Each sort needs its own tagged template so neon keeps parameters safe.
     if (sort === "rating") {
       places = (await sql`
         SELECT r.id, r.name, r.address, r.google_rating, r.google_reviews_count,
@@ -150,8 +161,15 @@ export default async function CategoryPage({
     }
   }
 
-  const emoji = CATEGORY_EMOJI[cat as PlaceCategory] || "📍";
-  const label = capitalize(cat);
+  const label = LABELS[cat] ?? cat;
+  const category = cat as PlaceCategory;
+  const accent =
+    (CATEGORY_COLORS as Record<string, string>)[cat] || "var(--brand)";
+  const gradientClasses =
+    (CATEGORY_GRADIENT as Record<string, string>)[cat] ||
+    "from-[#ff5b3a] to-[#ff8a3d]";
+
+  const fromQs = `?from=${encodeURIComponent(`/category/${cat}`)}`;
 
   const qs = (overrides: Record<string, string | number | null>) => {
     const sp2 = new URLSearchParams();
@@ -193,55 +211,64 @@ export default async function CategoryPage({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <JsonLd data={itemListLd} />
       <JsonLd data={breadcrumbLd} />
-      <div className="fixed top-0 left-0 right-0 h-12 bg-white/95 backdrop-blur-sm border-b border-slate-200 z-50 flex items-center px-4 gap-3">
-        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#ff5b3a] shrink-0" />
-          <span className="font-semibold text-sm tracking-tight bg-gradient-to-r from-[#ff5b3a] to-[#f59e0b] bg-clip-text text-transparent">
-            BuzzMaps
-          </span>
-        </Link>
-        <span className="text-slate-300">·</span>
-        <span className="text-sm font-semibold text-slate-700">
-          {emoji} {label}
-        </span>
-      </div>
+      <TopBar title={label} back="/" backLabel="All places" />
 
-      <div className="pt-16 pb-20 max-w-4xl mx-auto px-4">
-        <div className="mb-6">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-[#ff5b3a] transition-colors mb-3"
-          >
-            ← Back to map
-          </Link>
-          <h1 className="text-2xl font-bold text-slate-900">
-            {emoji} {label} in Toronto
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            {total} place{total !== 1 ? "s" : ""} tracked by BuzzMaps
-          </p>
+      <article className="pt-14 md:pt-16 pb-24 max-w-5xl mx-auto px-6 md:px-10 page-enter">
+        <div className="hidden md:block mb-6">
+          <BackLink href="/" label="All places" />
         </div>
 
-        {/* Sort controls */}
+        <header
+          className="text-center pt-8 pb-8 mb-10"
+          style={{ borderBottom: "1px solid var(--fg)" }}
+        >
+          <div className="flex justify-center mb-4">
+            <CategoryBadge
+              category={category}
+              size="md"
+              variant="solid"
+            />
+          </div>
+          <h1
+            className={`font-display text-5xl sm:text-6xl md:text-7xl bg-gradient-to-r ${gradientClasses} bg-clip-text text-transparent`}
+            style={{ fontWeight: 500, lineHeight: 1, letterSpacing: "-0.02em" }}
+          >
+            {label}.
+          </h1>
+          <p
+            className="caption mt-4"
+            style={{ color: "var(--fg-muted)" }}
+          >
+            {total} {total === 1 ? "place" : "places"} catalogued in Toronto
+          </p>
+        </header>
+
         {total > 0 && (
-          <div className="flex flex-wrap gap-1 bg-white border border-slate-200 rounded-full p-1 mb-5 w-fit">
+          <div className="flex flex-wrap gap-2 mb-8 justify-center md:justify-start">
             {SORTS.map((s) => {
               const params = new URLSearchParams();
               if (s.id !== "mentions") params.set("sort", s.id);
               const href = params.toString() ? `?${params.toString()}` : "";
+              const isActive = sort === s.id;
               return (
                 <Link
                   key={s.id}
                   href={href}
                   scroll={false}
-                  className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${
-                    sort === s.id
-                      ? "bg-slate-900 text-white"
-                      : "text-slate-600 hover:bg-slate-100"
-                  }`}
+                  className={`chip-pill ${isActive ? "chip-pill-active" : ""}`}
+                  style={
+                    isActive
+                      ? {
+                          background: accent,
+                          borderColor: accent,
+                          color: "var(--fg-inverse)",
+                          boxShadow: `0 4px 12px ${accent}33`,
+                        }
+                      : undefined
+                  }
                 >
                   {s.label}
                 </Link>
@@ -251,121 +278,98 @@ export default async function CategoryPage({
         )}
 
         {total === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-            <span className="text-4xl mb-3">{emoji}</span>
-            <p className="text-sm font-medium text-slate-500">
-              No {label.toLowerCase()} places tracked yet
+          <div
+            className="flex flex-col items-center justify-center py-20 text-center rounded-[var(--radius-xl)]"
+            style={{
+              background: "var(--bg-elevated)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <div
+              className="inline-flex items-center justify-center mb-4"
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: "var(--radius-lg)",
+                background: `${accent}1f`,
+              }}
+            >
+              <CategoryBadge
+                category={category}
+                size="md"
+                showLabel={false}
+                variant="tint"
+              />
+            </div>
+            <p
+              className="font-display text-2xl"
+              style={{ color: "var(--fg)", fontWeight: 500 }}
+            >
+              No {label.toLowerCase()} tracked yet.
             </p>
-            <p className="text-xs text-slate-400 mt-1">Be the first to suggest one!</p>
+            <p className="caption mt-2" style={{ color: "var(--fg-muted)" }}>
+              Be the first to suggest one.
+            </p>
             <Link
               href="/submit"
-              className="mt-4 px-5 py-2 bg-[#ff5b3a] text-white text-xs font-semibold rounded-lg hover:bg-[#e64a29] transition-colors"
+              className="btn-primary mt-6"
             >
-              ➕ Submit a {label}
+              Submit a place
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {places.map((place) => {
-              const price = priceBadge(place.price_level);
-              return (
-                <Link
-                  key={place.id}
-                  href={`/place/${encodeURIComponent(place.name)}`}
-                  className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#ff5b3a]/40 transition-all overflow-hidden cursor-pointer hover:scale-[1.01]"
-                >
-                  {place.photo_url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={place.photo_url}
-                      alt={place.name}
-                      className="w-full h-32 object-cover"
-                    />
-                  )}
-                  <div className="p-4">
-                    <div className="flex items-start gap-2">
-                      {!place.photo_url && (
-                        <span className="text-xl shrink-0">{emoji}</span>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-bold text-slate-900 truncate">
-                          {place.name}
-                        </h3>
-                        {place.cuisine_type && (
-                          <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                            {place.cuisine_type}
-                          </p>
-                        )}
-                        {place.address && (
-                          <p className="text-xs text-slate-400 truncate mt-0.5">
-                            {place.address}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center flex-wrap gap-2 mt-2">
-                      <span className="text-xs font-semibold bg-[#ff5b3a]/10 text-[#ff5b3a] px-2 py-0.5 rounded-full">
-                        {place.mention_count} mention
-                        {place.mention_count !== 1 ? "s" : ""}
-                      </span>
-                      {place.google_rating !== null && (
-                        <span className="text-xs text-slate-500">
-                          ⭐ {place.google_rating.toFixed(1)}
-                          {place.google_reviews_count ? (
-                            <span className="text-slate-400">
-                              {" "}
-                              ({place.google_reviews_count.toLocaleString()})
-                            </span>
-                          ) : null}
-                        </span>
-                      )}
-                      {price && (
-                        <span className="text-xs text-slate-500 font-semibold">
-                          {price}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {places.map((p, i) => (
+              <PlaceCard
+                key={p.id}
+                stagger={i}
+                href={`/place/${encodeURIComponent(p.name)}${fromQs}`}
+                place={{
+                  id: p.id,
+                  name: p.name,
+                  category,
+                  address: p.address,
+                  photo_url: p.photo_url,
+                  mention_count: p.mention_count,
+                  google_rating: p.google_rating,
+                  cuisine_type: p.cuisine_type,
+                  price_level: p.price_level,
+                }}
+              />
+            ))}
           </div>
         )}
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <nav
             aria-label="Pagination"
-            className="mt-8 flex items-center justify-center gap-2 text-sm"
+            className="mt-12 flex items-center justify-center gap-3 text-sm"
           >
             <Link
               href={page > 1 ? qs({ page: page - 1 }) : "#"}
               aria-disabled={page === 1}
-              className={`px-3 py-1.5 rounded-full border ${
-                page === 1
-                  ? "text-slate-300 border-slate-100 pointer-events-none"
-                  : "text-slate-600 border-slate-200 hover:border-[#ff5b3a] hover:text-[#ff5b3a]"
-              }`}
+              className={`chip-pill ${page === 1 ? "pointer-events-none" : ""}`}
+              style={page === 1 ? { color: "var(--fg-faint)" } : undefined}
             >
               ← Prev
             </Link>
-            <span className="text-xs text-slate-500 px-2">
+            <span
+              className="dateline"
+              style={{ color: "var(--fg-muted)" }}
+            >
               Page {page} of {totalPages}
             </span>
             <Link
               href={page < totalPages ? qs({ page: page + 1 }) : "#"}
               aria-disabled={page === totalPages}
-              className={`px-3 py-1.5 rounded-full border ${
-                page === totalPages
-                  ? "text-slate-300 border-slate-100 pointer-events-none"
-                  : "text-slate-600 border-slate-200 hover:border-[#ff5b3a] hover:text-[#ff5b3a]"
-              }`}
+              className={`chip-pill ${page === totalPages ? "pointer-events-none" : ""}`}
+              style={page === totalPages ? { color: "var(--fg-faint)" } : undefined}
             >
               Next →
             </Link>
           </nav>
         )}
-      </div>
+      </article>
     </div>
   );
 }

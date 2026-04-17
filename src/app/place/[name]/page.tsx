@@ -11,6 +11,7 @@ import SaveButton from "@/components/SaveButton";
 import JsonLd from "@/components/JsonLd";
 import PostFilterList from "@/components/PostFilterList";
 import TopBar from "@/components/ui/TopBar";
+import BackLink from "@/components/ui/BackLink";
 import PlaceCard from "@/components/ui/PlaceCard";
 import { SENTIMENT_COLORS, SENTIMENT_LABELS } from "@/lib/constants";
 import { decodeHtmlEntities, getPostHref } from "@/lib/post-source";
@@ -75,12 +76,38 @@ export async function generateMetadata({
   };
 }
 
+// Origin-aware back: callers can pass `?from=/some/path` (URL-encoded).
+// Falls back to `/` for direct loads. Whitelist allows only same-origin
+// paths so we don't bounce to an arbitrary URL.
+function resolveBack(rawFrom: string | string[] | undefined): {
+  href: string;
+  label: string;
+} {
+  const from = Array.isArray(rawFrom) ? rawFrom[0] : rawFrom;
+  if (typeof from !== "string" || !from.startsWith("/") || from.startsWith("//")) {
+    return { href: "/", label: "Map" };
+  }
+  if (from.startsWith("/collections/")) return { href: from, label: "Collection" };
+  if (from.startsWith("/collections")) return { href: "/collections", label: "Collections" };
+  if (from.startsWith("/category/")) return { href: from, label: "Category" };
+  if (from.startsWith("/neighbourhood/")) return { href: from, label: "Neighbourhood" };
+  if (from.startsWith("/neighbourhoods")) return { href: "/neighbourhoods", label: "Atlas" };
+  if (from.startsWith("/search")) return { href: from, label: "Search" };
+  if (from.startsWith("/events")) return { href: "/events", label: "Events" };
+  if (from === "/") return { href: "/", label: "Feed" };
+  return { href: from, label: "Back" };
+}
+
 export default async function PlacePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ name: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { name } = await params;
+  const sp = await searchParams;
+  const back = resolveBack(sp.from);
   const decodedName = decodeURIComponent(name);
   const sql = getDb();
 
@@ -255,9 +282,12 @@ export default async function PlacePage({
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <JsonLd data={jsonLd} />
       <JsonLd data={breadcrumbLd} />
-      <TopBar title={place.name} />
+      <TopBar title={place.name} back={back.href} backLabel={back.label} />
 
       <article className="pt-14 md:pt-16 pb-24 page-enter">
+        <div className="hidden md:block max-w-5xl mx-auto px-6 md:px-10 pt-6">
+          <BackLink href={back.href} label={back.label} />
+        </div>
         {/* HERO */}
         <header className="max-w-5xl mx-auto px-6 md:px-10 pt-8 md:pt-12">
           {place.photo_url && (

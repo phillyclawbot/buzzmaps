@@ -48,7 +48,7 @@ export default function ShortcutsHelp() {
     >
       <div
         className="absolute inset-0"
-        style={{ background: "rgba(20, 18, 17, 0.55)" }}
+        style={{ background: "color-mix(in srgb, var(--fg) 55%, transparent)" }}
       />
       <div
         onClick={(e) => e.stopPropagation()}

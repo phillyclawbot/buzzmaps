@@ -3,6 +3,7 @@
  * Keeps import sites clean and ensures tree-shaking works consistently.
  */
 export {
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   ArrowUp,
