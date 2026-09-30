@@ -3,6 +3,7 @@
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { CARTO_API_KEY } from "@/lib/site";
 import { CATEGORY_COLORS, CATEGORY_COLORS_DARK } from "@/lib/constants";
 import type { PlaceCategory } from "@/lib/types";
 
@@ -71,7 +72,7 @@ export default function PlaceMap({
     >
       <TileLayer
         attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+        url={`https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${CARTO_API_KEY}`}
       />
       <Marker position={[lat, lng]} icon={icon}>
         <Popup>{name}</Popup>
