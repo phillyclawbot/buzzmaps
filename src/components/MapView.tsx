@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useMemo, memo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { CARTO_API_KEY } from "@/lib/site";
 import {
   MapContainer,
   TileLayer,
@@ -30,8 +31,7 @@ import { getNeighbourhood } from "@/lib/neighbourhoods";
 // Site is light-only, so only one tile layer.
 // ─────────────────────────────────────────────────────────
 
-const TILE_URL =
-  "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+const TILE_URL = `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=${CARTO_API_KEY}`;
 const TILE_ATTR =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
